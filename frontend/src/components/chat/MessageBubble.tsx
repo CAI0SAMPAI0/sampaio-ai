@@ -16,7 +16,7 @@ export default function MessageBubble({ role, content }: Props) {
   return (
     <div className={`flex items-start gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
       <Image
-        src={isUser ? '/user-avatar.png' : '/ai-avatar.png'}
+        src={isUser ? '/user-avatar.jpg' : '/ai-avatar.png'}
         alt={isUser ? 'Você' : 'Sampaio IA'}
         width={32}
         height={32}
