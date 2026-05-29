@@ -33,7 +33,7 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-CHANGE_ME', cast=str)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='sampaio-ai.onrender.com').split(',')
 
 
 # Application definition
@@ -134,11 +134,8 @@ STATIC_URL = 'static/'
 LOGIN_REDIRECT_URL = 'chatbot'
 LOGOUT_REDIRECT_URL = 'login'
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # Next.js dev
-]
-
-CORS_ALLOW_CREDENTIALS = True  # necessário para enviar cookies de sessão
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000').split(',')
+CORS_ALLOW_CREDENTIALS = True
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
