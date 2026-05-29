@@ -119,7 +119,7 @@ function ChatPageContent() {
     setIsLoading(true)
 
     try {
-      const data = await sendMessage(convId, text, file)
+      const data = await sendMessage(convId!, text, file)
 
       if (data.conversation_title) {
         setConversations(prev =>
