@@ -1,14 +1,97 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
-export async function sendMessage(message: string) {
-    const response = await fetch(`${API_URL}/api/chat/`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ message })
-    })
+function getToken() {
+  return localStorage.getItem('access_token')
+}
 
-    if (!response.ok) throw new Error('Failed to send message')
-    return response.json() as Promise<{ message: string; response: string }>
+function authHeader() {
+  return { 'Authorization': `Bearer ${getToken()}` }
+}
+
+async function refreshToken(): Promise<boolean> {
+  const refresh = localStorage.getItem('refresh_token')
+  if (!refresh) return false
+
+  try {
+    const res = await fetch(`${API_URL}/api/auth/refresh/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh }),
+    })
+    if (!res.ok) return false
+    const data = await res.json()
+    localStorage.setItem('access_token', data.access)
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+  const headers = { ...authHeader(), ...(options.headers ?? {}) }
+  let res = await fetch(url, { ...options, headers })
+
+  // Token expirado — tenta renovar
+  if (res.status === 401) {
+    const refreshed = await refreshToken()
+    if (refreshed) {
+      const retryHeaders = { ...authHeader(), ...(options.headers ?? {}) }
+      res = await fetch(url, { ...options, headers: retryHeaders })
+    } else {
+      // Refresh também expirou — força logout
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+      window.location.href = '/login'
+    }
+  }
+
+  return res
+}
+
+export async function login(username: string, password: string) {
+  const res = await fetch(`${API_URL}/api/auth/login/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  })
+  if (!res.ok) throw new Error('Credenciais inválidas')
+  const data = await res.json()
+  localStorage.setItem('access_token', data.access)
+  localStorage.setItem('refresh_token', data.refresh)
+  return data
+}
+
+export async function getConversations() {
+  const res = await fetchWithAuth(`${API_URL}/api/conversations/`)
+  if (!res.ok) throw new Error('Erro ao buscar conversas')
+  return res.json()
+}
+
+export async function createConversation() {
+  const res = await fetchWithAuth(`${API_URL}/api/conversations/`, { method: 'POST' })
+  if (!res.ok) throw new Error('Erro ao criar conversa')
+  return res.json()
+}
+
+export async function deleteConversation(id: number) {
+  await fetchWithAuth(`${API_URL}/api/conversations/${id}/`, { method: 'DELETE' })
+}
+
+export async function getMessages(conversationId: number) {
+  const res = await fetchWithAuth(`${API_URL}/api/conversations/${conversationId}/messages/`)
+  if (!res.ok) throw new Error('Erro ao buscar mensagens')
+  return res.json()
+}
+
+export async function sendMessage(conversationId: number, message: string, file?: File) {
+  const formData = new FormData()
+  formData.append('message', message)
+  if (file) formData.append('file', file)
+
+  const res = await fetchWithAuth(`${API_URL}/api/conversations/${conversationId}/messages/`, {
+    method: 'POST',
+    body: formData,
+  })
+  if (!res.ok) throw new Error('Erro ao enviar mensagem')
+  return res.json()
 }

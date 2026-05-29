@@ -1,6 +1,11 @@
 from pathlib import Path
 from decouple import config
+from datetime import timedelta
 
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=365),
+    'REFRESH_TOKEN_LIFETIME': timedelta(minutes=15),
+}
 
 GROQ_API_KEY = config('GROQ_API_KEY')
 GOOGLE_API_KEY = config('GOOGLE_API_KEY')
@@ -14,12 +19,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-)k-kw!q83an#e0zx)*4)m_%epa2)xsv%r$ctiv#yjm$f)v#zoz'
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-CHANGE_ME', cast=str)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost').split(',')
 
 
 # Application definition
@@ -128,7 +133,7 @@ CORS_ALLOW_CREDENTIALS = True  # necessário para enviar cookies de sessão
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
