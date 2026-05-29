@@ -61,7 +61,6 @@ INSTALLED_APPS = [
 
     'chatbot',
     'accounts',
-    'rag',
     'rest_framework',
     'corsheaders',
 ]
