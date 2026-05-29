@@ -1,9 +1,10 @@
 import os
 
 from django.conf import settings
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.shortcuts import render
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
 from langchain_groq import ChatGroq
 from markdown import markdown
 from langchain_chroma import Chroma
@@ -12,7 +13,7 @@ from chatbot.models import Chat
 
 
 os.environ['GROQ_API_KEY'] = settings.GROQ_API_KEY
-os.environ['GOOGLE_API_KEY'] = settings.GOOGLE_API_KEY
+
 
 # Carregando o RAG ao iniciar
 
@@ -57,23 +58,33 @@ def ask_ai(message):
     return markdown(response.content, output_format='html')
 
 
-@login_required
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
 def chatbot(request):
-    chats = Chat.objects.all().order_by('-created_at')
+    if request.method == 'GET':
+        chats = Chat.objects.filter(user=request.user).order_by('created_at')
+        data = [
+            {
+                'id': chat.id,
+                'message': chat.message,
+                'response': chat.response,
+                'created_at': chat.created_at,
+            }
+            for chat in chats
+        ]
+        return Response(data)
 
     if request.method == 'POST':
-        message = request.POST.get('message')
+        message = request.data.get('message', '').strip()
+        if not message:
+            return Response({'error': 'Mensagem vazia.'}, status=status.HTTP_400_BAD_REQUEST)
+
         response = ask_ai(message)
 
-        chat = Chat(
+        Chat.objects.create(
+            user=request.user,
             message=message,
             response=response
         )
-        chat.save()
 
-        return JsonResponse({
-            'message': message,
-            'response': response
-        })
-
-    return render(request, 'chatbot.html', {'chats': chats})
+        return Response({'message': message, 'response': response})

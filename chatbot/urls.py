@@ -4,5 +4,5 @@ from django.urls import path
 
 
 urlpatterns = [
-    path('', views.chatbot, name='chatbot'),
+    path('api/chat/', views.chatbot, name='chatbot'),
 ]

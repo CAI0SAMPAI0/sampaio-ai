@@ -83,10 +83,3 @@ def testar_rag():
         | model
         | StrOutputParser()
     )
-
-    # Teste Inicial Global
-    question = "O que os livros dizem sobre APIs ou FastAPI?"
-    print(f"\nFazendo busca global para: '{question}'...")
-    response = rag_chain.invoke(question)
-    print("\nResposta do Teste Inicial:")
-    print(response)
