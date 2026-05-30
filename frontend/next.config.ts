@@ -8,6 +8,11 @@ const nextConfig = {
         port: '8000',
         pathname: '/media/**',
       },
+      {
+        protocol: 'https',
+        hostname: '*.onrender.com',
+        pathname: '/media/**',
+      },
     ],
     // Libera IPs privados em desenvolvimento
     dangerouslyAllowSVG: true,
