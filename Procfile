@@ -1,1 +1,1 @@
-web: sh backend/entrypoint.sh
+web: sh start.sh
