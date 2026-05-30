@@ -3,6 +3,7 @@ import PyPDF2
 import io
 
 from django.conf import settings
+from django.db import DatabaseError
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
@@ -61,19 +62,29 @@ def ask_ai(message: str, file_context: str, chat_history: list) -> str:
     return response.content
 
 
+def database_unavailable_response():
+    return Response(
+        {'error': 'Banco de dados temporariamente indisponível. Tente novamente em instantes.'},
+        status=status.HTTP_503_SERVICE_UNAVAILABLE,
+    )
+
+
 # ─── Conversations ────────────────────────────────────────────────────────────
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def conversations(request):
-    if request.method == 'GET':
-        convs = Conversation.objects.filter(user=request.user).order_by('-created_at')
-        data = [{'id': c.id, 'title': c.title, 'created_at': c.created_at} for c in convs]
-        return Response(data)
+    try:
+        if request.method == 'GET':
+            convs = Conversation.objects.filter(user=request.user).order_by('-created_at')
+            data = [{'id': c.id, 'title': c.title, 'created_at': c.created_at} for c in convs]
+            return Response(data)
 
-    if request.method == 'POST':
-        conv = Conversation.objects.create(user=request.user)
-        return Response({'id': conv.id, 'title': conv.title, 'created_at': conv.created_at})
+        if request.method == 'POST':
+            conv = Conversation.objects.create(user=request.user)
+            return Response({'id': conv.id, 'title': conv.title, 'created_at': conv.created_at})
+    except DatabaseError:
+        return database_unavailable_response()
 
 
 @api_view(['DELETE'])
@@ -85,6 +96,8 @@ def conversation_detail(request, pk):
         return Response({'message': 'Conversa deletada.'})
     except Conversation.DoesNotExist:
         return Response({'error': 'Não encontrada.'}, status=status.HTTP_404_NOT_FOUND)
+    except DatabaseError:
+        return database_unavailable_response()
 
 
 # ─── Chat ─────────────────────────────────────────────────────────────────────
@@ -97,11 +110,16 @@ def chatbot(request, conversation_id):
         conv = Conversation.objects.get(pk=conversation_id, user=request.user)
     except Conversation.DoesNotExist:
         return Response({'error': 'Conversa não encontrada.'}, status=status.HTTP_404_NOT_FOUND)
+    except DatabaseError:
+        return database_unavailable_response()
 
     if request.method == 'GET':
-        chats = Chat.objects.filter(conversation=conv).order_by('created_at')
-        data = [{'id': c.id, 'message': c.message, 'response': c.response, 'created_at': c.created_at} for c in chats]
-        return Response(data)
+        try:
+            chats = Chat.objects.filter(conversation=conv).order_by('created_at')
+            data = [{'id': c.id, 'message': c.message, 'response': c.response, 'created_at': c.created_at} for c in chats]
+            return Response(data)
+        except DatabaseError:
+            return database_unavailable_response()
 
     if request.method == 'POST':
         message = request.data.get('message', '').strip()
@@ -113,25 +131,44 @@ def chatbot(request, conversation_id):
         if uploaded_file:
             file_context = extract_file_content(uploaded_file)
 
-        previous_chats = Chat.objects.filter(conversation=conv).order_by('created_at')
-        chat_history = []
-        for c in previous_chats:
-            chat_history.append(('human', c.message))
-            chat_history.append(('ai', c.response))
+        try:
+            previous_chats = Chat.objects.filter(conversation=conv).order_by('created_at')
+            chat_history = []
+            for c in previous_chats:
+                chat_history.append(('human', c.message))
+                chat_history.append(('ai', c.response))
+        except DatabaseError:
+            return database_unavailable_response()
 
-        response = ask_ai(message, file_context, chat_history)
+        try:
+            response = ask_ai(message, file_context, chat_history)
+        except Exception:
+            return Response(
+                {'error': 'Erro ao gerar resposta da IA. Tente novamente em instantes.'},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
 
         is_first = not previous_chats.exists()
         if is_first:
-            conv.title = generate_title(message)
-            conv.save()
+            try:
+                conv.title = generate_title(message)
+            except Exception:
+                conv.title = message[:100] or conv.title
 
-        Chat.objects.create(
-            user=request.user,
-            conversation=conv,
-            message=message,
-            response=response
-        )
+            try:
+                conv.save()
+            except DatabaseError:
+                return database_unavailable_response()
+
+        try:
+            Chat.objects.create(
+                user=request.user,
+                conversation=conv,
+                message=message,
+                response=response
+            )
+        except DatabaseError:
+            return database_unavailable_response()
 
         return Response({
             'message': message,

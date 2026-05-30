@@ -2,17 +2,12 @@ from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse_lazy
 from django.views import generic
 from django.contrib.auth.models import User
+from django.db import DatabaseError
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth.models import User
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import UserProfile
 
@@ -44,26 +39,47 @@ def register(request):
     }, status=status.HTTP_201_CREATED)
 
 
+def build_avatar_url(request, profile):
+    if not profile or not profile.avatar:
+        return None
+
+    try:
+        return request.build_absolute_uri(profile.avatar.url)
+    except Exception:
+        return None
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def profile(request):
     user = request.user
-    profile, _ = UserProfile.objects.get_or_create(user=user)
-    avatar_url = None
-    if profile.avatar:
-        avatar_url = request.build_absolute_uri(profile.avatar.url)
+    profile_obj = None
+
+    try:
+        profile_obj, _ = UserProfile.objects.get_or_create(user=user)
+    except DatabaseError:
+        # Do not fail the whole authenticated session if the optional profile
+        # table/storage is temporarily unavailable; the frontend can still load
+        # the user identity and continue without an avatar.
+        profile_obj = None
+
     return Response({
         'id': user.id,
         'username': user.username,
-        'avatar': avatar_url,
+        'avatar': build_avatar_url(request, profile_obj),
     })
+
 
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def update_profile(request):
     user = request.user
-    profile, _ = UserProfile.objects.get_or_create(user=user)
+
+    try:
+        profile_obj, _ = UserProfile.objects.get_or_create(user=user)
+    except DatabaseError:
+        return Response({'error': 'Perfil temporariamente indisponível.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     if 'username' in request.data:
         new_username = request.data['username']
@@ -73,16 +89,15 @@ def update_profile(request):
         user.save()
 
     if 'avatar' in request.FILES:
-        profile.avatar = request.FILES['avatar']
-        profile.save()
-
-    avatar_url = None
-    if profile.avatar:
-        avatar_url = request.build_absolute_uri(profile.avatar.url)
+        profile_obj.avatar = request.FILES['avatar']
+        try:
+            profile_obj.save()
+        except Exception:
+            return Response({'error': 'Erro ao salvar avatar.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     return Response({
         'username': user.username,
-        'avatar': avatar_url,
+        'avatar': build_avatar_url(request, profile_obj),
     })
 
 
