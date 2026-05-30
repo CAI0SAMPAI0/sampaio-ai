@@ -1,10 +1,11 @@
 from pathlib import Path
 from decouple import config
 from datetime import timedelta
-import os
+import importlib.util
 
 # BASE_DIR deve ser o primeiro
 BASE_DIR = Path(__file__).resolve().parent.parent
+HAS_WHITENOISE = importlib.util.find_spec('whitenoise') is not None
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-CHANGE_ME', cast=str)
 DEBUG = config('DEBUG', default=True, cast=bool)
@@ -58,6 +59,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+if HAS_WHITENOISE:
+    MIDDLEWARE.insert(2, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 ROOT_URLCONF = 'core.urls'
 
