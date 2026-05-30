@@ -10,7 +10,7 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: '*.onrender.com',
+        hostname: '*.up.railway.app',
         pathname: '/media/**',
       },
     ],

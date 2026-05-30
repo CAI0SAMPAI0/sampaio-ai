@@ -94,7 +94,14 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000').split(',')
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in config(
+        'CORS_ALLOWED_ORIGINS',
+        default='http://localhost:3000,https://sampaio-ai.vercel.app',
+    ).split(',')
+    if origin.strip()
+]
 CORS_ALLOW_CREDENTIALS = True
 
 REST_FRAMEWORK = {
@@ -107,3 +114,9 @@ REST_FRAMEWORK = {
 }
 
 APPEND_SLASH = True
+
+STORAGES = {
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}

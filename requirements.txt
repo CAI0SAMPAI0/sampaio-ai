@@ -17,3 +17,4 @@ PyPDF2==3.0.1
 Markdown==3.10.2
 groq==0.37.1
 pillow==10.4.0
+whitenoise==6.12.0
