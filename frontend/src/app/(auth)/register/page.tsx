@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import PasswordInput from '@/components/ui/PasswordInput'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -78,26 +79,18 @@ export default function RegisterPage() {
 
             <div>
               <label className='block text-sm text-zinc-400 mb-1'>Senha</label>
-              <input
-                type='password'
+              <PasswordInput
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                required
-                className='w-full bg-zinc-700 text-white text-sm rounded-xl px-4 py-3
-                           placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
                 placeholder='crie uma senha'
               />
             </div>
 
             <div>
               <label className='block text-sm text-zinc-400 mb-1'>Confirmar senha</label>
-              <input
-                type='password'
+              <PasswordInput
                 value={confirm}
                 onChange={e => setConfirm(e.target.value)}
-                required
-                className='w-full bg-zinc-700 text-white text-sm rounded-xl px-4 py-3
-                           placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
                 placeholder='repita a senha'
               />
             </div>

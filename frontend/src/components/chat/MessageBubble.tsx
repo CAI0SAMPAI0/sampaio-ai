@@ -8,19 +8,20 @@ import Image from 'next/image'
 interface Props {
   role: 'user' | 'ai'
   content: string
+  userAvatar: string
 }
 
-export default function MessageBubble({ role, content }: Props) {
+export default function MessageBubble({ role, content, userAvatar }: Props) {
   const isUser = role === 'user'
 
   return (
     <div className={`flex items-start gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
       <Image
-        src={isUser ? '/user-avatar.jpg' : '/ai-avatar.png'}
+        src={isUser ? userAvatar : '/ai-avatar.png'}
         alt={isUser ? 'Você' : 'Sampaio IA'}
         width={32}
         height={32}
-        className='rounded-full flex-shrink-0'
+        className='rounded-full shrink-0'
       />
 
       <div className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed
