@@ -13,6 +13,11 @@ const nextConfig = {
         hostname: '*.onrender.com',
         pathname: '/media/**',
       },
+      {
+        protocol: 'https',
+        hostname: '*.up.railway.app',
+        pathname: '/media/**',
+      },
     ],
     // Libera IPs privados em desenvolvimento
     dangerouslyAllowSVG: true,
