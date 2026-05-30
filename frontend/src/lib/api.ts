@@ -1,11 +1,14 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 function getToken() {
+  if (typeof window === 'undefined') return null  // guard SSR
   return localStorage.getItem('access_token')
 }
 
-function authHeader() {
-  return { 'Authorization': `Bearer ${getToken()}` }
+function authHeader(): Record<string, string> {
+  const token = getToken()
+  if (!token) return {}
+  return { 'Authorization': `Bearer ${token}` }
 }
 
 async function refreshToken(): Promise<boolean> {
@@ -93,5 +96,33 @@ export async function sendMessage(conversationId: number, message: string, file?
     body: formData,
   })
   if (!res.ok) throw new Error('Erro ao enviar mensagem')
+  return res.json()
+}
+
+export async function getProfile() {
+  const res = await fetchWithAuth(`${API_URL}/api/auth/me/`)
+  if (!res.ok) throw new Error('Erro ao buscar perfil')
+  return res.json()
+}
+
+export async function updateProfile(data: FormData) {
+  const res = await fetchWithAuth(`${API_URL}/api/auth/me/update/`, {
+    method: 'PATCH',
+    body: data,
+  })
+  if (!res.ok) throw new Error('Erro ao atualizar perfil')
+  return res.json()
+}
+
+export async function changePassword(current: string, newPass: string) {
+  const res = await fetchWithAuth(`${API_URL}/api/auth/me/password/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ current_password: current, new_password: newPass }),
+  })
+  if (!res.ok) {
+    const data = await res.json()
+    throw new Error(data.error ?? 'Erro ao alterar senha')
+  }
   return res.json()
 }
