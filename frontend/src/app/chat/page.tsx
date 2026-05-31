@@ -206,7 +206,7 @@ function ChatPageContent() {
         </div>
 
         <button
-          onClick={() => router.push('/me')}
+          onClick={() => router.push('/settings')}
           className='w-full flex items-center gap-2 text-left text-sm text-zinc-400 hover:text-white
              px-3 py-2 rounded-xl hover:bg-zinc-800 transition-colors'
         >
