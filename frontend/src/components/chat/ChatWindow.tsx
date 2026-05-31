@@ -19,18 +19,14 @@ export default function ChatWindow({ messages, isLoading, userAvatar }: Props) {
     const containerRef = useRef<HTMLDivElement>(null)
     const bottomRef = useRef<HTMLDivElement>(null)
     const [showScrollBtn, setShowScrollBtn] = useState(false)
-    // Track whether the last scroll-to-bottom was triggered programmatically
     const isAutoScrolling = useRef(false)
 
     const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
         isAutoScrolling.current = true
         bottomRef.current?.scrollIntoView({ behavior })
-        // Reset flag after animation completes
         setTimeout(() => { isAutoScrolling.current = false }, 500)
     }, [])
 
-    // Scroll to bottom instantly when conversation loads (messages replaced wholesale)
-    // and smoothly when a new message is appended or loading starts.
     const prevLengthRef = useRef(0)
     useEffect(() => {
         const container = containerRef.current
@@ -54,7 +50,6 @@ export default function ChatWindow({ messages, isLoading, userAvatar }: Props) {
         }
     }, [messages, isLoading, scrollToBottom])
 
-    // On first mount / conversation switch: jump instantly to bottom
     useEffect(() => {
         scrollToBottom('instant' as ScrollBehavior)
         prevLengthRef.current = 0
@@ -63,7 +58,6 @@ export default function ChatWindow({ messages, isLoading, userAvatar }: Props) {
         messages[0]?.content,
     ])
 
-    // Show/hide the scroll-to-bottom button based on scroll position
     const handleScroll = useCallback(() => {
         const container = containerRef.current
         if (!container) return
