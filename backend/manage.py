@@ -1,9 +1,8 @@
-import asyncio
 import os
 import sys
 
 
-async def main():
+def main():
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
     try:
@@ -18,4 +17,4 @@ async def main():
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    main()

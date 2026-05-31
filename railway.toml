@@ -1,8 +1,0 @@
-# railway.toml — minimal config for deploying the backend service
-project = "sampaio-ai"
-
-[[services]]
-name = "backend"
-path = "."
-start = "sh start.sh"
-build = "python -m pip install -r requirements.txt"
