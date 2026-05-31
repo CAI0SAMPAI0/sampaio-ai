@@ -1,7 +1,7 @@
 import { apiUrl } from './config'
 
 function getToken() {
-  if (typeof window === 'undefined') return null  // guard SSR
+  if (typeof window === 'undefined') return null
   return localStorage.getItem('access_token')
 }
 
@@ -86,15 +86,23 @@ export async function getMessages(conversationId: number) {
   return res.json()
 }
 
-export async function sendMessage(conversationId: number, message: string, file?: File) {
+export async function sendMessage(
+  conversationId: number,
+  message: string,
+  files?: File[],
+) {
   const formData = new FormData()
   formData.append('message', message)
-  if (file) formData.append('file', file)
 
-  const res = await fetchWithAuth(apiUrl(`/api/conversations/${conversationId}/messages/`), {
-    method: 'POST',
-    body: formData,
-  })
+  if (files && files.length > 0) {
+    formData.append('file', files[0])
+    files.slice(1).forEach((f, i) => formData.append(`file_${i + 2}`, f))
+  }
+
+  const res = await fetchWithAuth(
+    apiUrl(`/api/conversations/${conversationId}/messages/`),
+    { method: 'POST', body: formData },
+  )
   if (!res.ok) throw new Error('Erro ao enviar mensagem')
   return res.json()
 }

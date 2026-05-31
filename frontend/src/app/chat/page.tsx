@@ -28,7 +28,6 @@ function ChatPageContent() {
   const [ready, setReady] = useState(false)
   const [userAvatar, setUserAvatar] = useState<string>('/user-avatar.jpg')
 
-
   const loadConversations = useCallback(async () => {
     try {
       const data = await getConversations()
@@ -43,17 +42,15 @@ function ChatPageContent() {
   useEffect(() => {
     const token = localStorage.getItem('access_token')
     if (!token) { router.push('/login'); return }
+
     getProfile().then(data => {
       if (data.avatar) setUserAvatar(data.avatar)
     }).catch(() => { })
 
-    const isDesktop = window.innerWidth >= 768
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSidebarOpen(isDesktop)
+    setSidebarOpen(window.innerWidth >= 768)
     setReady(true)
 
     const convIdFromUrl = searchParams.get('id')
-
     loadConversations().then(async (data) => {
       if (convIdFromUrl) {
         const id = parseInt(convIdFromUrl)
@@ -112,7 +109,7 @@ function ChatPageContent() {
     }
   }
 
-  async function handleSend(text: string, file?: File) {
+  async function handleSend(text: string, files?: File[]) {
     let convId = activeId
 
     if (!convId) {
@@ -122,11 +119,17 @@ function ChatPageContent() {
       convId = conv.id
     }
 
-    setMessages(prev => [...prev, { role: 'user', content: text }])
+    // Show user bubble immediately — include file names as context hint
+    const fileNote =
+      files && files.length > 0
+        ? `\n\n📎 ${files.map(f => f.name).join(', ')}`
+        : ''
+    setMessages(prev => [...prev, { role: 'user', content: text + fileNote }])
     setIsLoading(true)
 
     try {
-      const data = await sendMessage(convId!, text, file)
+      // Single request — all files go in one FormData (api.ts handles the keys)
+      const data = await sendMessage(convId!, text, files)
 
       if (data.conversation_title) {
         setConversations(prev =>
@@ -232,7 +235,7 @@ function ChatPageContent() {
         </div>
       </aside>
 
-      <div className='flex flex-col flex-1 min-w-0'>
+      <div className='flex flex-col flex-1 min-w-0 min-h-0'>
         <header className='flex items-center gap-3 px-4 py-4 border-b border-zinc-800 shrink-0'>
           <button
             onClick={() => setSidebarOpen(prev => !prev)}
@@ -240,7 +243,9 @@ function ChatPageContent() {
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
               fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" />
+              <line x1="4" x2="20" y1="12" y2="12" />
+              <line x1="4" x2="20" y1="6" y2="6" />
+              <line x1="4" x2="20" y1="18" y2="18" />
             </svg>
           </button>
           <span className='text-sm text-zinc-400 truncate'>

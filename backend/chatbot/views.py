@@ -1,7 +1,6 @@
 import os
 import PyPDF2
 import io
-
 from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -34,6 +33,29 @@ def extract_file_content(file) -> str:
             return ''
 
 
+def collect_file_context(request) -> str:
+    parts: list[str] = []
+
+    if 'file' in request.FILES:
+        text = extract_file_content(request.FILES['file'])
+        if text:
+            name = request.FILES['file'].name
+            parts.append(f'--- {name} ---\n{text}')
+
+    index = 2
+    while True:
+        key = f'file_{index}'
+        if key not in request.FILES:
+            break
+        text = extract_file_content(request.FILES[key])
+        if text:
+            name = request.FILES[key].name
+            parts.append(f'--- {name} ---\n{text}')
+        index += 1
+
+    return '\n\n'.join(parts)
+
+
 def generate_title(message: str) -> str:
     model = ChatGroq(model='llama-3.3-70b-versatile')
     response = model.invoke([
@@ -44,24 +66,28 @@ def generate_title(message: str) -> str:
 
 
 def ask_ai(message: str, file_context: str, chat_history: list) -> str:
-    model = ChatGroq(model='llama-3.3-70b-versatile')
+    model = ChatGroq(
+        model='openai/gpt-oss-120b',
+        temperature=0.2
+    )
 
     system_prompt = (
         'Você é um assistente de IA sênior responsável por tirar dúvidas sobre programação, '
         'especialmente Python, Django, DRF, FastAPI, JavaScript, TypeScript, HTML, CSS, Tailwind CSS. '
+        'Você tem acesso a arquivos enviados pelo usuário, que podem conter código ou documentação. Use sempre a versão mais recente das bibliotecas e frameworks. Você pode usar exemplos de código para explicar conceitos ou resolver dúvidas. Além de saber bem arquitetura de software, boas práticas, padrões de projeto, testes, segurança, performance e escalabilidade. '
         'Responda de forma clara e objetiva, com exemplos de código quando necessário. '
         'Responda em formato markdown. Responda em português.'
     )
 
     if file_context:
-        system_prompt += f'\n\nARQUIVO ENVIADO PELO USUÁRIO:\n{file_context}'
+        system_prompt += f'\n\nARQUIVOS ENVIADOS PELO USUÁRIO:\n{file_context}'
 
     messages = [('system', system_prompt)] + chat_history + [('human', message)]
     response = model.invoke(messages)
     return response.content
 
 
-# ─── Conversations ────────────────────────────────────────────────────────────
+# Conversations 
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
@@ -87,7 +113,7 @@ def conversation_detail(request, pk):
         return Response({'error': 'Não encontrada.'}, status=status.HTTP_404_NOT_FOUND)
 
 
-# ─── Chat ─────────────────────────────────────────────────────────────────────
+# Chat 
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
@@ -108,10 +134,8 @@ def chatbot(request, conversation_id):
         if not message:
             return Response({'error': 'Mensagem vazia.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        file_context = ''
-        uploaded_file = request.FILES.get('file')
-        if uploaded_file:
-            file_context = extract_file_content(uploaded_file)
+        # Collect all uploaded files
+        file_context = collect_file_context(request)
 
         previous_chats = Chat.objects.filter(conversation=conv).order_by('created_at')
         chat_history = []
