@@ -31,8 +31,10 @@ async function refreshToken(): Promise<boolean> {
 }
 
 async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+  console.log('fetchWithAuth', url)
   const headers = { ...authHeader(), ...(options.headers ?? {}) }
   let res = await fetch(url, { ...options, headers })
+  console.log('status:', res.status, url)
 
   // Token expirado — tenta renovar
   if (res.status === 401) {
