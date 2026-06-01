@@ -23,14 +23,15 @@ def extract_file_content(file) -> str:
             return '\n'.join(page.extract_text() or '' for page in reader.pages)
         except Exception:
             return ''
-
-    try:
-        return content.decode('utf-8')
-    except UnicodeDecodeError:
+    else:
         try:
-            return content.decode('latin-1')
-        except Exception:
-            return ''
+            return content.decode('utf-8')
+        except UnicodeDecodeError:
+            try:
+                return content.decode('latin-1')
+            except Exception:
+                return ''
+            
     return text [:3000]
 
 def collect_file_context(request) -> str:
@@ -67,8 +68,7 @@ def generate_title(message: str) -> str:
 
 def ask_ai(message: str, file_context: str, chat_history: list) -> str:
     model = ChatGroq(
-        model='llama-3.3-70b-versatile',
-        temperature=0.2
+        model='llama-3.3-70b-versatile'
     )
 
     system_prompt = (

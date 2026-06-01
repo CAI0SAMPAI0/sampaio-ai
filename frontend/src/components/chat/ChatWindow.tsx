@@ -13,9 +13,10 @@ interface Props {
     messages: Message[]
     isLoading: boolean
     userAvatar: string
+    onResend?: (text: string) => void
 }
 
-export default function ChatWindow({ messages, isLoading, userAvatar }: Props) {
+export default function ChatWindow({ messages, isLoading, userAvatar, onResend }: Props) {
     const containerRef = useRef<HTMLDivElement>(null)
     const bottomRef = useRef<HTMLDivElement>(null)
     const [showScrollBtn, setShowScrollBtn] = useState(false)
@@ -77,7 +78,7 @@ export default function ChatWindow({ messages, isLoading, userAvatar }: Props) {
         <div className='relative flex-1 min-h-0'>
             <div
                 ref={containerRef}
-                className='h-full overflow-y-auto px-4 py-6 space-y-6'
+                className='h-full overflow-y-auto px-4 py-6 space-y-6 overflow-hidden'
             >
                 {messages.length === 0 && (
                     <div className='flex flex-col items-center justify-center h-full text-zinc-500 gap-2'>
@@ -98,6 +99,7 @@ export default function ChatWindow({ messages, isLoading, userAvatar }: Props) {
                         role={msg.role}
                         content={msg.content}
                         userAvatar={userAvatar}
+                        onResend={onResend}
                     />
                 ))}
 

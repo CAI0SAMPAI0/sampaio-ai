@@ -253,7 +253,7 @@ function ChatPageContent() {
           </span>
         </header>
 
-        <ChatWindow messages={messages} isLoading={isLoading} userAvatar={userAvatar} />
+        <ChatWindow messages={messages} isLoading={isLoading} userAvatar={userAvatar} onResend={(text) => handleSend(text)}/>
         <ChatInput onSend={handleSend} disabled={isLoading} />
       </div>
     </div>
