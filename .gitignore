@@ -1,7 +1,26 @@
 .venv/
 .env
-.env.local
+.env.*
 chroma_db/
 __pycache__/
+*.pyc
 files/
 db.sqlite3
+
+# Frontend / Node.js
+node_modules/
+.next/
+out/
+build/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/

@@ -1,20 +1,29 @@
-Django==6.0.5
-djangorestframework==3.17.1
-djangorestframework-simplejwt==5.5.1
-django-cors-headers==4.9.0
-python-decouple==3.8
-dj-database-url==3.1.2
-psycopg2-binary==2.9.12
-gunicorn==23.0.0
+# Web
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+
+# Database
+sqlalchemy[asyncio]==2.0.41
+asyncpg==0.30.0
+alembic==1.15.2
+
+# Auth
+python-jose[cryptography]==3.5.0
+bcrypt==5.0.0
+python-multipart==0.0.20
+
+# Config
+pydantic-settings==2.9.1
+pydantic[email]==2.11.4
+
+# AI
 langchain==1.3.2
-langchain-community==0.4.2
-langchain-core==1.4.0
-langchain-groq==1.1.2
-langchain-text-splitters==1.1.2
-langsmith==0.8.6
-huggingface_hub==1.16.1
+langchain-groq==0.3.2
+langchain-core==0.3.59
+
+# Files
 pypdf==4.3.1
-Markdown==3.10.2
-groq==0.37.1
-pillow==10.4.0
-whitenoise==6.12.0
+pillow==11.2.1
+
+# Dev utils
+python-decouple==3.8

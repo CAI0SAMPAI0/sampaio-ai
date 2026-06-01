@@ -9,7 +9,8 @@ from .deps import get_current_user
 router = APIRouter()
 
 
-@router.get("/", response_model=list[ConversationOut])
+@router.get("", response_model=list[ConversationOut])
+@router.get("/", response_model=list[ConversationOut], include_in_schema=False)
 async def list_conversations(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -22,7 +23,7 @@ async def list_conversations(
     return result.scalars().all()
 
 
-@router.post("/", response_model=ConversationOut, status_code=201)
+@router.post("", response_model=ConversationOut, status_code=201)
 async def create_conversation(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -34,7 +35,7 @@ async def create_conversation(
     return conv
 
 
-@router.delete("/{conv_id}/")
+@router.delete("/{conv_id}")
 async def delete_conversation(
     conv_id: int,
     current_user: User = Depends(get_current_user),

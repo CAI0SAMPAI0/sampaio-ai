@@ -48,7 +48,7 @@ async def register(body: RegisterIn, db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.post("/login")
+@router.post("/login/")
 async def login(body: RegisterIn, db: AsyncSession = Depends(get_db)):
     """_summary_
 
@@ -57,7 +57,7 @@ async def login(body: RegisterIn, db: AsyncSession = Depends(get_db)):
         db (AsyncSession, optional): _description_. Defaults to Depends(get_db).
     """
     user = await db.scalar(select(User).where(User.username == body.username))
-    if not user or not verify_password(body.password, user.password):
+    if not user or not verify_password(body.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     return TokenOut(
@@ -65,7 +65,7 @@ async def login(body: RegisterIn, db: AsyncSession = Depends(get_db)):
         refresh=create_refresh_token(user.id),
     )
 
-@router.post("/refresh/")
+@router.post("/refresh")
 async def refresh(body: RefreshIn, db: AsyncSession = Depends(get_db)):
     try:
         user_id = decode_token(body.refresh)
@@ -79,14 +79,14 @@ async def refresh(body: RefreshIn, db: AsyncSession = Depends(get_db)):
     return {"access": create_access_token(user.id)}
 
 
-@router.post("/logout/")
+@router.post("/logout")
 async def logout(body: RefreshIn):
     # stateless JWT — apenas confirma recebimento
     # para blacklist real, adicione redis futuramente
     return JSONResponse(status_code=205, content={"message": "Logout successful."})
 
 
-@router.get("/me/", response_model=ProfileOut)
+@router.get("/me", response_model=ProfileOut)
 async def profile(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     await db.refresh(current_user, ["profile"])
     profile = current_user.profile
@@ -98,7 +98,7 @@ async def profile(current_user: User = Depends(get_current_user), db: AsyncSessi
     )
 
 
-@router.patch("/me/update/")
+@router.patch("/me/update")
 async def update_profile(
     username: str | None = None,
     avatar: UploadFile | None = File(None),
@@ -136,7 +136,7 @@ async def update_profile(
     )
 
 
-@router.post("/me/password/")
+@router.post("/me/password")
 async def change_password(
     body: ChangePasswordIn,
     current_user: User = Depends(get_current_user),

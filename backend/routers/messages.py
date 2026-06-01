@@ -10,6 +10,14 @@ from models import User, Conversation, Chat
 from schemas import MessageOut
 from .deps import get_current_user
 
+import langchain
+if not hasattr(langchain, "verbose"):
+    langchain.verbose = False
+if not hasattr(langchain, "debug"):
+    langchain.debug = False
+if not hasattr(langchain, "llm_cache"):
+    langchain.llm_cache = None
+
 from langchain_groq import ChatGroq
 
 router = APIRouter()
@@ -73,7 +81,7 @@ async def _ask_ai(message: str, file_context: str, history: list) -> str:
 
 # ── routes ───────────────────────────────────────────────────────────────────
 
-@router.get("/{conv_id}/messages/")
+@router.get("/{conv_id}/messages")
 async def list_messages(
     conv_id: int,
     current_user: User = Depends(get_current_user),
@@ -101,7 +109,7 @@ async def list_messages(
     ]
 
 
-@router.post("/{conv_id}/messages/", response_model=MessageOut)
+@router.post("/{conv_id}/messages", response_model=MessageOut)
 async def send_message(
     conv_id: int,
     message: Annotated[str, Form()],

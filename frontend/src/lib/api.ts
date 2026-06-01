@@ -54,7 +54,8 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Re
 }
 
 export async function login(username: string, password: string) {
-  const res = await fetch(apiUrl('/api/auth/login'), {
+  console.log('Logging in', username)
+  const res = await fetch(apiUrl('/api/auth/login/'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
