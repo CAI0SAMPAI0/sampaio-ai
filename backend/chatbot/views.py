@@ -31,7 +31,7 @@ def extract_file_content(file) -> str:
             return content.decode('latin-1')
         except Exception:
             return ''
-
+    return text [:3000]
 
 def collect_file_context(request) -> str:
     parts: list[str] = []
@@ -143,6 +143,7 @@ def chatbot(request, conversation_id):
             chat_history.append(('human', c.message))
             chat_history.append(('ai', c.response))
 
+        chat_history = chat_history[-6:]
         response = ask_ai(message, file_context, chat_history)
 
         is_first = not previous_chats.exists()
