@@ -77,6 +77,8 @@ def ask_ai(message: str, file_context: str, chat_history: list) -> str:
         'Você tem acesso a arquivos enviados pelo usuário, que podem conter código ou documentação. Use sempre a versão mais recente das bibliotecas e frameworks. Você pode usar exemplos de código para explicar conceitos ou resolver dúvidas. Além de saber bem arquitetura de software, boas práticas, padrões de projeto, testes, segurança, performance e escalabilidade. '
         'Responda de forma clara e objetiva, com exemplos de código quando necessário. '
         'Responda em formato markdown. Responda em português.'
+        'Ajude o usuário a resolver dúvidas, entender conceitos e melhorar suas habilidades de programação. Seja amigável e paciente.'
+        'Ajude com as atividades e estudos da faculdade, como trabalhos, projetos e preparação para provas.'
     )
 
     if file_context:
