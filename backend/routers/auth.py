@@ -15,7 +15,7 @@ from schemas import (
     ProfileOut, ProfileUpdateOut, ChangePasswordIn,
 )
 from .deps import get_current_user
-import base64, uuid
+import base64
 
 router = APIRouter()
 
@@ -142,12 +142,12 @@ async def change_password(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    if not verify_password(body.current_password, current_user.password):
+    if not verify_password(body.current_password, current_user.password_hash):
         raise HTTPException(400, "Senha atual incorreta.")
     if len(body.new_password) < 6:
         raise HTTPException(400, "Nova senha muito curta.")
 
-    current_user.password = hash_password(body.new_password)
+    current_user.password_hash = hash_password(body.new_password)
     await db.commit()
 
     return {"message": "Senha alterada com sucesso."}

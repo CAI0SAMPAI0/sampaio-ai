@@ -8,6 +8,7 @@ class Settings(BaseSettings):
         env_file=Path(__file__).resolve().parent.parent / ".env",
         env_file_encoding='utf-8',
         case_sensitive=False,
+        extra='ignore',
     )
 
     database_url: str
@@ -29,4 +30,4 @@ class Settings(BaseSettings):
 
     debug: bool = False
 
-settings = Settings
+settings = Settings()

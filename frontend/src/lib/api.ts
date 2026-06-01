@@ -16,7 +16,7 @@ async function refreshToken(): Promise<boolean> {
   if (!refresh) return false
 
   try {
-    const res = await fetch(apiUrl('/api/auth/refresh/'), {
+    const res = await fetch(apiUrl('/api/auth/refresh'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh }),
@@ -54,7 +54,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Re
 }
 
 export async function login(username: string, password: string) {
-  const res = await fetch(apiUrl('/api/auth/login/'), {
+  const res = await fetch(apiUrl('/api/auth/login'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
@@ -67,13 +67,13 @@ export async function login(username: string, password: string) {
 }
 
 export async function getConversations() {
-  const res = await fetchWithAuth(apiUrl('/api/conversations/'))
+  const res = await fetchWithAuth(apiUrl('/api/conversations'))
   if (!res.ok) throw new Error('Erro ao buscar conversas')
   return res.json()
 }
 
 export async function createConversation() {
-  const res = await fetchWithAuth(apiUrl('/api/conversations/'), { method: 'POST' })
+  const res = await fetchWithAuth(apiUrl('/api/conversations'), { method: 'POST' })
   if (!res.ok) throw new Error('Erro ao criar conversa')
   return res.json()
 }
@@ -83,7 +83,7 @@ export async function deleteConversation(id: number) {
 }
 
 export async function getMessages(conversationId: number) {
-  const res = await fetchWithAuth(apiUrl(`/api/conversations/${conversationId}/messages/`))
+  const res = await fetchWithAuth(apiUrl(`/api/conversations/${conversationId}/messages`))
   if (!res.ok) throw new Error('Erro ao buscar mensagens')
   return res.json()
 }
@@ -102,7 +102,7 @@ export async function sendMessage(
   }
 
   const res = await fetchWithAuth(
-    apiUrl(`/api/conversations/${conversationId}/messages/`),
+    apiUrl(`/api/conversations/${conversationId}/messages`),
     { method: 'POST', body: formData },
   )
   if (!res.ok) throw new Error('Erro ao enviar mensagem')
@@ -110,13 +110,13 @@ export async function sendMessage(
 }
 
 export async function getProfile() {
-  const res = await fetchWithAuth(apiUrl('/api/auth/me/'))
+  const res = await fetchWithAuth(apiUrl('/api/auth/me'))
   if (!res.ok) throw new Error('Erro ao buscar perfil')
   return res.json()
 }
 
 export async function updateProfile(data: FormData) {
-  const res = await fetchWithAuth(apiUrl('/api/auth/me/update/'), {
+  const res = await fetchWithAuth(apiUrl('/api/auth/me/update'), {
     method: 'PATCH',
     body: data,
   })
@@ -125,7 +125,7 @@ export async function updateProfile(data: FormData) {
 }
 
 export async function changePassword(current: string, newPass: string) {
-  const res = await fetchWithAuth(apiUrl('/api/auth/me/password/'), {
+  const res = await fetchWithAuth(apiUrl('/api/auth/me/password'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ current_password: current, new_password: newPass }),

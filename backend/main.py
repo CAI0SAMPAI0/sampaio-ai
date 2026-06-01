@@ -14,6 +14,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title='Sampaio AI',
+    redirect_slashes=False,
     description='An AI assistant for developers.',
     version='1.0.0',
     lifespan=lifespan,
@@ -28,7 +29,7 @@ app.add_middleware(
 )
 
 
-app.get('/')
+@app.get('/')
 async def health_check():
     return {'message': 'Sampaio AI is running!'}
 
