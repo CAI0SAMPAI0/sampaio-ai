@@ -15,6 +15,53 @@ interface Props {
   onResend?: (text: string) => void
 }
 
+// Custom wrapper for block code with language headers, copy buttons and feedback checkmarks
+function CodeBlockWrapper({ children, code, language }: { children: React.ReactNode; code: string; language: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className='my-4 rounded-xl border border-zinc-700/60 overflow-hidden shadow-md bg-zinc-950/80 transition-all'>
+      <div className='flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-700/60 select-none'>
+        <span className='text-[10px] font-bold uppercase tracking-wider text-zinc-400'>
+          {language}
+        </span>
+        <button
+          onClick={handleCopy}
+          className='flex items-center gap-1.5 text-[10px] font-medium text-zinc-400 hover:text-white transition-all cursor-pointer'
+        >
+          {copied ? (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24"
+                fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className='animate-scale-up'>
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span className='text-green-400 font-bold'>Copiado!</span>
+            </>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+              </svg>
+              <span>Copiar</span>
+            </>
+          )}
+        </button>
+      </div>
+      <div className='p-0 overflow-x-auto bg-zinc-950 select-text'>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 function MarkdownContent({ content, isUser }: { content: string; isUser: boolean }) {
   return (
     <ReactMarkdown
@@ -42,14 +89,47 @@ function MarkdownContent({ content, isUser }: { content: string; isUser: boolean
               {children}
             </code>
           ) : (
-            <code className={`${className} text-xs`} {...props}>{children}</code>
+            <code className={`${className} text-xs font-mono`} {...props}>{children}</code>
           )
         },
-        pre: ({ children }) => (
-          <pre className='bg-zinc-950 rounded-xl p-4 my-3 overflow-x-auto text-xs'
-            style={{ maxWidth: '100%', wordBreak: 'break-all' }}>
-            {children}
-          </pre>
+        pre: ({ children }) => {
+          // Detect code string and language from child code element if available
+          const codeElement = children as React.ReactElement
+          const isCode = codeElement && codeElement.props && codeElement.props.children
+          
+          let codeString = ''
+          let language = 'código'
+
+          if (isCode) {
+            codeString = String(codeElement.props.children || '').replace(/\n$/, '')
+            const className = codeElement.props.className || ''
+            const match = /language-(\w+)/.exec(className)
+            language = match ? match[1] : 'código'
+          } else {
+            codeString = String(children || '').replace(/\n$/, '')
+          }
+
+          return (
+            <CodeBlockWrapper code={codeString} language={language}>
+              <pre className='p-4 overflow-x-auto text-xs m-0 font-mono bg-zinc-950 text-zinc-100'
+                style={{ maxWidth: '100%', wordBreak: 'break-all' }}>
+                {children}
+              </pre>
+            </CodeBlockWrapper>
+          )
+        },
+        img: ({ src, alt }) => (
+          <img
+            src={src}
+            alt={alt}
+            className='rounded-xl max-w-full my-2.5 cursor-zoom-in hover:brightness-90 transition-all shadow-md max-h-[320px] object-contain border border-zinc-700/30'
+            onClick={() => {
+              if (src) {
+                const event = new CustomEvent('open-lightbox', { detail: { src, alt: alt || 'Visualização da Imagem' } })
+                window.dispatchEvent(event)
+              }
+            }}
+          />
         ),
         a: ({ href, children }) => (
           <a href={href} target='_blank' rel='noopener noreferrer'
@@ -121,7 +201,7 @@ export default function MessageBubble({ role, content, userAvatar, onResend }: P
               }}
               autoFocus
               rows={3}
-              className='w-full bg-zinc-800 text-white text-sm rounded-xl px-4 py-3
+              className='w-full bg-zinc-800 text-zinc-100 text-sm rounded-xl px-4 py-3
                          border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none'
             />
             <div className='flex gap-2 justify-end'>

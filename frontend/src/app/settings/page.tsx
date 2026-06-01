@@ -22,6 +22,25 @@ export default function SettingsPage() {
   const [profileMsg, setProfileMsg] = useState('')
   const [pwMsg, setPwMsg] = useState('')
   const [loading, setLoading] = useState(false)
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system')
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' || 'system'
+    setTheme(savedTheme)
+  }, [])
+
+  function handleThemeChange(newTheme: 'light' | 'dark' | 'system') {
+    setTheme(newTheme)
+    localStorage.setItem('theme', newTheme)
+    const isDark = newTheme === 'dark' || (newTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    if (isDark) {
+      document.documentElement.classList.add('dark')
+      document.documentElement.style.colorScheme = 'dark'
+    } else {
+      document.documentElement.classList.remove('dark')
+      document.documentElement.style.colorScheme = 'light'
+    }
+  }
 
   useEffect(() => {
     const token = localStorage.getItem('access_token')
@@ -80,7 +99,7 @@ export default function SettingsPage() {
   const displayAvatar = previewUrl ?? avatar ?? '/user-avatar.jpg'
 
   return (
-    <div className='min-h-screen bg-zinc-900 text-white px-4 py-10'>
+    <div className='min-h-screen bg-zinc-900 text-zinc-100 px-4 py-10'>
       <div className='max-w-lg mx-auto space-y-8'>
 
         <div className='flex items-center gap-3'>
@@ -191,6 +210,29 @@ export default function SettingsPage() {
           >
             Alterar senha
           </button>
+        </div>
+
+        {/* Aparência (Tema) */}
+        <div className='bg-zinc-800 rounded-2xl p-6 space-y-4 shadow-lg'>
+          <h2 className='font-semibold text-lg'>Aparência</h2>
+          <div>
+            <label className='text-sm text-zinc-400 block mb-3'>Tema do aplicativo</label>
+            <div className='grid grid-cols-3 gap-2.5'>
+              {(['light', 'dark', 'system'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => handleThemeChange(t)}
+                  className={`py-3 px-4 rounded-xl text-sm font-semibold border transition-all duration-200 cursor-pointer ${
+                    theme === t
+                      ? 'bg-blue-600 text-white border-blue-500 shadow-md transform scale-[1.02]'
+                      : 'bg-zinc-700 text-zinc-300 border-zinc-600 hover:bg-zinc-600 hover:text-white'
+                  }`}
+                >
+                  {t === 'light' ? 'Claro' : t === 'dark' ? 'Escuro' : 'Sistema'}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
       </div>

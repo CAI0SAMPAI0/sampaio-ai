@@ -7,6 +7,39 @@ interface Props {
   disabled: boolean
 }
 
+// Sub-component to safely handle Object URL generation & clean up to prevent memory leaks
+function FilePreviewItem({ file, onRemove }: { file: File; onRemove: () => void }) {
+  const [preview, setPreview] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!file.type.startsWith('image/')) return
+    const url = URL.createObjectURL(file)
+    setPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [file])
+
+  return (
+    <div className='relative group flex flex-col items-center justify-center bg-zinc-800/80 border border-zinc-700/60 rounded-xl p-1 w-16 h-16 shrink-0 shadow-md transition-all hover:scale-[1.02]'>
+      {preview ? (
+        <img src={preview} alt={file.name} className='w-full h-full object-cover rounded-lg select-none' />
+      ) : (
+        <div className='flex flex-col items-center justify-center w-full h-full text-zinc-400 select-none'>
+          <span className='text-lg leading-none'>📄</span>
+          <span className='text-[8px] font-bold tracking-wider text-zinc-400 mt-1 max-w-[50px] truncate uppercase'>
+            {file.name.split('.').pop() || 'ARQ'}
+          </span>
+        </div>
+      )}
+      <button
+        onClick={onRemove}
+        className='absolute -top-1.5 -right-1.5 bg-red-600 hover:bg-red-500 text-white rounded-full w-4.5 h-4.5 flex items-center justify-center text-[9px] font-bold shadow-md border border-zinc-900 transition-transform hover:scale-110 cursor-pointer'
+        title='Remover arquivo'
+      >
+        ✕
+      </button>
+    </div>
+  )
+}
 
 function detectCodeLanguage(text: string): string | null {
   const trimmed = text.trim()
@@ -58,6 +91,7 @@ export default function ChatInput({ onSend, disabled }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  // Height auto-resize for textarea
   useEffect(() => {
     const el = textareaRef.current
     if (!el) return
@@ -65,7 +99,56 @@ export default function ChatInput({ onSend, disabled }: Props) {
     el.style.height = Math.min(el.scrollHeight, 192) + 'px'
   }, [value])
 
+  // Drag and drop hook integration
+  useEffect(() => {
+    const handleDroppedFiles = (e: Event) => {
+      const customEvent = e as CustomEvent<File[]>
+      const selected = customEvent.detail
+      if (selected && selected.length > 0) {
+        setFiles(prev => {
+          const existing = new Set(prev.map(f => `${f.name}-${f.size}`))
+          const newFiles = selected.filter(f => !existing.has(`${f.name}-${f.size}`))
+          return [...prev, ...newFiles]
+        })
+      }
+    }
+    window.addEventListener('files-dropped', handleDroppedFiles)
+    return () => window.removeEventListener('files-dropped', handleDroppedFiles)
+  }, [])
+
+  // Clipboard Paste support
   function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    // 1. Scan clipboard for files (Images, etc.)
+    const items = e.clipboardData.items
+    let hasFiles = false
+    
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1 || items[i].kind === 'file') {
+        const file = items[i].getAsFile()
+        if (file) {
+          e.preventDefault()
+          hasFiles = true
+          
+          // Generate a custom placeholder name for copied clipboard images if needed
+          let finalFile = file
+          if (file.name === 'image.png') {
+            const timestamp = new Date().getTime()
+            const ext = file.type.split('/')[1] || 'png'
+            finalFile = new File([file], `colado-${timestamp}.${ext}`, { type: file.type })
+          }
+
+          setFiles(prev => {
+            const existing = new Set(prev.map(f => `${f.name}-${f.size}`))
+            if (existing.has(`${finalFile.name}-${finalFile.size}`)) return prev
+            return [...prev, finalFile]
+          })
+        }
+      }
+    }
+
+    if (hasFiles) return
+
+    // 2. Scan clipboard for standard code syntax and block-format it
     const pasted = e.clipboardData.getData('text')
     if (!pasted) return
 
@@ -131,21 +214,15 @@ export default function ChatInput({ onSend, disabled }: Props) {
 
   return (
     <div className='border-t border-zinc-700 bg-zinc-900 px-4 py-3'>
+      {/* File Previews Grid with Thumbnails */}
       {files.length > 0 && (
-        <div className='flex flex-wrap gap-2 mb-2 max-w-3xl mx-auto'>
+        <div className='flex flex-wrap gap-2.5 mb-3 max-w-3xl mx-auto overflow-x-auto py-1 max-h-24 scrollbar-thin'>
           {files.map((file, i) => (
-            <div
+            <FilePreviewItem
               key={`${file.name}-${i}`}
-              className='flex items-center gap-2 bg-zinc-800 rounded-xl px-3 py-1.5 max-w-[220px]'
-            >
-              <span className='text-xs'>📎</span>
-              <span className='text-xs text-zinc-300 truncate flex-1'>{file.name}</span>
-              <button
-                onClick={() => removeFile(i)}
-                className='text-zinc-500 hover:text-red-400 text-xs shrink-0 transition-colors'
-                title='Remover arquivo'
-              >✕</button>
-            </div>
+              file={file}
+              onRemove={() => removeFile(i)}
+            />
           ))}
         </div>
       )}
@@ -156,7 +233,7 @@ export default function ChatInput({ onSend, disabled }: Props) {
           disabled={disabled}
           title='Anexar arquivo(s)'
           className={`shrink-0 w-11 h-11 flex items-center justify-center rounded-xl
-                      border transition-all duration-200 disabled:opacity-40
+                      border transition-all duration-200 disabled:opacity-40 cursor-pointer
                       ${files.length > 0
               ? 'border-blue-500 bg-blue-500/10 text-blue-400'
               : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-zinc-500 hover:text-white hover:bg-zinc-700'
@@ -177,7 +254,7 @@ export default function ChatInput({ onSend, disabled }: Props) {
           type='file'
           multiple
           className='hidden'
-          accept='.pdf,.py,.js,.ts,.tsx,.jsx,.java,.cpp,.c,.cs,.go,.rs,.rb,.php,.html,.css,.json,.csv,.txt,.md,.yaml,.yml,.xml,.sql'
+          accept='.pdf,.py,.js,.ts,.tsx,.jsx,.java,.cpp,.c,.cs,.go,.rs,.rb,.php,.html,.css,.json,.csv,.txt,.md,.yaml,.yml,.xml,.sql,.png,.jpg,.jpeg,.gif,.webp'
           onChange={handleFileChange}
         />
 
@@ -188,9 +265,9 @@ export default function ChatInput({ onSend, disabled }: Props) {
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           disabled={disabled}
-          placeholder='No que posso ajudar?'
+          placeholder='No que posso ajudar? (Ctrl+V para colar imagens ou arraste arquivos aqui)'
           rows={1}
-          className='flex-1 resize-none overflow-y-auto bg-zinc-800 text-white text-sm
+          className='flex-1 resize-none overflow-y-auto bg-zinc-800 text-zinc-100 text-sm
                      placeholder-zinc-500 rounded-xl px-4 py-3
                      focus:outline-none focus:ring-2 focus:ring-blue-500
                      disabled:opacity-50 transition-all'
@@ -202,7 +279,7 @@ export default function ChatInput({ onSend, disabled }: Props) {
           disabled={disabled || !value.trim()}
           className='shrink-0 w-11 h-11 flex items-center justify-center
                      bg-blue-600 hover:bg-blue-500 disabled:opacity-40
-                     text-white rounded-xl transition-colors'
+                     text-white rounded-xl transition-colors cursor-pointer'
           title='Enviar'
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"

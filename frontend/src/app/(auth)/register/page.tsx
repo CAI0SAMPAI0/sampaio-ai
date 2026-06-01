@@ -71,7 +71,7 @@ export default function RegisterPage() {
                 value={username}
                 onChange={e => setUsername(e.target.value)}
                 required
-                className='w-full bg-zinc-700 text-white text-sm rounded-xl px-4 py-3
+                className='w-full bg-zinc-700 text-zinc-100 text-sm rounded-xl px-4 py-3
                            placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
                 placeholder='escolha um usuário'
               />
