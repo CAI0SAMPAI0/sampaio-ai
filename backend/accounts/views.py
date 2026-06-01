@@ -51,7 +51,11 @@ def profile(request):
     profile, _ = UserProfile.objects.get_or_create(user=user)
     avatar_url = None
     if profile.avatar:
-        avatar_url = request.build_absolute_uri(profile.avatar.url)
+        try:
+            avatar_url = request.build_absolute_uri(profile.avatar.url)
+        except Exception:
+            profile.avatar = None
+            profile.save()
     return Response({
         'id': user.id,
         'username': user.username,

@@ -24,10 +24,16 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
+    const token = localStorage.getItem('access_token')
+    if (!token) {
+      router.push('/login')
+      return
+    }
     getProfile().then(data => {
       setUsername(data.username)
       setAvatar(data.avatar)
-    }).catch(() => router.push('/login'))
+    }).catch(() => {
+    })
   }, [router])
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
