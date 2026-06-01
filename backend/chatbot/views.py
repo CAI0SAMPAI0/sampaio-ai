@@ -67,7 +67,7 @@ def generate_title(message: str) -> str:
 
 def ask_ai(message: str, file_context: str, chat_history: list) -> str:
     model = ChatGroq(
-        model='openai/gpt-oss-120b',
+        model='llama-3.3-70b-versatile',
         temperature=0.2
     )
 
