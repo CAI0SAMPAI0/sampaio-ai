@@ -1,5 +1,5 @@
 import os
-import PyPDF2
+import pypdf
 import io
 from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes, parser_classes
@@ -19,7 +19,7 @@ def extract_file_content(file) -> str:
 
     if filename.endswith('.pdf'):
         try:
-            reader = PyPDF2.PdfReader(io.BytesIO(content))
+            reader = pypdf.PdfReader(io.BytesIO(content))
             return '\n'.join(page.extract_text() or '' for page in reader.pages)
         except Exception:
             return ''
