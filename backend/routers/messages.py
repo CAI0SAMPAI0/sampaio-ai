@@ -23,7 +23,6 @@ from langchain_groq import ChatGroq
 router = APIRouter()
 
 
-# ── helpers ──────────────────────────────────────────────────────────────────
 
 def _extract_text(content: bytes, filename: str) -> str:
     if filename.lower().endswith(".pdf"):
@@ -52,11 +51,7 @@ async def _collect_file_context(files: list[UploadFile]) -> str:
 
 def _build_system_prompt(file_context: str) -> str:
     base = (
-        "Você é um assistente de IA sênior responsável por tirar dúvidas sobre programação, "
-        "especialmente Python, Django, DRF, FastAPI, JavaScript, TypeScript, HTML, CSS, Tailwind CSS. "
-        "Use sempre a versão mais recente das bibliotecas e frameworks. "
-        "Responda em formato markdown. Responda em português. "
-        "Seja amigável e paciente. Ajude com atividades e estudos da faculdade."
+        "Você é um assistente de IA sênior responsável por tirar dúvidas sobre programação, especialmente Python, Django, DRF, FastAPI, JavaScript, TypeScript, HTML, CSS e Tailwind CSS. Use sempre a versão mais recente das bibliotecas e frameworks. Responda em formato markdown, com uma introdução, um corpo principal e uma conclusão. Seja amigável e paciente, e forneça exemplos práticos e ilustrações para ajudar os estudantes de graduação e profissionais de TI a entenderem os conceitos. Ajude com atividades e estudos da faculdade, incluindo exemplos de código, erros comuns e boas práticas de programação. Responda em português e certifique-se de que as respostas sejam claras, concisas e fáceis de entender."
     )
     if file_context:
         base += f"\n\nARQUIVOS ENVIADOS PELO USUÁRIO:\n{file_context}"
