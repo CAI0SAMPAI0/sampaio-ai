@@ -94,7 +94,7 @@ function MarkdownContent({ content, isUser }: { content: string; isUser: boolean
         },
         pre: ({ children }) => {
           // Detect code string and language from child code element if available
-          const codeElement = children as React.ReactElement
+          const codeElement = children as React.ReactElement<{ children?: React.ReactNode; className?: string }>
           const isCode = codeElement && codeElement.props && codeElement.props.children
           
           let codeString = ''
