@@ -98,8 +98,7 @@ export async function sendMessage(
   formData.append('message', message)
 
   if (files && files.length > 0) {
-    formData.append('file', files[0])
-    files.slice(1).forEach((f, i) => formData.append(`file_${i + 2}`, f))
+    files.forEach(f => formData.append('files', f))
   }
 
   const res = await fetchWithAuth(

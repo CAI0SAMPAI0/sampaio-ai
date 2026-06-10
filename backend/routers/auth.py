@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request, Form
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -100,7 +100,7 @@ async def profile(current_user: User = Depends(get_current_user), db: AsyncSessi
 
 @router.patch("/me/update")
 async def update_profile(
-    username: str | None = None,
+    username: str | None = Form(None),
     avatar: UploadFile | None = File(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
