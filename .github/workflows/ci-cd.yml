@@ -82,6 +82,7 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        lfs: true
     - name: Push to Hugging Face Spaces
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
