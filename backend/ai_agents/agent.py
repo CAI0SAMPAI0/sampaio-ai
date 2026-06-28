@@ -24,7 +24,8 @@ def web_search_ddg(query: str) -> str:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
-        res = requests.post(url, data={'q': query}, headers=headers, timeout=6)
+        # Reduced timeout to 2.0s to prevent hanging when offline or blocked
+        res = requests.post(url, data={'q': query}, headers=headers, timeout=2.0)
         if res.status_code == 200:
             snippets = re.findall(r'<a class="result__snippet"[^>]*>(.*?)</a>', res.text, re.DOTALL)
             results = []
@@ -129,6 +130,8 @@ def generate_response_node(state: AgentState) -> dict:
     # 3. Executa inferência
     assistant_content = ""
     groq_key = getattr(settings, 'GROQ_API_KEY', None)
+    if groq_key:
+        groq_key = str(groq_key).strip().strip("'").strip('"')
     
     if groq_key and groq_key != 'gsk_placeholder_for_development' and groq_key != "":
         try:
@@ -143,9 +146,15 @@ def generate_response_node(state: AgentState) -> dict:
             assistant_content = f"Desculpe, ocorreu um erro ao processar a resposta: {str(e)}"
     else:
         # Resposta simulada para desenvolvimento
+        key_status = "Chave nula ou ausente"
+        if groq_key == 'gsk_placeholder_for_development':
+            key_status = "Placeholder de desenvolvimento ativo no seu arquivo .env"
+        elif groq_key == "":
+            key_status = "Chave vazia"
+            
         assistant_content = (
             f"### Resposta do Mentor (Modo Simulação LangGraph)\n\n"
-            f"Olá! O Sampaio AI está em modo simulado (chave Groq ausente).\n\n"
+            f"Olá! O Sampaio AI está em modo simulado ({key_status}).\n\n"
         )
         if state.get('context'):
             assistant_content += (

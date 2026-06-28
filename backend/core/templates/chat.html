@@ -52,6 +52,8 @@
     font-size: 14.5px;
     line-height: 1.6;
     position: relative;
+    word-wrap: break-word;
+    word-break: break-word;
   }
 
   .msg.user .bubble {
@@ -91,6 +93,11 @@
   }
 
   /* MARKDOWN STYLES FOR MENTOR BUBBLE */
+  .markdown-content {
+    word-wrap: break-word;
+    word-break: break-word;
+  }
+
   .markdown-content p {
     margin: 0 0 12px 0;
   }
@@ -118,8 +125,12 @@
     border-radius: 6px;
     display: block;
     margin: 12px 0;
-    overflow-x: auto;
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    /* Prevent horizontal scroll by wrapping code lines */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-all;
+    overflow-x: hidden;
   }
 
   .markdown-content pre code {
@@ -127,6 +138,9 @@
     background: transparent;
     padding: 0;
     color: inherit;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-all;
   }
 
   .markdown-content code:not(pre code) {
@@ -467,31 +481,43 @@
   <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
   
   <script>
-    // Configure marked
-    marked.setOptions({
-        highlight: function(code, lang) {
-            const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-            return hljs.highlight(code, { language }).value;
-        },
-        langPrefix: 'hljs language-'
-    });
+    // Configure marked safely
+    if (typeof marked !== 'undefined') {
+        const markedOptions = {
+            langPrefix: 'hljs language-'
+        };
+        if (typeof hljs !== 'undefined') {
+            markedOptions.highlight = function(code, lang) {
+                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                return hljs.highlight(code, { language }).value;
+            };
+        }
+        marked.setOptions(markedOptions);
+    }
 
     const chatMessages = document.getElementById('chatMessages');
 
-    // Render markdown in assistant messages
+    // Render markdown in assistant messages safely
     function renderAssistantMessages() {
         document.querySelectorAll('[data-raw-content]').forEach(el => {
             const rawContent = el.getAttribute('data-raw-content');
             if (rawContent && el.classList.contains('mentor')) {
                 const mdContainer = el.querySelector('.markdown-content');
                 if (mdContainer) {
-                    mdContainer.innerHTML = marked.parse(rawContent);
+                    if (typeof marked !== 'undefined') {
+                        mdContainer.innerHTML = marked.parse(rawContent);
+                    } else {
+                        mdContainer.textContent = rawContent;
+                    }
                 }
             }
         });
-        document.querySelectorAll('pre code').forEach((block) => {
-            hljs.highlightElement(block);
-        });
+        
+        if (typeof hljs !== 'undefined') {
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        }
     }
 
     // Initialize render
@@ -517,7 +543,7 @@
             userMsg.className = 'msg user';
             userMsg.innerHTML = `
               <div class="bubble">
-                \${text.replace(/\\n/g, '<br>')}
+                ${text.replace(/\n/g, '<br>')}
               </div>
             `;
             
@@ -567,13 +593,19 @@
                 `;
                 
                 const mdContainer = assistantMsg.querySelector('.markdown-content');
-                mdContainer.innerHTML = marked.parse(data.content);
+                if (typeof marked !== 'undefined') {
+                    mdContainer.innerHTML = marked.parse(data.content);
+                } else {
+                    mdContainer.textContent = data.content;
+                }
                 
                 container.appendChild(assistantMsg);
                 
-                assistantMsg.querySelectorAll('pre code').forEach((block) => {
-                    hljs.highlightElement(block);
-                });
+                if (typeof hljs !== 'undefined') {
+                    assistantMsg.querySelectorAll('pre code').forEach((block) => {
+                        hljs.highlightElement(block);
+                    });
+                }
                 
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             })
