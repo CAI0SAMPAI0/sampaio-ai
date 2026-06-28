@@ -23,7 +23,7 @@ class KnowledgeDocumentViewSet(viewsets.ModelViewSet):
             created_docs = []
             for file_obj in files:
                 ext = os.path.splitext(file_obj.name)[1].lower().replace('.', '')
-                allowed_exts = ['pdf', 'docx', 'txt', 'md', 'markdown', 'csv', 'xlsx', 'pptx', 'png', 'jpg', 'jpeg']
+                allowed_exts = ['pdf', 'docx', 'txt', 'md', 'markdown', 'csv', 'xlsx', 'pptx', 'png', 'jpg', 'jpeg', 'epub']
                 if ext not in allowed_exts:
                     return Response(
                         {'error': f"Formato de arquivo .{ext} não suportado."},
@@ -56,7 +56,7 @@ class KnowledgeDocumentViewSet(viewsets.ModelViewSet):
             )
             
         ext = os.path.splitext(file_obj.name)[1].lower().replace('.', '')
-        allowed_exts = ['pdf', 'docx', 'txt', 'md', 'markdown', 'csv', 'xlsx', 'pptx', 'png', 'jpg', 'jpeg']
+        allowed_exts = ['pdf', 'docx', 'txt', 'md', 'markdown', 'csv', 'xlsx', 'pptx', 'png', 'jpg', 'jpeg', 'epub']
         if ext not in allowed_exts:
             return Response(
                 {'error': f"Formato de arquivo .{ext} não suportado."},

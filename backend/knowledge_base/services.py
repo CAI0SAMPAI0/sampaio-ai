@@ -138,6 +138,41 @@ def extract_text_from_file(file_path, ext):
         except Exception as e:
             print(f"Erro ao ler DOCX: {e}")
             text_by_page.append((1, f"[Erro ou DOCX sem texto legível: {os.path.basename(file_path)}]"))
+    elif ext == 'epub':
+        try:
+            import zipfile
+            import re
+            
+            html_tags_re = re.compile(r'<[^>]+>')
+            
+            with zipfile.ZipFile(file_path) as epub:
+                # Find all files inside the epub zip that contain HTML/XHTML content
+                content_files = [f for f in epub.namelist() if f.lower().endswith(('.xhtml', '.html', '.htm'))]
+                # Sort them
+                content_files.sort()
+                
+                text_parts = []
+                for file_name in content_files:
+                    try:
+                        content = epub.read(file_name).decode('utf-8', errors='ignore')
+                        # Remove HTML tags
+                        cleaned_text = html_tags_re.sub(' ', content)
+                        # Normalize spaces and HTML entities
+                        cleaned_text = cleaned_text.replace('&nbsp;', ' ').replace('&lt;', '<').replace('&gt;', '>').replace('&amp;', '&').replace('&quot;', '"').replace('&apos;', "'")
+                        cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
+                        if cleaned_text:
+                            text_parts.append(cleaned_text)
+                    except Exception as inner_e:
+                        print(f"Erro ao ler arquivo {file_name} do EPUB: {inner_e}")
+                
+                full_text = '\n\n'.join(text_parts)
+                if full_text:
+                    text_by_page.append((1, full_text))
+                else:
+                    text_by_page.append((1, f"[EPUB sem texto legível: {os.path.basename(file_path)}]"))
+        except Exception as e:
+            print(f"Erro ao ler EPUB: {e}")
+            text_by_page.append((1, f"[Erro ao ler EPUB {os.path.basename(file_path)}: {e}]"))
     else:
         text_by_page.append((1, f"[Conteúdo indexado do arquivo {ext.upper()}: {os.path.basename(file_path)}]"))
         
