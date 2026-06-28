@@ -18,8 +18,13 @@ DATABASE_URL = config('DATABASE_URL', default=None)
 
 if DATABASE_URL:
     import dj_database_url
+    db_config = dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
+    # Ensure SSL is configured for cloud database/Neon DB when not in debug mode
+    if not DEBUG and 'sqlite' not in db_config.get('ENGINE', ''):
+        db_config.setdefault('OPTIONS', {})
+        db_config['OPTIONS']['sslmode'] = 'require'
     DATABASES = {
-        'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
+        'default': db_config
     }
 else:
     DATABASES = {
@@ -143,8 +148,8 @@ STORAGES = {
 }
 
 # Celery Configurations
-CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='amqp://guest:guest@localhost:5672//')
 CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default=CELERY_RESULT_BACKEND)
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'

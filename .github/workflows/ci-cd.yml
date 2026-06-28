@@ -43,19 +43,25 @@ jobs:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Downcase repository name
+      run: |
+        echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
     - name: Build and Push App Image
       uses: docker/build-push-action@v5
       with:
         context: ./backend
         push: true
         tags: |
-          ghcr.io/${{ github.repository }}/app:latest
-          ghcr.io/${{ github.repository }}/app:${{ github.sha }}
+          ghcr.io/${{ env.IMAGE_NAME }}/app:latest
+          ghcr.io/${{ env.IMAGE_NAME }}/app:${{ github.sha }}
 
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+    - name: Downcase repository name
+      run: |
+        echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
     - name: Deploy to VPS
       uses: appleboy/ssh-action@v1.0.3
       with:
@@ -65,5 +71,19 @@ jobs:
         script: |
           cd /app/sampaio-ai
           git pull origin main
-          docker pull ghcr.io/${{ github.repository }}/app:latest
+          docker pull ghcr.io/${{ env.IMAGE_NAME }}/app:latest
           docker stack deploy --with-registry-auth -c stack.yml sampaioai
+
+  deploy-hf:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Push to Hugging Face Spaces
+      env:
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      run: |
+        git push --force https://anything:$HF_TOKEN@huggingface.co/spaces/${{ github.repository }} main
