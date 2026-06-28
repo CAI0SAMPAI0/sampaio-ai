@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -83,6 +87,8 @@ jobs:
       with:
         fetch-depth: 0
         lfs: true
+    - name: Fetch all Git LFS history
+      run: git lfs fetch --all
     - name: Push to Hugging Face Spaces
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
