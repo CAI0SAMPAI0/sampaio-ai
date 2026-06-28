@@ -9,7 +9,7 @@ HAS_WHITENOISE = importlib.util.find_spec('whitenoise') is not None
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-CHANGE_ME', cast=str)
 DEBUG = config('DEBUG', default=True, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='.hf.space').split(',')
 
 GROQ_API_KEY = config('GROQ_API_KEY', default=None)
 
@@ -182,4 +182,8 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+    SECURE_HSTS_PRELOAD = True
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://supercai0-sampaio-ai.hf.space',
+]
