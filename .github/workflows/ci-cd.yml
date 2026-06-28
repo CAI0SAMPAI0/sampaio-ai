@@ -86,4 +86,11 @@ jobs:
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
-        git push --force https://anything:$HF_TOKEN@huggingface.co/spaces/${{ github.repository }} main
+        HF_SPACE_NAME="${{ secrets.HF_SPACE }}"
+        if [ -z "$HF_SPACE_NAME" ]; then
+          LOWER_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          LOWER_REPO=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+          HF_SPACE_NAME="$LOWER_OWNER/$LOWER_REPO"
+        fi
+        echo "Deploying to Hugging Face Space: $HF_SPACE_NAME"
+        git push --force https://anything:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE_NAME main
