@@ -7,10 +7,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Sampaio AI - Mentor de Estudos{% endblock %}</title>
     
-    <!-- Google Fonts: Outfit -->
+    <!-- Google Fonts: Fraunces, IBM Plex Sans, Caveat, JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=Caveat:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     
     <!-- Tailwind CSS v4 Play CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -21,242 +21,473 @@
     <!-- Feather Icons CDN -->
     <script src="https://unpkg.com/feather-icons"></script>
     
-    <style type="text/tailwindcss">
-        @theme {
-            --font-sans: 'Outfit', sans-serif;
-            --color-brand-50: #eff6ff;
-            --color-brand-100: #dbeafe;
-            --color-brand-500: #3b82f6;
-            --color-brand-600: #2563eb;
-            --color-brand-700: #1d4ed8;
-            --color-brand-900: #1e3a8a;
+    <style>
+        :root {
+            --paper: #F3EEE2;
+            --paper-card: #FBF8F0;
+            --ink: #232017;
+            --ink-soft: #4A453A;
+            --pencil: #8C8573;
+            --rule-blue: #5A7A92;
+            --rule-blue-faint: #C7D6DE;
+            --margin-red: #B33A3A;
+            --margin-red-soft: #E8C9C5;
+            --mentor-green: #1F4B3A;
+            --mentor-green-bg: #E4ECE5;
+            --highlight: #F2D472;
+            --tab-1: #B33A3A;
+            --tab-2: #1F4B3A;
+            --tab-3: #5A7A92;
+            --tab-4: #B5832E;
+            --tab-5: #6B5B95;
+            --sidebar-w: 260px;
+            --sidebar-w-collapsed: 64px;
         }
-        
+
         [x-cloak] { display: none !important; }
+
+        html, body {
+            margin: 0;
+            height: 100%;
+            background: #E7E1D2;
+            font-family: 'IBM Plex Sans', sans-serif;
+            color: var(--ink);
+            overflow: hidden;
+        }
+
+        .app {
+            display: grid;
+            grid-template-columns: var(--sidebar-w) 1fr;
+            height: 100vh;
+            transition: grid-template-columns 0.25s ease;
+        }
+
+        .app.collapsed {
+            grid-template-columns: var(--sidebar-w-collapsed) 1fr;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            background: #1C1A14;
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            border-right: 1px solid #2d2a20;
+            z-index: 40;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 18px 20px 22px;
+            border-bottom: 1px solid #3a362b;
+            margin-bottom: 16px;
+            white-space: nowrap;
+        }
+
+        .brand-text {
+            transition: opacity 0.15s ease;
+        }
+
+        .app.collapsed .brand-text {
+            opacity: 0;
+            width: 0;
+        }
+
+        .brand-title {
+            font-family: 'Fraunces', serif;
+            font-weight: 600;
+            font-size: 21px;
+            color: #F3EEE2;
+        }
+
+        .brand-sub {
+            font-family: 'Caveat', cursive;
+            font-size: 16px;
+            color: var(--highlight);
+            margin-top: 1px;
+        }
+
+        .toggle-btn {
+            width: 28px;
+            height: 28px;
+            flex: none;
+            border-radius: 50%;
+            background: #2c2820;
+            border: 1px solid #463f31;
+            color: #D8D2C2;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn:hover {
+            background: #3a352a;
+            border-color: var(--pencil);
+        }
+
+        .tabs {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding-right: 14px;
+            flex: none;
+        }
+
+        .tab {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 16px 11px 22px;
+            color: #D8D2C2;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            border-radius: 0 4px 4px 0;
+            position: relative;
+            white-space: nowrap;
+            overflow: hidden;
+            transition: background 0.15s ease;
+        }
+
+        .tab-icon {
+            width: 18px;
+            height: 18px;
+            flex: none;
+        }
+
+        .tab-label {
+            transition: opacity 0.15s ease;
+        }
+
+        .app.collapsed .tab-label {
+            opacity: 0;
+        }
+
+        .tab.active {
+            background: var(--paper);
+            color: var(--ink);
+            margin-right: -1px;
+        }
+
+        .app.collapsed .tab.active {
+            margin-right: 0;
+            border-radius: 4px;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            right: -14px;
+            top: 0;
+            bottom: 0;
+            width: 14px;
+            background: var(--paper);
+            clip-path: polygon(0 0, 100% 0, 0 100%);
+        }
+
+        .app.collapsed .tab.active::after {
+            display: none;
+        }
+
+        .tab:not(.active):hover {
+            background: #26231b;
+        }
+
+        /* FOOTER */
+        .sidebar-foot {
+            padding: 14px 0 4px 22px;
+            border-top: 1px solid #3a362b;
+            margin-top: auto;
+            flex: none;
+        }
+
+        .foot-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-decoration: none;
+        }
+
+        .avatar-sm {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--tab-5);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 12px;
+            flex: none;
+            border: 1px solid #3a362b;
+        }
+
+        .foot-name {
+            color: #EDE8D9;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .foot-mail {
+            color: #8a8472;
+            font-size: 11px;
+        }
+
+        .app.collapsed .foot-text {
+            display: none;
+        }
+
+        /* CONTENT WRAPPER */
+        .content-wrap {
+            background:
+                repeating-linear-gradient(to bottom, transparent 0, transparent 31px, var(--rule-blue-faint) 31px, var(--rule-blue-faint) 32px),
+                var(--paper);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: relative;
+            z-index: 10;
+        }
+
+        .content-wrap::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 60px;
+            width: 2px;
+            background: var(--margin-red);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .content-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 32px 18px 88px;
+            border-bottom: 1px solid #DCD4BF;
+            background: var(--paper);
+            flex: none;
+            z-index: 10;
+        }
+
+        .chat-title-block {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .chat-title {
+            font-family: 'Fraunces', serif;
+            font-weight: 600;
+            font-size: 19px;
+            color: var(--ink);
+        }
+
+        .chat-meta {
+            font-size: 12px;
+            color: var(--pencil);
+            margin-top: 2px;
+        }
+
+        .content-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px 32px 28px 88px;
+            z-index: 10;
+        }
+
+        /* MAP TAILWIND STYLES TO NOTEBOOK DESIGN SYSTEM */
+        .content-wrap .bg-white {
+            background-color: var(--paper-card) !important;
+        }
+        .content-wrap .border-slate-200, 
+        .content-wrap .border-slate-100 {
+            border-color: #DCD4BF !important;
+        }
+        .content-wrap .bg-slate-50 {
+            background-color: var(--paper) !important;
+        }
+        .content-wrap .bg-slate-100 {
+            background-color: #EBE4D5 !important;
+        }
+        .content-wrap .text-slate-900,
+        .content-wrap .text-slate-800 {
+            color: var(--ink) !important;
+        }
+        .content-wrap .text-slate-500,
+        .content-wrap .text-slate-600 {
+            color: var(--ink-soft) !important;
+        }
+        .content-wrap .text-slate-400 {
+            color: var(--pencil) !important;
+        }
+        .content-wrap input,
+        .content-wrap textarea,
+        .content-wrap select {
+            background-color: var(--paper-card) !important;
+            border-color: var(--ink) !important;
+            color: var(--ink) !important;
+        }
+        .content-wrap input:focus,
+        .content-wrap textarea:focus,
+        .content-wrap select:focus {
+            border-color: var(--margin-red) !important;
+            box-shadow: 0 0 0 3px var(--margin-red-soft) !important;
+        }
+
+        /* SCROLLBARS */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #D5CBB5;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--pencil);
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body class="h-full font-sans antialiased text-slate-900" x-data="{ mobileSidebarOpen: false }">
-    <div class="min-h-full">
-        <!-- ============================================================ -->
-        <!-- Mobile Sidebar Overlays & Slide-over -->
-        <!-- ============================================================ -->
-        <div x-show="mobileSidebarOpen" class="relative z-50 lg:hidden" role="dialog" aria-modal="true" x-cloak>
-            <div x-show="mobileSidebarOpen"
-                 x-transition:enter="transition-opacity ease-linear duration-300"
-                 x-transition:enter-start="opacity-0"
-                 x-transition:enter-end="opacity-100"
-                 x-transition:leave="transition-opacity ease-linear duration-300"
-                 x-transition:leave-start="opacity-100"
-                 x-transition:leave-end="opacity-0"
-                 class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm"></div>
+<body class="h-full font-sans antialiased">
 
-            <div class="fixed inset-0 flex">
-                <div x-show="mobileSidebarOpen"
-                     x-transition:enter="transition ease-in-out duration-300 transform"
-                     x-transition:enter-start="-translate-x-full"
-                     x-transition:enter-end="translate-x-0"
-                     x-transition:leave="transition ease-in-out duration-300 transform"
-                     x-transition:leave-start="translate-x-0"
-                     x-transition:leave-end="-translate-x-full"
-                     @click.outside="mobileSidebarOpen = false"
-                     class="relative flex flex-1 w-full max-w-xs mr-16 bg-slate-900">
-                     
-                    <!-- Close button -->
-                    <div class="absolute top-0 flex justify-center w-16 pt-5 left-full">
-                        <button type="button" @click="mobileSidebarOpen = false" class="p-1 -m-2.5 text-white hover:text-slate-300 focus:outline-none">
-                            <span class="sr-only">Fechar sidebar</span>
-                            <i data-feather="x" class="w-6 h-6"></i>
-                        </button>
-                    </div>
+    {% block full_page %}
+    <div class="app" id="app">
 
-                    <!-- Sidebar content for mobile -->
-                    <div class="flex flex-col px-6 py-4 overflow-y-auto grow gap-y-5">
-                        <div class="flex items-center h-16 shrink-0">
-                            <span class="text-xl font-extrabold tracking-wider text-white">SAMPAIO <span class="text-blue-500">AI</span></span>
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-text">
+                    <div class="brand-title">SAMPAIO AI</div>
+                    <div class="brand-sub">seu caderno de estudos</div>
+                </div>
+                <button class="toggle-btn" id="toggleBtn" aria-label="Recolher menu" title="Recolher menu">‹</button>
+            </div>
+
+            <!-- MAIN TABS -->
+            <nav class="tabs">
+                <a class="tab {% if request.resolver_match.url_name == 'dashboard_page' %}active{% endif %}" href="{% url 'dashboard_page' %}">
+                    <i data-feather="grid" class="tab-icon" style="color: var(--tab-2);"></i>
+                    <span class="tab-label">Dashboard</span>
+                </a>
+                <a class="tab {% if request.resolver_match.url_name == 'chat_page' %}active{% endif %}" href="{% url 'chat_page' %}">
+                    <i data-feather="message-square" class="tab-icon" style="color: var(--tab-3);"></i>
+                    <span class="tab-label">Chat com Mentor</span>
+                </a>
+                <a class="tab {% if request.resolver_match.url_name == 'library_page' %}active{% endif %}" href="{% url 'library_page' %}">
+                    <i data-feather="book-open" class="tab-icon" style="color: var(--tab-4);"></i>
+                    <span class="tab-label">Biblioteca</span>
+                </a>
+                <a class="tab {% if request.resolver_match.url_name == 'study_plans_page' %}active{% endif %}" href="{% url 'study_plans_page' %}">
+                    <i data-feather="activity" class="tab-icon" style="color: var(--tab-1);"></i>
+                    <span class="tab-label">Planos de Estudo</span>
+                </a>
+                <a class="tab {% if request.resolver_match.url_name == 'flashcards_page' %}active{% endif %}" href="{% url 'flashcards_page' %}">
+                    <i data-feather="layers" class="tab-icon" style="color: var(--tab-5);"></i>
+                    <span class="tab-label">Flashcards</span>
+                </a>
+                <a class="tab {% if request.resolver_match.url_name == 'quizzes_page' %}active{% endif %}" href="{% url 'quizzes_page' %}">
+                    <i data-feather="check-square" class="tab-icon" style="color: var(--tab-2);"></i>
+                    <span class="tab-label">Quizzes</span>
+                </a>
+                <a class="tab {% if request.resolver_match.url_name == 'profile_page' %}active{% endif %}" href="{% url 'profile_page' %}">
+                    <i data-feather="user" class="tab-icon" style="color: var(--tab-3);"></i>
+                    <span class="tab-label">Minha Conta</span>
+                </a>
+            </nav>
+
+            <!-- SIDEBAR EXTRA BLOCK -->
+            {% block sidebar_extra %}{% endblock %}
+
+            <!-- FOOTER -->
+            <div class="sidebar-foot">
+                <a href="{% url 'profile_page' %}" class="foot-user">
+                    {% if request.user.avatar %}
+                        <img src="{{ request.user.avatar.url }}" alt="Avatar" class="avatar-sm object-cover">
+                    {% else %}
+                        <div class="avatar-sm">
+                            {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
                         </div>
-                        <nav class="flex flex-col flex-1">
-                            <ul role="list" class="flex flex-col flex-1 gap-y-7">
-                                <li>
-                                    <ul role="list" class="-mx-2 space-y-1">
-                                        <!-- Nav Items Mobile -->
-                                        <li>
-                                            <a href="{% url 'dashboard_page' %}" class="flex p-2 text-sm font-semibold leading-6 rounded-md gap-x-3 {% if request.resolver_match.url_name == 'dashboard_page' %} bg-slate-800 text-white {% else %} text-slate-400 hover:text-white hover:bg-slate-800 {% endif %}">
-                                                <i data-feather="grid" class="w-5 h-5 shrink-0"></i>
-                                                Dashboard
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="{% url 'chat_page' %}" class="flex p-2 text-sm font-semibold leading-6 rounded-md gap-x-3 {% if request.resolver_match.url_name == 'chat_page' %} bg-slate-800 text-white {% else %} text-slate-400 hover:text-white hover:bg-slate-800 {% endif %}">
-                                                <i data-feather="message-square" class="w-5 h-5 shrink-0"></i>
-                                                Chat com Mentor
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="{% url 'library_page' %}" class="flex p-2 text-sm font-semibold leading-6 rounded-md gap-x-3 {% if request.resolver_match.url_name == 'library_page' %} bg-slate-800 text-white {% else %} text-slate-400 hover:text-white hover:bg-slate-800 {% endif %}">
-                                                <i data-feather="book-open" class="w-5 h-5 shrink-0"></i>
-                                                Biblioteca
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="{% url 'study_plans_page' %}" class="flex p-2 text-sm font-semibold leading-6 rounded-md gap-x-3 {% if request.resolver_match.url_name == 'study_plans_page' %} bg-slate-800 text-white {% else %} text-slate-400 hover:text-white hover:bg-slate-800 {% endif %}">
-                                                <i data-feather="activity" class="w-5 h-5 shrink-0"></i>
-                                                Planos de Estudo
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="{% url 'flashcards_page' %}" class="flex p-2 text-sm font-semibold leading-6 rounded-md gap-x-3 {% if request.resolver_match.url_name == 'flashcards_page' %} bg-slate-800 text-white {% else %} text-slate-400 hover:text-white hover:bg-slate-800 {% endif %}">
-                                                <i data-feather="layers" class="w-5 h-5 shrink-0"></i>
-                                                Flashcards
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="{% url 'quizzes_page' %}" class="flex p-2 text-sm font-semibold leading-6 rounded-md gap-x-3 {% if request.resolver_match.url_name == 'quizzes_page' %} bg-slate-800 text-white {% else %} text-slate-400 hover:text-white hover:bg-slate-800 {% endif %}">
-                                                <i data-feather="check-square" class="w-5 h-5 shrink-0"></i>
-                                                Quizzes
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="{% url 'profile_page' %}" class="flex p-2 text-sm font-semibold leading-6 rounded-md gap-x-3 {% if request.resolver_match.url_name == 'profile_page' %} bg-slate-800 text-white {% else %} text-slate-400 hover:text-white hover:bg-slate-800 {% endif %}">
-                                                <i data-feather="user" class="w-5 h-5 shrink-0"></i>
-                                                Minha Conta
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
-                                <li class="mt-auto">
-                                    <a href="{% url 'logout' %}" class="flex p-2 -mx-2 text-sm font-semibold leading-6 rounded-md text-rose-400 hover:bg-slate-800 hover:text-rose-300 gap-x-3">
-                                        <i data-feather="log-out" class="w-5 h-5 shrink-0"></i>
-                                        Sair
-                                    </a>
-                                </li>
-                            </ul>
-                        </nav>
+                    {% endif %}
+                    <div class="foot-text">
+                        <div class="foot-name">{{ request.user.first_name|default:"Usuário" }} {{ request.user.last_name|default:"" }}</div>
+                        <div class="foot-mail">{{ request.user.email }}</div>
+                    </div>
+                </a>
+            </div>
+        </aside>
+
+        <!-- CONTENT WRAP -->
+        <div class="content-wrap">
+            <!-- TOP BAR -->
+            <header class="content-top">
+                <div class="chat-title-block">
+                    <div>
+                        <h1 class="chat-title">{% block content_title %}Sampaio AI{% endblock %}</h1>
+                        <div class="chat-meta">{% block content_subtitle %}caderno de estudos inteligente{% endblock %}</div>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- ============================================================ -->
-        <!-- Static Sidebar for Desktop -->
-        <!-- ============================================================ -->
-        <div class="hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:w-72 lg:flex-col">
-            <div class="flex flex-col px-6 py-6 overflow-y-auto bg-slate-900 grow gap-y-6">
-                <!-- Brand Logo -->
-                <div class="flex items-center h-16 shrink-0">
-                    <a href="/" class="text-2xl font-extrabold tracking-wider text-white">SAMPAIO <span class="text-blue-500">AI</span></a>
-                </div>
-                
-                <!-- Main Nav -->
-                <nav class="flex flex-col flex-1">
-                    <ul role="list" class="flex flex-col flex-1 gap-y-7">
-                        <li>
-                            <ul role="list" class="-mx-2 space-y-1.5">
-                                <li>
-                                    <a href="{% url 'dashboard_page' %}" class="group flex gap-x-3 rounded-xl p-3 text-sm font-semibold leading-6 transition-all {% if request.resolver_match.url_name == 'dashboard_page' %} bg-blue-600 text-white shadow-md shadow-blue-500/20 {% else %} text-slate-300 hover:text-white hover:bg-slate-800 {% endif %}">
-                                        <i data-feather="grid" class="w-5 h-5 shrink-0"></i>
-                                        Dashboard
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="{% url 'chat_page' %}" class="group flex gap-x-3 rounded-xl p-3 text-sm font-semibold leading-6 transition-all {% if request.resolver_match.url_name == 'chat_page' %} bg-blue-600 text-white shadow-md shadow-blue-500/20 {% else %} text-slate-300 hover:text-white hover:bg-slate-800 {% endif %}">
-                                        <i data-feather="message-square" class="w-5 h-5 shrink-0"></i>
-                                        Chat com Mentor
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="{% url 'library_page' %}" class="group flex gap-x-3 rounded-xl p-3 text-sm font-semibold leading-6 transition-all {% if request.resolver_match.url_name == 'library_page' %} bg-blue-600 text-white shadow-md shadow-blue-500/20 {% else %} text-slate-300 hover:text-white hover:bg-slate-800 {% endif %}">
-                                        <i data-feather="book-open" class="w-5 h-5 shrink-0"></i>
-                                        Biblioteca
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="{% url 'study_plans_page' %}" class="group flex gap-x-3 rounded-xl p-3 text-sm font-semibold leading-6 transition-all {% if request.resolver_match.url_name == 'study_plans_page' %} bg-blue-600 text-white shadow-md shadow-blue-500/20 {% else %} text-slate-300 hover:text-white hover:bg-slate-800 {% endif %}">
-                                        <i data-feather="activity" class="w-5 h-5 shrink-0"></i>
-                                        Planos de Estudo
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="{% url 'flashcards_page' %}" class="group flex gap-x-3 rounded-xl p-3 text-sm font-semibold leading-6 transition-all {% if request.resolver_match.url_name == 'flashcards_page' %} bg-blue-600 text-white shadow-md shadow-blue-500/20 {% else %} text-slate-300 hover:text-white hover:bg-slate-800 {% endif %}">
-                                        <i data-feather="layers" class="w-5 h-5 shrink-0"></i>
-                                        Flashcards
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="{% url 'quizzes_page' %}" class="group flex gap-x-3 rounded-xl p-3 text-sm font-semibold leading-6 transition-all {% if request.resolver_match.url_name == 'quizzes_page' %} bg-blue-600 text-white shadow-md shadow-blue-500/20 {% else %} text-slate-300 hover:text-white hover:bg-slate-800 {% endif %}">
-                                        <i data-feather="check-square" class="w-5 h-5 shrink-0"></i>
-                                        Quizzes
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="{% url 'profile_page' %}" class="group flex gap-x-3 rounded-xl p-3 text-sm font-semibold leading-6 transition-all {% if request.resolver_match.url_name == 'profile_page' %} bg-blue-600 text-white shadow-md shadow-blue-500/20 {% else %} text-slate-300 hover:text-white hover:bg-slate-800 {% endif %}">
-                                        <i data-feather="user" class="w-5 h-5 shrink-0"></i>
-                                        Minha Conta
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                        <li class="mt-auto">
-                            <a href="{% url 'logout' %}" class="group flex gap-x-3 rounded-xl p-3 text-sm font-semibold leading-6 text-rose-400 hover:bg-slate-800 hover:text-rose-300 transition-all">
-                                <i data-feather="log-out" class="w-5 h-5 shrink-0"></i>
-                                Sair
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-        </div>
-
-        <!-- ============================================================ -->
-        <!-- Content Container -->
-        <!-- ============================================================ -->
-        <div class="lg:pl-72 flex flex-col min-h-screen">
-            <!-- Header bar -->
-            <header class="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-x-4 border-b border-slate-200 bg-white/80 backdrop-blur-md px-4 shadow-xs sm:gap-x-6 sm:px-6 lg:px-8">
-                <!-- Hamburger menu button -->
-                <button type="button" @click="mobileSidebarOpen = true" class="-m-2.5 p-2.5 text-slate-700 lg:hidden focus:outline-none">
-                    <span class="sr-only">Abrir sidebar</span>
-                    <i data-feather="menu" class="w-6 h-6"></i>
-                </button>
-
-                <!-- Separator -->
-                <div class="w-px h-6 bg-slate-200 lg:hidden" aria-hidden="true"></div>
-
-                <!-- Right Header Actions -->
-                <div class="flex justify-between flex-1 gap-x-4 lg:justify-end">
-                    <div class="flex items-center gap-x-4 lg:gap-x-6">
-                        <!-- Badge -->
-                        <span class="hidden md:inline-flex items-center gap-x-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                <div class="flex items-center gap-4">
+                    {% block header_actions %}
+                        <span class="inline-flex items-center gap-x-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-600/10">
                             🎓 Mentor de Programação
                         </span>
-
-                        <!-- User Profile Info -->
-                        <a href="{% url 'profile_page' %}" class="flex items-center gap-x-3 group hover:opacity-85 transition-opacity">
-                            <div class="text-right hidden sm:block">
-                                <p class="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-none mb-0.5">{{ request.user.first_name|default:"Usuário" }} {{ request.user.last_name|default:"" }}</p>
-                                <p class="text-xs text-slate-500 leading-none">{{ request.user.email }}</p>
-                            </div>
-                            {% if request.user.avatar %}
-                                <img src="{{ request.user.avatar.url }}" alt="Avatar" class="w-9 h-9 rounded-full object-cover border border-slate-200 shadow-xs">
-                            {% else %}
-                                <img src="{% static 'images/1.png' %}" alt="Avatar" class="w-9 h-9 rounded-full object-cover border border-slate-200 shadow-xs">
-                            {% endif %}
-                        </a>
-                    </div>
+                    {% endblock %}
                 </div>
             </header>
 
-            <!-- Main block -->
-            <main class="flex-1 py-8 px-4 sm:px-6 lg:px-8 bg-slate-50">
+            <!-- MAIN CONTENT -->
+            <main class="content-body">
                 {% block content %}{% endblock %}
             </main>
         </div>
-    </div>
 
-    <!-- Initialize icons -->
+    </div>
+    {% endblock %}
+
+    <!-- Initialize icons & Toggle Sidebar Script -->
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             feather.replace();
+
+            // Collapsible Sidebar logic
+            const app = document.getElementById('app');
+            const toggleBtn = document.getElementById('toggleBtn');
+            
+            if (app && toggleBtn) {
+                // Read from localStorage to persist user sidebar preference
+                const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                if (sidebarCollapsed) {
+                    app.classList.add('collapsed');
+                    toggleBtn.textContent = '›';
+                }
+
+                toggleBtn.addEventListener('click', () => {
+                    app.classList.toggle('collapsed');
+                    const isCollapsed = app.classList.contains('collapsed');
+                    toggleBtn.textContent = isCollapsed ? '›' : '‹';
+                    localStorage.setItem('sidebarCollapsed', isCollapsed);
+                });
+            }
         });
     </script>
     {% block extra_js %}{% endblock %}
