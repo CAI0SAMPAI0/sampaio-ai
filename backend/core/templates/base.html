@@ -1,0 +1,264 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br" class="h-full bg-slate-50">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Sampaio AI - Mentor de Estudos{% endblock %}</title>
+    
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS v4 Play CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    
+    <!-- Alpine.js CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Feather Icons CDN -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    
+    <style type="text/tailwindcss">
+        @theme {
+            --font-sans: 'Outfit', sans-serif;
+            --color-brand-50: #eff6ff;
+            --color-brand-100: #dbeafe;
+            --color-brand-500: #3b82f6;
+            --color-brand-600: #2563eb;
+            --color-brand-700: #1d4ed8;
+            --color-brand-900: #1e3a8a;
+        }
+        
+        [x-cloak] { display: none !important; }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="h-full font-sans antialiased text-slate-900" x-data="{ mobileSidebarOpen: false }">
+    <div class="min-h-full">
+        <!-- ============================================================ -->
+        <!-- Mobile Sidebar Overlays & Slide-over -->
+        <!-- ============================================================ -->
+        <div x-show="mobileSidebarOpen" class="relative z-50 lg:hidden" role="dialog" aria-modal="true" x-cloak>
+            <div x-show="mobileSidebarOpen"
+                 x-transition:enter="transition-opacity ease-linear duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition-opacity ease-linear duration-300"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm"></div>
+
+            <div class="fixed inset-0 flex">
+                <div x-show="mobileSidebarOpen"
+                     x-transition:enter="transition ease-in-out duration-300 transform"
+                     x-transition:enter-start="-translate-x-full"
+                     x-transition:enter-end="translate-x-0"
+                     x-transition:leave="transition ease-in-out duration-300 transform"
+                     x-transition:leave-start="translate-x-0"
+                     x-transition:leave-end="-translate-x-full"
+                     @click.outside="mobileSidebarOpen = false"
+                     class="relative flex flex-1 w-full max-w-xs mr-16 bg-slate-900">
+                     
+                    <!-- Close button -->
+                    <div class="absolute top-0 flex justify-center w-16 pt-5 left-full">
+                        <button type="button" @click="mobileSidebarOpen = false" class="p-1 -m-2.5 text-white hover:text-slate-300 focus:outline-none">
+                            <span class="sr-only">Fechar sidebar</span>
+                            <i data-feather="x" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+
+                    <!-- Sidebar content for mobile -->
+                    <div class="flex flex-col px-6 py-4 overflow-y-auto grow gap-y-5">
+                        <div class="flex items-center h-16 shrink-0">
+                            <span class="text-xl font-extrabold tracking-wider text-white">SAMPAIO <span class="text-blue-500">AI</span></span>
+                        </div>
+                        <nav class="flex flex-col flex-1">
+                            <ul role="list" class="flex flex-col flex-1 gap-y-7">
+                                <li>
+                                    <ul role="list" class="-mx-2 space-y-1">
+                                        <!-- Nav Items Mobile -->
+                                        <li>
+                                            <a href="{% url 'dashboard_page' %}" class="flex p-2 text-sm font-semibold leading-6 rounded-md gap-x-3 {% if request.resolver_match.url_name == 'dashboard_page' %} bg-slate-800 text-white {% else %} text-slate-400 hover:text-white hover:bg-slate-800 {% endif %}">
+                                                <i data-feather="grid" class="w-5 h-5 shrink-0"></i>
+                                                Dashboard
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="{% url 'chat_page' %}" class="flex p-2 text-sm font-semibold leading-6 rounded-md gap-x-3 {% if request.resolver_match.url_name == 'chat_page' %} bg-slate-800 text-white {% else %} text-slate-400 hover:text-white hover:bg-slate-800 {% endif %}">
+                                                <i data-feather="message-square" class="w-5 h-5 shrink-0"></i>
+                                                Chat com Mentor
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="{% url 'library_page' %}" class="flex p-2 text-sm font-semibold leading-6 rounded-md gap-x-3 {% if request.resolver_match.url_name == 'library_page' %} bg-slate-800 text-white {% else %} text-slate-400 hover:text-white hover:bg-slate-800 {% endif %}">
+                                                <i data-feather="book-open" class="w-5 h-5 shrink-0"></i>
+                                                Biblioteca
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="{% url 'study_plans_page' %}" class="flex p-2 text-sm font-semibold leading-6 rounded-md gap-x-3 {% if request.resolver_match.url_name == 'study_plans_page' %} bg-slate-800 text-white {% else %} text-slate-400 hover:text-white hover:bg-slate-800 {% endif %}">
+                                                <i data-feather="activity" class="w-5 h-5 shrink-0"></i>
+                                                Planos de Estudo
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="{% url 'flashcards_page' %}" class="flex p-2 text-sm font-semibold leading-6 rounded-md gap-x-3 {% if request.resolver_match.url_name == 'flashcards_page' %} bg-slate-800 text-white {% else %} text-slate-400 hover:text-white hover:bg-slate-800 {% endif %}">
+                                                <i data-feather="layers" class="w-5 h-5 shrink-0"></i>
+                                                Flashcards
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="{% url 'quizzes_page' %}" class="flex p-2 text-sm font-semibold leading-6 rounded-md gap-x-3 {% if request.resolver_match.url_name == 'quizzes_page' %} bg-slate-800 text-white {% else %} text-slate-400 hover:text-white hover:bg-slate-800 {% endif %}">
+                                                <i data-feather="check-square" class="w-5 h-5 shrink-0"></i>
+                                                Quizzes
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="{% url 'profile_page' %}" class="flex p-2 text-sm font-semibold leading-6 rounded-md gap-x-3 {% if request.resolver_match.url_name == 'profile_page' %} bg-slate-800 text-white {% else %} text-slate-400 hover:text-white hover:bg-slate-800 {% endif %}">
+                                                <i data-feather="user" class="w-5 h-5 shrink-0"></i>
+                                                Minha Conta
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+                                <li class="mt-auto">
+                                    <a href="{% url 'logout' %}" class="flex p-2 -mx-2 text-sm font-semibold leading-6 rounded-md text-rose-400 hover:bg-slate-800 hover:text-rose-300 gap-x-3">
+                                        <i data-feather="log-out" class="w-5 h-5 shrink-0"></i>
+                                        Sair
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- Static Sidebar for Desktop -->
+        <!-- ============================================================ -->
+        <div class="hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:w-72 lg:flex-col">
+            <div class="flex flex-col px-6 py-6 overflow-y-auto bg-slate-900 grow gap-y-6">
+                <!-- Brand Logo -->
+                <div class="flex items-center h-16 shrink-0">
+                    <a href="/" class="text-2xl font-extrabold tracking-wider text-white">SAMPAIO <span class="text-blue-500">AI</span></a>
+                </div>
+                
+                <!-- Main Nav -->
+                <nav class="flex flex-col flex-1">
+                    <ul role="list" class="flex flex-col flex-1 gap-y-7">
+                        <li>
+                            <ul role="list" class="-mx-2 space-y-1.5">
+                                <li>
+                                    <a href="{% url 'dashboard_page' %}" class="group flex gap-x-3 rounded-xl p-3 text-sm font-semibold leading-6 transition-all {% if request.resolver_match.url_name == 'dashboard_page' %} bg-blue-600 text-white shadow-md shadow-blue-500/20 {% else %} text-slate-300 hover:text-white hover:bg-slate-800 {% endif %}">
+                                        <i data-feather="grid" class="w-5 h-5 shrink-0"></i>
+                                        Dashboard
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{% url 'chat_page' %}" class="group flex gap-x-3 rounded-xl p-3 text-sm font-semibold leading-6 transition-all {% if request.resolver_match.url_name == 'chat_page' %} bg-blue-600 text-white shadow-md shadow-blue-500/20 {% else %} text-slate-300 hover:text-white hover:bg-slate-800 {% endif %}">
+                                        <i data-feather="message-square" class="w-5 h-5 shrink-0"></i>
+                                        Chat com Mentor
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{% url 'library_page' %}" class="group flex gap-x-3 rounded-xl p-3 text-sm font-semibold leading-6 transition-all {% if request.resolver_match.url_name == 'library_page' %} bg-blue-600 text-white shadow-md shadow-blue-500/20 {% else %} text-slate-300 hover:text-white hover:bg-slate-800 {% endif %}">
+                                        <i data-feather="book-open" class="w-5 h-5 shrink-0"></i>
+                                        Biblioteca
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{% url 'study_plans_page' %}" class="group flex gap-x-3 rounded-xl p-3 text-sm font-semibold leading-6 transition-all {% if request.resolver_match.url_name == 'study_plans_page' %} bg-blue-600 text-white shadow-md shadow-blue-500/20 {% else %} text-slate-300 hover:text-white hover:bg-slate-800 {% endif %}">
+                                        <i data-feather="activity" class="w-5 h-5 shrink-0"></i>
+                                        Planos de Estudo
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{% url 'flashcards_page' %}" class="group flex gap-x-3 rounded-xl p-3 text-sm font-semibold leading-6 transition-all {% if request.resolver_match.url_name == 'flashcards_page' %} bg-blue-600 text-white shadow-md shadow-blue-500/20 {% else %} text-slate-300 hover:text-white hover:bg-slate-800 {% endif %}">
+                                        <i data-feather="layers" class="w-5 h-5 shrink-0"></i>
+                                        Flashcards
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{% url 'quizzes_page' %}" class="group flex gap-x-3 rounded-xl p-3 text-sm font-semibold leading-6 transition-all {% if request.resolver_match.url_name == 'quizzes_page' %} bg-blue-600 text-white shadow-md shadow-blue-500/20 {% else %} text-slate-300 hover:text-white hover:bg-slate-800 {% endif %}">
+                                        <i data-feather="check-square" class="w-5 h-5 shrink-0"></i>
+                                        Quizzes
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{% url 'profile_page' %}" class="group flex gap-x-3 rounded-xl p-3 text-sm font-semibold leading-6 transition-all {% if request.resolver_match.url_name == 'profile_page' %} bg-blue-600 text-white shadow-md shadow-blue-500/20 {% else %} text-slate-300 hover:text-white hover:bg-slate-800 {% endif %}">
+                                        <i data-feather="user" class="w-5 h-5 shrink-0"></i>
+                                        Minha Conta
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="mt-auto">
+                            <a href="{% url 'logout' %}" class="group flex gap-x-3 rounded-xl p-3 text-sm font-semibold leading-6 text-rose-400 hover:bg-slate-800 hover:text-rose-300 transition-all">
+                                <i data-feather="log-out" class="w-5 h-5 shrink-0"></i>
+                                Sair
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- Content Container -->
+        <!-- ============================================================ -->
+        <div class="lg:pl-72 flex flex-col min-h-screen">
+            <!-- Header bar -->
+            <header class="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-x-4 border-b border-slate-200 bg-white/80 backdrop-blur-md px-4 shadow-xs sm:gap-x-6 sm:px-6 lg:px-8">
+                <!-- Hamburger menu button -->
+                <button type="button" @click="mobileSidebarOpen = true" class="-m-2.5 p-2.5 text-slate-700 lg:hidden focus:outline-none">
+                    <span class="sr-only">Abrir sidebar</span>
+                    <i data-feather="menu" class="w-6 h-6"></i>
+                </button>
+
+                <!-- Separator -->
+                <div class="w-px h-6 bg-slate-200 lg:hidden" aria-hidden="true"></div>
+
+                <!-- Right Header Actions -->
+                <div class="flex justify-between flex-1 gap-x-4 lg:justify-end">
+                    <div class="flex items-center gap-x-4 lg:gap-x-6">
+                        <!-- Badge -->
+                        <span class="hidden md:inline-flex items-center gap-x-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                            🎓 Mentor de Programação
+                        </span>
+
+                        <!-- User Profile Info -->
+                        <a href="{% url 'profile_page' %}" class="flex items-center gap-x-3 group hover:opacity-85 transition-opacity">
+                            <div class="text-right hidden sm:block">
+                                <p class="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-none mb-0.5">{{ request.user.first_name|default:"Usuário" }} {{ request.user.last_name|default:"" }}</p>
+                                <p class="text-xs text-slate-500 leading-none">{{ request.user.email }}</p>
+                            </div>
+                            {% if request.user.avatar %}
+                                <img src="{{ request.user.avatar.url }}" alt="Avatar" class="w-9 h-9 rounded-full object-cover border border-slate-200 shadow-xs">
+                            {% else %}
+                                <img src="{% static 'images/1.png' %}" alt="Avatar" class="w-9 h-9 rounded-full object-cover border border-slate-200 shadow-xs">
+                            {% endif %}
+                        </a>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main block -->
+            <main class="flex-1 py-8 px-4 sm:px-6 lg:px-8 bg-slate-50">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Initialize icons -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            feather.replace();
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

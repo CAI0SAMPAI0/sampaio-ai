@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Quizzes e Simulados - Sampaio AI{% endblock %}
+
+{% block content %}
+<div class="flex h-[calc(100vh-8.5rem)] rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs" x-data="{ sidebarOpen: true }">
+    <!-- Sidebar - Histórico de Quizzes -->
+    <div class="w-80 border-r border-slate-200 flex flex-col shrink-0 bg-white transition-all duration-300"
+         :class="sidebarOpen ? 'block' : 'hidden md:flex'">
+        <!-- IA Generator -->
+        <div class="p-4 border-b border-slate-200 bg-slate-50/50">
+            <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Gerar Novo Quiz (IA)</h5>
+            <div class="mb-3">
+                <select id="quizDocSelect" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs bg-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                    <option value="">-- Selecione o material --</option>
+                    {% for doc in documents %}
+                    <option value="{{ doc.id }}">{{ doc.name }}</option>
+                    {% empty %}
+                    <option value="" disabled>Nenhum documento processado</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="button" id="generateQuizBtn" class="w-full flex items-center justify-center gap-x-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-500 transition-colors">
+                <i data-feather="zap" class="w-3.5 h-3.5"></i>
+                <span>Gerar Quiz</span>
+            </button>
+            <div id="generateQuizLoader" class="text-center py-2 hidden">
+                <span class="inline-block animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></span>
+                <span class="ms-2 text-[10px] text-slate-500">A IA está formulando o quiz...</span>
+            </div>
+        </div>
+        
+        <!-- Saved Quizzes List -->
+        <div class="flex-1 overflow-y-auto divide-y divide-slate-100" id="quizListContainer">
+            {% for q in quizzes %}
+            <div class="p-4 cursor-pointer hover:bg-slate-50 transition-colors" id="sidebar-quiz-{{ q.id }}" onclick="loadQuiz({{ q.id }})">
+                <p class="text-xs font-bold text-slate-900 truncate">{{ q.title }}</p>
+                <div class="flex justify-between items-center mt-1.5 text-[10px] text-slate-400">
+                    <span>{{ q.created_at|date:"d/m/Y H:i" }}</span>
+                    <span class="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-600">{{ q.questions.count }} questões</span>
+                </div>
+            </div>
+            {% empty %}
+            <div class="p-8 text-center text-slate-400 text-xs" id="noQuizzesPlaceholder">
+                Nenhum quiz gerado ainda
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-y-auto" :class="sidebarOpen ? 'hidden md:flex' : 'flex'">
+        <!-- Header -->
+        <div class="h-16 shrink-0 bg-white border-b border-slate-200 px-6 flex items-center justify-between gap-x-4 shadow-2xs" id="activeQuizHeader" style="display: none;">
+            <div class="flex items-center gap-x-3">
+                <button type="button" @click="sidebarOpen = !sidebarOpen" class="md:hidden p-1.5 -ml-1 text-slate-500 hover:text-slate-700">
+                    <i data-feather="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <div>
+                    <h5 class="text-sm font-bold text-slate-900 leading-tight" id="activeQuizTitle">Título do Quiz</h5>
+                    <span class="text-xs text-slate-400" id="activeQuizSub">Selecione uma resposta para cada alternativa</span>
+                </div>
+            </div>
+            <span class="inline-flex items-center gap-x-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                <i data-feather="check-square" class="w-3.5 h-3.5"></i> Múltipla Escolha
+            </span>
+        </div>
+
+        <!-- Quizzes Form & Results Content -->
+        <div class="p-6 space-y-6 flex-1 flex flex-col">
+            <!-- Initial Welcome Placeholder -->
+            <div class="flex flex-col items-center justify-center text-slate-400 text-center py-12 my-auto" id="quizWelcomePlaceholder">
+                <div class="rounded-full bg-blue-50 p-4 text-blue-600 mb-3">
+                    <i data-feather="check-square" class="w-8 h-8"></i>
+                </div>
+                <h5 class="text-sm font-bold text-slate-900">Simulados e Exercícios</h5>
+                <p class="text-xs text-slate-500 max-w-xs mt-2">
+                    Selecione um questionário da lista lateral para praticar, ou escolha um documento e clique em **Gerar Quiz** para criar novos exercícios com IA.
+                </p>
+            </div>
+
+            <!-- Score / Correction Card (Hidden initially) -->
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs hidden" id="scoreCard">
+                <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+                    <div id="scoreCircle" class="text-4xl sm:text-5xl font-extrabold tracking-tight">0%</div>
+                    <div class="flex-1 w-full text-center sm:text-left">
+                        <h6 class="text-sm font-bold text-slate-900" id="scoreTitle">Resultado do Simulado</h6>
+                        <p class="text-xs text-slate-500 mt-1 mb-3" id="scoreSub">Você acertou 0 de 0 questões.</p>
+                        <div class="w-full bg-slate-100 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full transition-all duration-500" id="scoreProgress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Questions Form -->
+            <form id="quizForm" class="space-y-6 hidden">
+                <div id="questionsContainer" class="space-y-6">
+                    <!-- Injected dynamically via JS -->
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="text-right">
+                    <button type="submit" class="inline-flex items-center gap-x-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-xs hover:bg-blue-500 transition-colors" id="submitAnswersBtn">
+                        Enviar Respostas
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Configura o CSRF Token padrão para requisições AJAX do Django
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    // Estado local do Quiz ativo
+    let activeQuizData = null;
+
+    // --- CARREGAR DETALHES DO QUIZ (API) ---
+    function loadQuiz(quizId) {
+        document.querySelectorAll('.quiz-item-sidebar').forEach(item => {
+            item.classList.remove('bg-blue-50/70', 'border-l-4', 'border-blue-600');
+        });
+        const activeItem = document.getElementById(`sidebar-quiz-${quizId}`);
+        if (activeItem) {
+            activeItem.classList.add('bg-blue-50/70', 'border-l-4', 'border-blue-600');
+        }
+
+        document.getElementById('quizWelcomePlaceholder').style.display = 'none';
+        document.getElementById('scoreCard').classList.add('hidden');
+        
+        const header = document.getElementById('activeQuizHeader');
+        const form = document.getElementById('quizForm');
+        header.style.display = 'flex';
+        form.style.display = 'none';
+
+        fetch(`/api/quizzes/${quizId}/`)
+        .then(res => res.json())
+        .then(quiz => {
+            activeQuizData = quiz;
+            
+            document.getElementById('activeQuizTitle').textContent = quiz.title;
+            document.getElementById('activeQuizSub').textContent = `Quiz criado sobre o assunto do material indexado.`;
+            
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+            
+            quiz.questions.forEach((q, idx) => {
+                let optionsHTML = '';
+                q.options.forEach((opt, optIdx) => {
+                    const optId = `q-${q.id}-opt-${optIdx}`;
+                    optionsHTML += `
+                        <div class="flex items-center gap-x-3 rounded-xl border border-slate-200 px-4 py-3.5 cursor-pointer bg-white transition-all hover:bg-slate-50"
+                             id="card-${optId}" onclick="selectOption(${q.id}, '${optId}')">
+                            <div class="flex items-center">
+                                <input class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500" type="radio" name="question-${q.id}" id="${optId}" value="${opt.replace(/"/g, '&quot;')}">
+                            </div>
+                            <label class="text-sm font-medium text-slate-700 w-full cursor-pointer" for="${optId}">${opt}</label>
+                        </div>
+                    `;
+                });
+
+                const qCard = `
+                    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs space-y-4" id="question-card-${q.id}">
+                        <div class="text-xs font-extrabold text-blue-600 uppercase tracking-wider">QUESTÃO ${idx + 1}</div>
+                        <h6 class="text-sm font-bold text-slate-900 leading-normal">${q.question_text}</h6>
+                        <div class="space-y-2">
+                            ${optionsHTML}
+                        </div>
+                        
+                        <!-- Explicação Técnica -->
+                        <div class="mt-4 p-4 rounded-xl bg-slate-50 border-l-4 border-blue-500 hidden" id="explanation-${q.id}">
+                            <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5 mb-1">
+                                <i data-feather="info" class="w-3.5 h-3.5"></i>EXPLICAÇÃO TÉCNICA:
+                            </div>
+                            <p class="text-xs text-slate-500 leading-relaxed">${q.explanation || 'Sem explicação disponível.'}</p>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', qCard);
+            });
+            
+            feather.replace();
+            form.style.display = 'block';
+            document.getElementById('submitAnswersBtn').style.display = 'inline-block';
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Erro ao carregar o quiz.');
+        });
+    }
+
+    // --- INTERAÇÕES DE SELEÇÃO ---
+    function selectOption(qId, optId) {
+        if (!document.getElementById('scoreCard').classList.contains('hidden')) return;
+
+        // Limpa seleção anterior
+        document.querySelectorAll(`[id^="card-q-${qId}-opt-"]`).forEach(card => {
+            card.className = "flex items-center gap-x-3 rounded-xl border border-slate-200 px-4 py-3.5 cursor-pointer bg-white transition-all hover:bg-slate-50";
+        });
+        
+        const card = document.getElementById(`card-${optId}`);
+        if (card) {
+            card.className = "flex items-center gap-x-3 rounded-xl border border-blue-600 px-4 py-3.5 cursor-pointer bg-blue-50/50 transition-all";
+        }
+        
+        const radio = document.getElementById(optId);
+        if (radio) radio.checked = true;
+    }
+
+    // --- CORREÇÃO / SUBMIT DO FORM ---
+    document.getElementById('quizForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const numQuestions = activeQuizData.questions.length;
+        const answers = {};
+        activeQuizData.questions.forEach(q => {
+            const checkedInput = document.querySelector(`input[name="question-${q.id}"]:checked`);
+            if (checkedInput) {
+                answers[q.id] = checkedInput.value;
+            }
+        });
+
+        const numAnswered = Object.keys(answers).length;
+        if (numAnswered < numQuestions) {
+            if (!confirm(`Você respondeu apenas ${numAnswered} de ${numQuestions} questões. Deseja enviar assim mesmo?`)) return;
+        }
+
+        // POST Submit
+        fetch(`/api/quizzes/${activeQuizData.id}/submit/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ answers: answers })
+        })
+        .then(res => res.json())
+        .then(report => {
+            document.getElementById('submitAnswersBtn').style.display = 'none';
+            document.querySelector('.quiz-main').scrollTop = 0;
+
+            const scoreCard = document.getElementById('scoreCard');
+            const scoreCircle = document.getElementById('scoreCircle');
+            const scoreTitle = document.getElementById('scoreTitle');
+            const scoreSub = document.getElementById('scoreSub');
+            const scoreProgress = document.getElementById('scoreProgress');
+
+            scoreCard.classList.remove('hidden');
+            scoreCircle.textContent = `${Math.round(report.percentage)}%`;
+            scoreSub.textContent = `Você acertou ${report.score} de ${report.total} questões.`;
+            scoreProgress.style.width = `${report.percentage}%`;
+
+            if (report.percentage >= 70) {
+                scoreTitle.textContent = "Excelente! Desempenho aprovado! 🏆";
+                scoreCircle.className = "text-4xl sm:text-5xl font-extrabold tracking-tight text-emerald-600";
+                scoreProgress.className = "bg-emerald-600 h-2 rounded-full transition-all duration-500";
+            } else {
+                scoreTitle.textContent = "Continue estudando para melhorar! 📚";
+                scoreCircle.className = "text-4xl sm:text-5xl font-extrabold tracking-tight text-amber-500";
+                scoreProgress.className = "bg-amber-500 h-2 rounded-full transition-all duration-500";
+            }
+
+            report.results.forEach(res => {
+                const qId = res.question_id;
+                
+                const expBox = document.getElementById(`explanation-${qId}`);
+                if (expBox) expBox.classList.remove('hidden');
+                
+                activeQuizData.questions.forEach(q => {
+                    if (q.id === qId) {
+                        q.options.forEach((opt, optIdx) => {
+                            const cardId = `card-q-${qId}-opt-${optIdx}`;
+                            const card = document.getElementById(cardId);
+                            if (!card) return;
+
+                            if (opt === res.correct_answer) {
+                                card.className = "flex items-center gap-x-3 rounded-xl border border-emerald-600 px-4 py-3.5 bg-emerald-50/50 text-emerald-900 transition-all font-semibold";
+                            }
+                            else if (opt === res.user_answer && !res.is_correct) {
+                                card.className = "flex items-center gap-x-3 rounded-xl border border-rose-600 px-4 py-3.5 bg-rose-50/50 text-rose-900 transition-all";
+                            }
+                            else {
+                                card.className = "flex items-center gap-x-3 rounded-xl border border-slate-100 px-4 py-3.5 bg-white text-slate-400 opacity-60 transition-all pointer-events-none";
+                            }
+                        });
+                    }
+                });
+            });
+            feather.replace();
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Erro ao enviar as respostas.');
+        });
+    });
+
+    // --- GERADOR DE QUIZ (IA) ---
+    const generateQuizBtn = document.getElementById('generateQuizBtn');
+    const quizDocSelect = document.getElementById('quizDocSelect');
+    const generateQuizLoader = document.getElementById('generateQuizLoader');
+
+    generateQuizBtn.addEventListener('click', () => {
+        const docId = quizDocSelect.value;
+        if (!docId) {
+            alert('Por favor, selecione um material de estudo.');
+            return;
+        }
+
+        generateQuizBtn.classList.add('hidden');
+        generateQuizLoader.classList.remove('hidden');
+
+        fetch('/api/quizzes/generate/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ document_id: docId })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Erro ao gerar quiz.');
+            return res.json();
+        })
+        .then(newQuiz => {
+            generateQuizBtn.classList.remove('hidden');
+            generateQuizLoader.classList.add('hidden');
+            quizDocSelect.value = '';
+            
+            const placeholder = document.getElementById('noQuizzesPlaceholder');
+            if (placeholder) placeholder.remove();
+
+            const container = document.getElementById('quizListContainer');
+            const itemHTML = `
+                <div class="p-4 cursor-pointer hover:bg-slate-50 transition-colors" id="sidebar-quiz-${newQuiz.id}" onclick="loadQuiz(${newQuiz.id})">
+                    <p class="text-xs font-bold text-slate-900 truncate">${newQuiz.title}</p>
+                    <div class="flex justify-between items-center mt-1.5 text-[10px] text-slate-400">
+                        <span>Agora mesmo</span>
+                        <span class="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-600">${newQuiz.questions.length} questões</span>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('afterbegin', itemHTML);
+            
+            alert('Simulado gerado com sucesso pela inteligência artificial!');
+            loadQuiz(newQuiz.id);
+        })
+        .catch(err => {
+            generateQuizBtn.classList.remove('hidden');
+            generateQuizLoader.classList.add('hidden');
+            console.error(err);
+            alert('Erro ao gerar o quiz. Verifique se o modelo está configurado corretamente.');
+        });
+    });
+</script>
+{% endblock %}

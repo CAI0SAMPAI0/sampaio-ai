@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mentor de Programação IA - Sampaio AI{% endblock %}
+
+{% block extra_css %}
+<!-- Highlight.js Stylesheet (Dark Theme) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.css">
+{% endblock %}
+
+{% block content %}
+<!-- Main chat container with Alpine state for mobile view toggles -->
+<div class="flex h-[calc(100vh-8.5rem)] rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs" x-data="{ sidebarOpen: true }">
+    <!-- Sidebar - Histórico de Sessões -->
+    <div class="w-80 border-r border-slate-200 flex flex-col shrink-0 bg-white transition-all duration-300"
+         :class="sidebarOpen ? 'block' : 'hidden md:flex'">
+        <!-- New Chat Button -->
+        <div class="p-4 border-b border-slate-200">
+            <form method="post" action="{% url 'new_chat' %}">
+                {% csrf_token %}
+                <button type="submit" class="w-full flex items-center justify-center gap-x-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-blue-500 transition-colors">
+                    <i data-feather="plus" class="w-4 h-4"></i>
+                    Nova Conversa
+                </button>
+            </form>
+        </div>
+        
+        <!-- Sessions List -->
+        <div class="flex-1 overflow-y-auto divide-y divide-slate-100">
+            {% for s in sessions %}
+            <div class="flex items-center justify-between p-4 cursor-pointer transition-colors {% if s.id == active_session.id %} bg-blue-50/70 border-l-4 border-blue-600 {% else %} hover:bg-slate-50 {% endif %}"
+                 onclick="window.location.href='?session={{ s.id }}'">
+                <div class="min-w-0 flex-1 pr-3">
+                    <p class="text-sm font-semibold text-slate-900 truncate">{{ s.title }}</p>
+                    <p class="text-xs text-slate-400 mt-0.5">{{ s.created_at|date:"d/m/Y H:i" }}</p>
+                </div>
+                <form method="post" action="{% url 'delete_chat' s.id %}" class="shrink-0" onsubmit="event.stopPropagation();">
+                    {% csrf_token %}
+                    <button type="submit" class="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Excluir">
+                        <i data-feather="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </form>
+            </div>
+            {% empty %}
+            <div class="p-8 text-center text-slate-400 text-sm">
+                Nenhuma conversa recente
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Active Chat Panel -->
+    <div class="flex-1 flex flex-col min-w-0 bg-slate-50" :class="sidebarOpen ? 'hidden md:flex' : 'flex'">
+        {% if active_session %}
+        <!-- Header -->
+        <div class="h-16 shrink-0 bg-white border-b border-slate-200 px-6 flex items-center justify-between gap-x-4 shadow-2xs">
+            <div class="flex items-center gap-x-3">
+                <button type="button" @click="sidebarOpen = !sidebarOpen" class="md:hidden p-1.5 -ml-1 text-slate-500 hover:text-slate-700">
+                    <i data-feather="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <div>
+                    <h6 class="text-sm font-bold text-slate-900 leading-tight">{{ active_session.title }}</h6>
+                    <span class="text-xs text-slate-400">Sessão #{{ active_session.id }}</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="inline-flex items-center gap-x-1.5 rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/10">
+                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                    LangGraph
+                </span>
+                <span class="hidden sm:inline-flex items-center gap-x-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-600/10">
+                    <i data-feather="globe" class="w-3 h-3"></i> RAG + Web Search
+                </span>
+            </div>
+        </div>
+
+        <!-- Messages List -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col" id="chatMessages">
+            {% for msg in messages %}
+            <div class="flex flex-col max-w-[85%] rounded-2xl px-5 py-3.5 shadow-2xs text-sm leading-relaxed {% if msg.role == 'user' %} self-end bg-blue-600 text-white {% else %} self-start bg-white text-slate-800 border border-slate-200/80 {% endif %}"
+                 data-raw-content="{{ msg.content }}">
+                {% if msg.role == 'user' %}
+                    {{ msg.content|linebreaksbr }}
+                {% else %}
+                    <!-- Rendered dynamic markdown -->
+                    {{ msg.content }}
+                {% endif %}
+            </div>
+            {% empty %}
+            <!-- Chat greeting message -->
+            <div class="flex flex-col max-w-[85%] rounded-2xl px-5 py-3.5 shadow-2xs text-sm leading-relaxed self-start bg-white text-slate-800 border border-slate-200/80">
+                <p class="font-bold mb-2 text-slate-900">Olá! Sou seu Mentor de Programação inteligente. 💻</p>
+                <p class="mb-2">Fui programado para ajudar você a dominar código, tirar dúvidas de arquitetura, explicar frameworks e criar cronogramas.</p>
+                <p class="mb-2">Além de buscar conteúdos nos <strong>livros de programação</strong> que você enviar para a biblioteca, eu também realizo pesquisas na <strong>internet</strong> em tempo real para te entregar a resposta mais completa e atualizada!</p>
+                <p class="font-semibold text-blue-600">Como posso ajudar nos seus estudos hoje?</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Input Form -->
+        <div class="p-4 bg-white border-t border-slate-200">
+            <form method="post" action="{% url 'send_chat_message' active_session.id %}" class="flex gap-x-3 items-center" id="chatForm">
+                {% csrf_token %}
+                <input type="text" name="message" id="messageInput" class="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="Pergunte sobre código ou peça para pesquisar na web..." required autocomplete="off">
+                <button type="submit" class="flex items-center gap-x-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-xs hover:bg-blue-500 transition-colors shrink-0">
+                    <i data-feather="navigation" class="w-4 h-4"></i>
+                    <span>Enviar</span>
+                </button>
+            </form>
+        </div>
+        {% else %}
+        <!-- Sidebar toggle button for mobile if sidebar is closed and no chat active -->
+        <div class="md:hidden p-4 border-b border-slate-200 bg-white">
+            <button type="button" @click="sidebarOpen = true" class="flex items-center gap-x-2 text-sm font-semibold text-blue-600">
+                <i data-feather="arrow-left" class="w-4 h-4"></i> Ver conversas
+            </button>
+        </div>
+        <!-- Welcome empty state -->
+        <div class="flex-1 flex flex-col items-center justify-center p-8 text-center my-auto">
+            <div class="rounded-2xl bg-blue-50 p-4 text-blue-600 mb-4">
+                <i data-feather="cpu" class="w-10 h-10"></i>
+            </div>
+            <h5 class="text-lg font-bold text-slate-900">Mentor de Programação IA</h5>
+            <p class="text-sm text-slate-500 max-w-sm mt-2">
+                Envie livros na biblioteca e converse com o agente inteligente integrado a buscas na internet. Inicie uma nova conversa para começar.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Marked (Markdown Parser) & Highlight.js -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
+<script>
+    // Configura o marked
+    marked.setOptions({
+        highlight: function(code, lang) {
+            const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+            return hljs.highlight(code, { language }).value;
+        },
+        langPrefix: 'hljs language-'
+    });
+
+    const chatMessages = document.getElementById('chatMessages');
+
+    // Renderiza markdown e formata código nas mensagens do assistente
+    function renderAssistantMessages() {
+        document.querySelectorAll('[data-raw-content]').forEach(el => {
+            const rawContent = el.getAttribute('data-raw-content');
+            if (rawContent && !el.classList.contains('message-user')) {
+                el.innerHTML = marked.parse(rawContent);
+            }
+        });
+        document.querySelectorAll('pre code').forEach((block) => {
+            hljs.highlightElement(block);
+        });
+        
+        // Add styling classes to markdown tags rendered in assistants bubble
+        document.querySelectorAll('#chatMessages p').forEach(p => p.classList.add('mb-2', 'last:mb-0'));
+        document.querySelectorAll('#chatMessages ul').forEach(ul => ul.classList.add('list-disc', 'pl-5', 'mb-2'));
+        document.querySelectorAll('#chatMessages ol').forEach(ol => ol.classList.add('list-decimal', 'pl-5', 'mb-2'));
+        document.querySelectorAll('#chatMessages code:not(pre code)').forEach(code => code.classList.add('bg-slate-100', 'text-slate-800', 'px-1.5', 'py-0.5', 'rounded', 'font-mono', 'text-xs'));
+        document.querySelectorAll('#chatMessages pre').forEach(pre => pre.classList.add('my-3', 'rounded-xl', 'overflow-hidden', 'shadow-2xs'));
+    }
+
+    // Inicializa renderização
+    renderAssistantMessages();
+
+    // Rolagem automática para a última mensagem
+    if (chatMessages) {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Envio de chat via AJAX
+    const chatForm = document.getElementById('chatForm');
+    const messageInput = document.getElementById('messageInput');
+
+    if (chatForm && chatMessages) {
+        chatForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            // Adiciona bolha do usuário
+            const userBubble = document.createElement('div');
+            userBubble.className = 'flex flex-col max-w-[85%] rounded-2xl px-5 py-3.5 shadow-2xs text-sm leading-relaxed self-end bg-blue-600 text-white';
+            userBubble.innerText = text;
+            chatMessages.appendChild(userBubble);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            messageInput.value = '';
+
+            // Adiciona indicador de digitando
+            const typingBubble = document.createElement('div');
+            typingBubble.className = 'flex items-center gap-x-2 max-w-[85%] rounded-2xl px-5 py-3.5 shadow-2xs text-sm leading-relaxed self-start bg-white text-slate-500 border border-slate-200/80';
+            typingBubble.innerHTML = '<span class="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></span><span>Mentor está formulando resposta...</span>';
+            chatMessages.appendChild(typingBubble);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            const formData = new FormData(chatForm);
+            formData.set('message', text);
+
+            fetch(chatForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                typingBubble.remove();
+                
+                const assistantBubble = document.createElement('div');
+                assistantBubble.className = 'flex flex-col max-w-[85%] rounded-2xl px-5 py-3.5 shadow-2xs text-sm leading-relaxed self-start bg-white text-slate-800 border border-slate-200/80';
+                assistantBubble.setAttribute('data-raw-content', data.content);
+                assistantBubble.innerHTML = marked.parse(data.content);
+                chatMessages.appendChild(assistantBubble);
+                
+                // Highlight code blocks and format tags
+                assistantBubble.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+                assistantBubble.querySelectorAll('p').forEach(p => p.classList.add('mb-2', 'last:mb-0'));
+                assistantBubble.querySelectorAll('ul').forEach(ul => ul.classList.add('list-disc', 'pl-5', 'mb-2'));
+                assistantBubble.querySelectorAll('ol').forEach(ol => ol.classList.add('list-decimal', 'pl-5', 'mb-2'));
+                assistantBubble.querySelectorAll('code:not(pre code)').forEach(code => code.classList.add('bg-slate-100', 'text-slate-800', 'px-1.5', 'py-0.5', 'rounded', 'font-mono', 'text-xs'));
+                assistantBubble.querySelectorAll('pre').forEach(pre => pre.classList.add('my-3', 'rounded-xl', 'overflow-hidden', 'shadow-2xs'));
+                
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            })
+            .catch(err => {
+                typingBubble.className = 'flex flex-col max-w-[85%] rounded-2xl px-5 py-3.5 shadow-2xs text-sm leading-relaxed self-start bg-rose-50 text-rose-600 border border-rose-100';
+                typingBubble.innerText = 'Desculpe, ocorreu um erro de conexão. Tente novamente.';
+                console.error(err);
+            });
+        });
+    }
+</script>
+{% endblock %}

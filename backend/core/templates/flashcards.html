@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Flashcards Leitner - Sampaio AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 3D Flip Card Styles */
+    .card-flipper-container {
+        perspective: 1000px;
+        width: 100%;
+        height: 280px;
+        cursor: pointer;
+    }
+    .card-flipper {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        transform-style: preserve-3d;
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card-flipper.flipped {
+        transform: rotateY(180deg);
+    }
+    .card-face {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        border-radius: 1rem;
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        overflow-y: auto;
+    }
+    .card-face-front {
+        background-color: #ffffff;
+        color: #1e3a8a;
+        border: 1px solid #e2e8f0;
+        border-left: 5px solid #3b82f6;
+    }
+    .card-face-back {
+        background-color: #eff6ff;
+        color: #1e293b;
+        transform: rotateY(180deg);
+        border: 2px solid #bfdbfe;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Header -->
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="min-w-0 flex-1">
+            <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">Flashcards Inteligentes</h2>
+            <p class="mt-1 text-sm leading-6 text-slate-500">Utilize o Leitner System (Repetição Espaçada) para reter conceitos complexos.</p>
+        </div>
+        
+        <!-- Total count badge -->
+        <div class="mt-4 md:mt-0 shrink-0">
+            <div class="flex items-center gap-x-4 bg-white border border-slate-200 px-5 py-3 rounded-2xl shadow-2xs">
+                <div class="rounded-xl bg-blue-50 p-2.5 text-blue-600">
+                    <i data-feather="layers" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h5 class="text-lg font-bold text-slate-900 leading-tight" id="total-flashcards-badge">{{ flashcards|length }}</h5>
+                    <span class="text-xs text-slate-400 font-medium">Flashcards criados</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Grid Layout -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Coluna Esquerda: IA e Filtros (1/3 no desktop) -->
+        <div class="space-y-6 lg:col-span-1">
+            <!-- IA Generator Card -->
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+                <h4 class="text-base font-bold text-slate-900 flex items-center gap-x-2">
+                    <i data-feather="cpu" class="w-5 h-5 text-blue-600"></i>
+                    Gerador com IA
+                </h4>
+                <p class="text-xs text-slate-500 mt-1 mb-4">Escolha um documento processado para que a inteligência artificial formule flashcards (pergunta e resposta) específicos sobre o assunto.</p>
+                
+                <div class="mb-4">
+                    <label for="docSelect" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Selecione o Documento</label>
+                    <select id="docSelect" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                        <option value="">-- Selecione --</option>
+                        {% for doc in documents %}
+                        <option value="{{ doc.id }}">{{ doc.name }} ({{ doc.chunks_count }} chunks)</option>
+                        {% empty %}
+                        <option value="" disabled>Nenhum documento processado disponível</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="button" id="generateBtn" class="w-full flex items-center justify-center gap-x-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-blue-500 transition-colors">
+                    <i data-feather="zap" class="w-4 h-4"></i>
+                    <span>Gerar Flashcards</span>
+                </button>
+
+                <!-- Loader -->
+                <div id="generateLoader" class="text-center py-4 hidden">
+                    <span class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></span>
+                    <p class="mt-2 text-xs text-slate-500">A IA está analisando o documento e formulando perguntas e respostas. Aguarde...</p>
+                </div>
+            </div>
+
+            <!-- Box Filters Card -->
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+                <h4 class="text-base font-bold text-slate-900 flex items-center gap-x-2">
+                    <i data-feather="sliders" class="w-5 h-5 text-blue-600"></i>
+                    Filtrar Estudos
+                </h4>
+                <div class="mt-4">
+                    <label for="boxFilter" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Filtrar por Caixa Leitner</label>
+                    <select id="boxFilter" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                        <option value="all">Todas as caixas</option>
+                        <option value="1">Caixa 1 (Estudar Mais / Difícil)</option>
+                        <option value="2">Caixa 2</option>
+                        <option value="3">Caixa 3</option>
+                        <option value="4">Caixa 4</option>
+                        <option value="5">Caixa 5 (Memorizado / Fácil)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna Direita: Revisão Interativa (2/3 no desktop) -->
+        <div class="lg:col-span-2">
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs min-h-[480px] flex flex-col justify-between">
+                <!-- Review Card Header -->
+                <div class="flex justify-between items-center pb-4 border-b border-slate-100 mb-6">
+                    <h4 class="text-base font-bold text-slate-900 flex items-center gap-x-2">
+                        <i data-feather="book-open" class="w-5 h-5 text-blue-600"></i>
+                        Sessão de Revisão
+                    </h4>
+                    <span id="card-progress-indicator" class="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600" style="display: none;">Card 1 de 10</span>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="text-center py-12 my-auto" style="{% if flashcards %}display: none;{% endif %}">
+                    <div class="inline-flex rounded-full bg-slate-50 p-4 text-slate-400 mb-3">
+                        <i data-feather="layers" class="w-8 h-8"></i>
+                    </div>
+                    <h5 class="text-sm font-bold text-slate-900">Nenhum Flashcard para Revisar</h5>
+                    <p class="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
+                        Gere novos flashcards a partir de seus documentos de estudo no painel esquerdo para iniciar sua revisão.
+                    </p>
+                </div>
+
+                <!-- Interactive Flashcard Area -->
+                <div id="flashcard-area" style="{% if not flashcards %}display: none;{% endif %} class="my-auto space-y-8">
+                    <div class="card-flipper-container" onclick="flipCard()">
+                        <div class="card-flipper" id="flipper">
+                            <!-- Frente do Card -->
+                            <div class="card-face card-face-front">
+                                <span class="bg-blue-50 text-blue-700 border border-blue-100 rounded-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider mb-4">PERGUNTA (FRENTE)</span>
+                                <h5 class="text-lg font-bold text-slate-900" id="card-front-text">Carregando pergunta...</h5>
+                                <span class="text-xs text-slate-400 mt-8 flex items-center gap-1"><i data-feather="repeat" class="w-3.5 h-3.5"></i> Clique para ver a resposta</span>
+                            </div>
+                            <!-- Verso do Card -->
+                            <div class="card-face card-face-back">
+                                <span class="bg-blue-100 text-blue-800 border border-blue-200 rounded-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider mb-4">RESPOSTA (VERSO)</span>
+                                <h5 class="text-lg font-semibold text-slate-800" id="card-back-text">Carregando resposta...</h5>
+                                <span class="text-xs text-slate-400 mt-8 flex items-center gap-1"><i data-feather="repeat" class="w-3.5 h-3.5"></i> Clique para ver a pergunta</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Spaced Repetition Review Ratings -->
+                    <div class="flex flex-col items-center gap-3">
+                        <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Como foi responder a esse card?</div>
+                        <div class="grid grid-cols-3 gap-3 w-full max-w-md">
+                            <button type="button" class="flex flex-col items-center justify-center p-3 rounded-xl border border-rose-200 text-rose-700 hover:bg-rose-50 transition-colors shadow-2xs group" onclick="submitReview('hard')">
+                                <span class="font-bold text-sm">Difícil 🔴</span>
+                                <span class="text-[9px] text-rose-500 mt-0.5">Volta p/ Caixa 1</span>
+                            </button>
+                            <button type="button" class="flex flex-col items-center justify-center p-3 rounded-xl border border-amber-200 text-amber-700 hover:bg-amber-50 transition-colors shadow-2xs group" onclick="submitReview('medium')">
+                                <span class="font-bold text-sm">Médio 🟡</span>
+                                <span class="text-[9px] text-amber-500 mt-0.5">Mantém a caixa</span>
+                            </button>
+                            <button type="button" class="flex flex-col items-center justify-center p-3 rounded-xl border border-emerald-200 text-emerald-700 hover:bg-emerald-50 transition-colors shadow-2xs group" onclick="submitReview('easy')">
+                                <span class="font-bold text-sm">Fácil 🟢</span>
+                                <span class="text-[9px] text-emerald-500 mt-0.5">Avança 1 caixa</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation and Metadata Footer -->
+                <div class="border-t border-slate-100 pt-4 mt-6 flex justify-between items-center" id="card-footer" style="{% if not flashcards %}display: none;{% endif %}">
+                    <div class="flex items-center gap-x-2">
+                        <span class="text-xs text-slate-400 font-medium">Status:</span>
+                        <span id="card-box-badge" class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ring-1 ring-inset">Caixa 1</span>
+                    </div>
+                    <div class="flex gap-x-2">
+                        <button type="button" class="inline-flex items-center gap-x-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors" onclick="prevCard()">
+                            <i data-feather="chevron-left" class="w-3.5 h-3.5"></i>
+                            <span>Anterior</span>
+                        </button>
+                        <button type="button" class="inline-flex items-center gap-x-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors" onclick="nextCard()">
+                            <span>Próximo</span>
+                            <i data-feather="chevron-right" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Configura o CSRF Token padrão para requisições AJAX do Django
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    // Estado da Aplicação
+    let rawFlashcards = [];
+    let filteredFlashcards = [];
+    let currentIndex = 0;
+
+    // --- CARREGAMENTO INICIAL DOS CARDS ---
+    document.addEventListener("DOMContentLoaded", () => {
+        loadFlashcardsFromAPI();
+        document.getElementById('boxFilter').addEventListener('change', applyFilters);
+    });
+
+    function loadFlashcardsFromAPI() {
+        fetch('/api/flashcards/')
+        .then(res => res.json())
+        .then(data => {
+            rawFlashcards = data;
+            applyFilters();
+        })
+        .catch(err => console.error('Erro ao carregar flashcards:', err));
+    }
+
+    function applyFilters() {
+        const boxVal = document.getElementById('boxFilter').value;
+        
+        if (boxVal === 'all') {
+            filteredFlashcards = [...rawFlashcards];
+        } else {
+            const boxInt = parseInt(boxVal);
+            filteredFlashcards = rawFlashcards.filter(c => c.box === boxInt);
+        }
+        
+        currentIndex = 0;
+        updateUI();
+    }
+
+    // --- RENDERIZAR INTERFACE ---
+    function updateUI() {
+        const emptyState = document.getElementById('empty-state');
+        const flashcardArea = document.getElementById('flashcard-area');
+        const cardFooter = document.getElementById('card-footer');
+        const progressIndicator = document.getElementById('card-progress-indicator');
+        const totalBadge = document.getElementById('total-flashcards-badge');
+        
+        totalBadge.textContent = rawFlashcards.length;
+
+        if (filteredFlashcards.length === 0) {
+            emptyState.style.display = 'block';
+            flashcardArea.style.display = 'none';
+            cardFooter.style.display = 'none';
+            progressIndicator.style.display = 'none';
+            return;
+        }
+
+        emptyState.style.display = 'none';
+        flashcardArea.style.display = 'block';
+        cardFooter.style.display = 'flex';
+        progressIndicator.style.display = 'inline-block';
+
+        const flipper = document.getElementById('flipper');
+        flipper.classList.remove('flipped');
+
+        const card = filteredFlashcards[currentIndex];
+        document.getElementById('card-front-text').textContent = card.front;
+        document.getElementById('card-back-text').textContent = card.back;
+        
+        progressIndicator.textContent = `Card ${currentIndex + 1} de ${filteredFlashcards.length}`;
+        
+        const boxBadge = document.getElementById('card-box-badge');
+        boxBadge.className = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ring-1 ring-inset';
+        
+        // Define as cores com base na caixa do card
+        if (card.box === 1) {
+            boxBadge.classList.add('bg-rose-50', 'text-rose-700', 'ring-rose-600/10');
+        } else if (card.box === 2) {
+            boxBadge.classList.add('bg-orange-50', 'text-orange-700', 'ring-orange-600/10');
+        } else if (card.box === 3) {
+            boxBadge.classList.add('bg-yellow-50', 'text-yellow-700', 'ring-yellow-600/10');
+        } else if (card.box === 4) {
+            boxBadge.classList.add('bg-sky-50', 'text-sky-700', 'ring-sky-600/10');
+        } else if (card.box === 5) {
+            boxBadge.classList.add('bg-emerald-50', 'text-emerald-700', 'ring-emerald-600/10');
+        }
+        boxBadge.textContent = `Caixa ${card.box}`;
+        feather.replace();
+    }
+
+    // --- INTERAÇÕES DO CARD ---
+    function flipCard() {
+        document.getElementById('flipper').classList.toggle('flipped');
+    }
+
+    function nextCard() {
+        if (filteredFlashcards.length === 0) return;
+        currentIndex = (currentIndex + 1) % filteredFlashcards.length;
+        updateUI();
+    }
+
+    function prevCard() {
+        if (filteredFlashcards.length === 0) return;
+        currentIndex = (currentIndex - 1 + filteredFlashcards.length) % filteredFlashcards.length;
+        updateUI();
+    }
+
+    // --- REVISÃO LEITNER SYSTEM (API) ---
+    function submitReview(rating) {
+        if (filteredFlashcards.length === 0) return;
+        const card = filteredFlashcards[currentIndex];
+
+        fetch(`/api/flashcards/${card.id}/review/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ rating: rating })
+        })
+        .then(res => res.json())
+        .then(updatedCard => {
+            const idxRaw = rawFlashcards.findIndex(c => c.id === card.id);
+            if (idxRaw !== -1) rawFlashcards[idxRaw] = updatedCard;
+
+            const boxFilterVal = document.getElementById('boxFilter').value;
+            if (boxFilterVal !== 'all' && updatedCard.box.toString() !== boxFilterVal) {
+                applyFilters();
+            } else {
+                const idxFiltered = filteredFlashcards.findIndex(c => c.id === card.id);
+                if (idxFiltered !== -1) filteredFlashcards[idxFiltered] = updatedCard;
+                nextCard();
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Erro ao enviar revisão do card.');
+        });
+    }
+
+    // --- GERADOR DE FLASHCARDS (IA) ---
+    const generateBtn = document.getElementById('generateBtn');
+    const docSelect = document.getElementById('docSelect');
+    const generateLoader = document.getElementById('generateLoader');
+
+    generateBtn.addEventListener('click', () => {
+        const docId = docSelect.value;
+        if (!docId) {
+            alert('Por favor, selecione um documento para gerar flashcards.');
+            return;
+        }
+
+        generateBtn.classList.add('hidden');
+        generateLoader.classList.remove('hidden');
+
+        fetch('/api/flashcards/generate/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ document_id: docId })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Erro na geração de flashcards.');
+            return res.json();
+        })
+        .then(newCards => {
+            generateBtn.classList.remove('hidden');
+            generateLoader.classList.add('hidden');
+            docSelect.value = '';
+            
+            alert(`Sucesso! ${newCards.length} novos flashcards foram gerados pela IA.`);
+            loadFlashcardsFromAPI();
+        })
+        .catch(err => {
+            generateBtn.classList.remove('hidden');
+            generateLoader.classList.add('hidden');
+            console.error(err);
+            alert('Erro ao gerar os flashcards. Verifique se o modelo está configurado corretamente.');
+        });
+    });
+</script>
+{% endblock %}

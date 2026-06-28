@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - Sampaio AI{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Header -->
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="min-w-0 flex-1">
+            <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">Visão Geral</h2>
+            <p class="mt-1 text-sm leading-6 text-slate-500">Monitore suas métricas de estudo e progresso de aprendizado.</p>
+        </div>
+    </div>
+
+    <!-- Welcome Panel -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-600 shadow-xl shadow-blue-500/10">
+        <div class="px-6 py-10 sm:px-12 sm:py-12 lg:pr-0 lg:py-14">
+            <div class="max-w-xl">
+                <h3 class="text-xl font-extrabold text-white sm:text-3xl">Bem-vindo ao Sampaio AI! 🎓</h3>
+                <p class="mt-4 text-sm leading-6 text-blue-100 sm:text-base">
+                    Sua plataforma pessoal de estudos de programação orientada por inteligência artificial. Centralize seus materiais, crie bases de conhecimento próprias, faça sessões de chat inteligente e gere flashcards/exercícios automaticamente.
+                </p>
+                <div class="mt-8 flex flex-wrap gap-4">
+                    <a href="{% url 'chat_page' %}" class="flex items-center gap-x-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-blue-600 shadow-sm hover:bg-blue-50 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                        <i data-feather="message-square" class="w-4 h-4"></i>
+                        Iniciar Conversa
+                    </a>
+                    <a href="{% url 'library_page' %}" class="flex items-center gap-x-2 rounded-xl border border-white/30 bg-white/10 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-white/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                        <i data-feather="upload" class="w-4 h-4"></i>
+                        Enviar Documentos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Cards Grid -->
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <!-- KPI 1: Chats -->
+        <div class="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-6 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
+            <div class="flex items-center gap-x-4">
+                <div class="rounded-xl bg-blue-50 p-3 text-blue-600">
+                    <i data-feather="message-square" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Chats Realizados</p>
+                    <h4 class="text-2xl font-bold tracking-tight text-slate-900 mt-1">{{ data.chats_realizados }}</h4>
+                </div>
+            </div>
+            <div class="mt-4 border-t border-slate-100 pt-3">
+                <span class="text-xs text-slate-500">Sessões ativas no histórico</span>
+            </div>
+        </div>
+
+        <!-- KPI 2: Arquivos -->
+        <div class="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-6 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
+            <div class="flex items-center gap-x-4">
+                <div class="rounded-xl bg-emerald-50 p-3 text-emerald-600">
+                    <i data-feather="file" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Arquivos Enviados</p>
+                    <h4 class="text-2xl font-bold tracking-tight text-slate-900 mt-1">{{ data.arquivos_enviados }}</h4>
+                </div>
+            </div>
+            <div class="mt-4 border-t border-slate-100 pt-3">
+                <span class="text-xs text-slate-500">PDF, TXT, Markdown, etc.</span>
+            </div>
+        </div>
+
+        <!-- KPI 3: Flashcards -->
+        <div class="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-6 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
+            <div class="flex items-center gap-x-4">
+                <div class="rounded-xl bg-amber-50 p-3 text-amber-600">
+                    <i data-feather="layers" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Flashcards Gerados</p>
+                    <h4 class="text-2xl font-bold tracking-tight text-slate-900 mt-1">{{ data.flashcards_criados }}</h4>
+                </div>
+            </div>
+            <div class="mt-4 border-t border-slate-100 pt-3">
+                <span class="text-xs text-slate-500">Cartões de memorização ativos</span>
+            </div>
+        </div>
+
+        <!-- KPI 4: Quizzes -->
+        <div class="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-6 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
+            <div class="flex items-center gap-x-4">
+                <div class="rounded-xl bg-purple-50 p-3 text-purple-600">
+                    <i data-feather="check-square" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Quizzes Realizados</p>
+                    <h4 class="text-2xl font-bold tracking-tight text-slate-900 mt-1">{{ data.quizzes_realizados }}</h4>
+                </div>
+            </div>
+            <div class="mt-4 border-t border-slate-100 pt-3">
+                <span class="text-xs text-slate-500">Exercícios respondidos</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary Grid -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Recent Topics -->
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs lg:col-span-2">
+            <h4 class="text-lg font-bold text-slate-900 mb-4">Temas de Estudo Recentes</h4>
+            <div class="flex flex-wrap gap-3">
+                {% for tema in data.temas_estudados %}
+                <span class="inline-flex items-center rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 shadow-2xs hover:bg-slate-100 transition-colors">
+                    {{ tema }}
+                </span>
+                {% empty %}
+                <div class="w-full text-center text-slate-400 py-8">
+                    <p class="text-sm">Nenhum tema estudado registrado ainda.</p>
+                    <p class="text-xs mt-1">Inicie um chat ou faça upload de documentos para começar!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Study hours card -->
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col justify-between">
+            <div>
+                <h4 class="text-lg font-bold text-slate-900 mb-1">Tempo de Estudo</h4>
+                <p class="text-xs text-slate-500">Horas de aprendizado acumuladas na plataforma.</p>
+            </div>
+            <div class="py-6 text-center">
+                <h1 class="text-5xl font-extrabold text-blue-600 tracking-tight">{{ data.horas_estudadas }}h</h1>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2">
+                <div class="bg-blue-600 h-2 rounded-full" style="width: 100%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

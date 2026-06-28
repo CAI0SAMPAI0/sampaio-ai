@@ -1,0 +1,530 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Biblioteca de Conhecimento - Sampaio AI{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Header -->
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="min-w-0 flex-1">
+            <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">Biblioteca</h2>
+            <p class="mt-1 text-sm leading-6 text-slate-500">Envie seus materiais de estudo e faça buscas semânticas inteligentes.</p>
+        </div>
+        
+        <!-- Total Documents Stats Card -->
+        <div class="mt-4 md:mt-0 shrink-0">
+            <div class="flex items-center gap-x-4 bg-white border border-slate-200 px-5 py-3 rounded-2xl shadow-2xs">
+                <div class="rounded-xl bg-blue-50 p-2.5 text-blue-600">
+                    <i data-feather="book-open" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h5 class="text-lg font-bold text-slate-900 leading-tight" id="stats-total">{{ documents|length }}</h5>
+                    <span class="text-xs text-slate-400 font-medium">Materiais indexados</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Coluna Esquerda: Upload e Busca (1/3 da tela no desktop) -->
+        <div class="space-y-6 lg:col-span-1">
+            <!-- Card de Upload -->
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+                <h4 class="text-base font-bold text-slate-900 flex items-center gap-x-2">
+                    <i data-feather="upload-cloud" class="w-5 h-5 text-blue-600"></i>
+                    Upload de Materiais
+                </h4>
+                
+                <!-- Dropzone Area -->
+                <div class="mt-4 border-2 border-dashed border-blue-200 bg-blue-50/50 hover:bg-blue-50 hover:border-blue-500 rounded-xl p-8 text-center cursor-pointer transition-all group" id="dropzone">
+                    <input type="file" id="fileInput" multiple class="hidden" accept=".pdf,.docx,.txt,.md,.markdown,.csv,.xlsx,.pptx,.png,.jpg,.jpeg">
+                    <div class="inline-flex rounded-xl bg-blue-100 p-3 text-blue-600 group-hover:scale-110 transition-transform mb-3">
+                        <i data-feather="upload" class="w-6 h-6"></i>
+                    </div>
+                    <p class="text-sm font-bold text-slate-900">Arraste seus arquivos aqui</p>
+                    <p class="text-xs text-slate-400 mt-1">ou clique para navegar no computador</p>
+                    <span class="inline-block mt-3 bg-white px-2.5 py-1 rounded-md border border-slate-100 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">PDF, DOCX, TXT, MD, CSV, Imagens</span>
+                </div>
+
+                <!-- Tags Input -->
+                <div class="mt-4">
+                    <label for="tagsInput" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Tags (opcional, separadas por vírgula)</label>
+                    <input type="text" id="tagsInput" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="ex: python, django, aula1">
+                </div>
+
+                <!-- Uploading Progress State -->
+                <div class="mt-4 hidden" id="uploadList">
+                    <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Enviando arquivos...</h5>
+                    <div id="uploadItemsContainer" class="space-y-2">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card de Busca Semântica -->
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+                <h4 class="text-base font-bold text-slate-900 flex items-center gap-x-2">
+                    <i data-feather="search" class="w-5 h-5 text-blue-600"></i>
+                    Busca Semântica na Base
+                </h4>
+                <p class="text-xs text-slate-500 mt-1 mb-4">Pesquise conceitos em toda a sua biblioteca de forma conceitual, e não apenas por palavras-chave exatas.</p>
+                
+                <!-- Input Group -->
+                <div class="flex rounded-xl border border-slate-200 overflow-hidden shadow-2xs focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+                    <input type="text" id="searchInput" class="flex-1 border-0 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-hidden" placeholder="O que você quer buscar?">
+                    <button class="bg-blue-600 hover:bg-blue-500 px-4 text-white transition-colors" type="button" id="searchButton">
+                        <i data-feather="search" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Search Results -->
+                <div id="searchResults" class="mt-4 max-h-[380px] overflow-y-auto hidden">
+                    <div id="searchResultsContainer" class="space-y-3">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+                <div id="searchPlaceholder" class="text-center text-slate-400 py-6 text-xs">
+                    Digite sua dúvida e clique em buscar.
+                </div>
+                <div id="searchLoading" class="text-center py-6 hidden">
+                    <span class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></span>
+                    <span class="block mt-2 text-xs text-slate-500">Pesquisando na base...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna Direita: Tabela de Materiais (2/3 da tela no desktop) -->
+        <div class="lg:col-span-2">
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+                <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                    <h4 class="text-base font-bold text-slate-900 flex items-center gap-x-2">
+                        <i data-feather="folder" class="w-5 h-5 text-blue-600"></i>
+                        Seus Materiais
+                    </h4>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-100 text-left text-sm">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nome</th>
+                                <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Tamanho</th>
+                                <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Data</th>
+                                <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="documentTableBody" class="divide-y divide-slate-100 bg-white">
+                            {% for doc in documents %}
+                            <tr class="hover:bg-slate-50/50 transition-colors" id="doc-row-{{ doc.id }}" data-doc-id="{{ doc.id }}">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-x-3">
+                                        <!-- File Icon Box -->
+                                        <div class="rounded-lg p-2.5 {% if doc.file_type == 'pdf' %} bg-rose-50 text-rose-600 {% elif doc.file_type == 'xlsx' or doc.file_type == 'csv' %} bg-emerald-50 text-emerald-600 {% elif doc.file_type == 'png' or doc.file_type == 'jpg' or doc.file_type == 'jpeg' %} bg-amber-50 text-amber-600 {% else %} bg-blue-50 text-blue-600 {% endif %}">
+                                            {% if doc.file_type == 'pdf' %}
+                                                <i data-feather="file-text" class="w-5 h-5"></i>
+                                            {% elif doc.file_type == 'xlsx' or doc.file_type == 'csv' %}
+                                                <i data-feather="grid" class="w-5 h-5"></i>
+                                            {% elif doc.file_type == 'png' or doc.file_type == 'jpg' or doc.file_type == 'jpeg' %}
+                                                <i data-feather="image" class="w-5 h-5"></i>
+                                            {% else %}
+                                                <i data-feather="file" class="w-5 h-5"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="font-bold text-slate-900 truncate max-w-[200px]" title="{{ doc.name }}">{{ doc.name }}</p>
+                                            <div class="flex flex-wrap gap-1 mt-1">
+                                                <span class="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 uppercase">{{ doc.file_type }}</span>
+                                                {% if doc.tags %}
+                                                    {% for tag in doc.tags.split %}
+                                                        <span class="inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-600">{{ tag }}</span>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-slate-500 text-xs whitespace-nowrap" id="doc-size-{{ doc.id }}">
+                                    {{ doc.file_size }} bytes
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div id="status-container-{{ doc.id }}">
+                                        {% if doc.processing_status == 'pending' %}
+                                            <span class="inline-flex items-center gap-x-1.5 rounded-full bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 border border-slate-200">
+                                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400 animate-pulse"></span>
+                                                Pendente
+                                            </span>
+                                        {% elif doc.processing_status == 'processing' %}
+                                            <span class="inline-flex items-center gap-x-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 border border-blue-200">
+                                                <span class="h-1.5 w-1.5 rounded-full bg-blue-500 animate-ping"></span>
+                                                Processando
+                                            </span>
+                                        {% elif doc.processing_status == 'completed' %}
+                                            <span class="inline-flex items-center gap-x-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200" title="{{ doc.chunks_count }} chunks criados">
+                                                <i data-feather="check-circle" class="w-3.5 h-3.5"></i>
+                                                Concluído ({{ doc.chunks_count }})
+                                            </span>
+                                        {% elif doc.processing_status == 'failed' %}
+                                            <span class="inline-flex items-center gap-x-1.5 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 border border-rose-200">
+                                                <i data-feather="alert-triangle" class="w-3.5 h-3.5"></i>
+                                                Falhou
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-slate-500 text-xs whitespace-nowrap">
+                                    {{ doc.uploaded_at|date:"d/m/Y H:i" }}
+                                </td>
+                                <td class="px-6 py-4 text-right whitespace-nowrap">
+                                    <div class="flex items-center justify-end gap-x-2">
+                                        <a href="/api/uploads/documents/{{ doc.id }}/download/" class="p-2 rounded-xl border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-colors" title="Baixar">
+                                            <i data-feather="download" class="w-4 h-4"></i>
+                                        </a>
+                                        <button type="button" class="p-2 rounded-xl border border-slate-200 text-slate-600 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition-colors" title="Excluir" onclick="deleteDocument({{ doc.id }})">
+                                            <i data-feather="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr id="empty-row">
+                                <td colspan="5" class="text-center py-12">
+                                    <div class="inline-flex rounded-full bg-slate-50 p-4 text-slate-400 mb-3">
+                                        <i data-feather="folder" class="w-8 h-8"></i>
+                                    </div>
+                                    <h5 class="text-sm font-bold text-slate-900">Sua biblioteca está vazia</h5>
+                                    <p class="text-xs text-slate-400 mt-1 px-4 max-w-xs mx-auto">Faça o upload do seu primeiro arquivo de estudo usando o painel lateral.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Configura o CSRF Token padrão para requisições AJAX do Django
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    // Formatação de bytes para tamanho legível
+    function formatBytes(bytes, decimals = 1) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
+    // Formata o tamanho de todos os documentos
+    document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll("[id^='doc-size-']").forEach(el => {
+            const bytes = parseInt(el.textContent.replace(' bytes', '').trim());
+            if (!isNaN(bytes)) {
+                el.textContent = formatBytes(bytes);
+            }
+        });
+        checkAndStartPolling();
+    });
+
+    // --- UPLOAD DE ARQUIVOS (AJAX MULTI-UPLOAD) ---
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const tagsInput = document.getElementById('tagsInput');
+    const uploadList = document.getElementById('uploadList');
+    const uploadItemsContainer = document.getElementById('uploadItemsContainer');
+
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('border-blue-500', 'bg-blue-100/50');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('border-blue-500', 'bg-blue-100/50');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('border-blue-500', 'bg-blue-100/50');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFilesUpload(files);
+        }
+    });
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            handleFilesUpload(fileInput.files);
+        }
+    });
+
+    function handleFilesUpload(files) {
+        uploadList.classList.remove('hidden');
+        
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+            formData.append('files', files[i]);
+            
+            const itemId = 'upload-item-' + Date.now() + '-' + i;
+            const itemHTML = `
+                <div class="p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs flex flex-col gap-1.5" id="${itemId}">
+                    <div class="flex justify-between items-center font-semibold text-slate-800">
+                        <span class="truncate max-w-[180px]">${files[i].name}</span>
+                        <span class="text-slate-400 text-nowrap">${formatBytes(files[i].size)}</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-1 rounded-full overflow-hidden">
+                        <div class="bg-blue-600 h-1 animate-pulse" style="width: 100%"></div>
+                    </div>
+                </div>
+            `;
+            uploadItemsContainer.insertAdjacentHTML('beforeend', itemHTML);
+        }
+        
+        if (tagsInput.value.trim()) {
+            formData.append('tags', tagsInput.value.trim());
+        }
+
+        fetch('/api/uploads/documents/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrftoken
+            }
+        })
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(err => { throw new Error(err.error || 'Erro no envio do arquivo') });
+            }
+            return res.json();
+        })
+        .then(data => {
+            uploadItemsContainer.innerHTML = '';
+            uploadList.classList.add('hidden');
+            tagsInput.value = '';
+            fileInput.value = '';
+            window.location.reload();
+        })
+        .catch(err => {
+            uploadItemsContainer.innerHTML = `<div class="alert alert-danger p-2 text-xs rounded-xl">${err.message}</div>`;
+            console.error(err);
+        });
+    }
+
+    // --- EXCLUSÃO DE DOCUMENTOS ---
+    function deleteDocument(docId) {
+        if (!confirm('Deseja realmente remover este material da sua biblioteca?')) return;
+
+        fetch(`/api/uploads/documents/${docId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': csrftoken
+            }
+        })
+        .then(res => {
+            if (res.status === 204) {
+                const row = document.getElementById(`doc-row-${docId}`);
+                if (row) row.remove();
+                
+                const tbody = document.getElementById('documentTableBody');
+                if (tbody.querySelectorAll('tr:not(#empty-row)').length === 0) {
+                    tbody.innerHTML = `
+                        <tr id="empty-row">
+                            <td colspan="5" class="text-center py-12">
+                                <div class="inline-flex rounded-full bg-slate-50 p-4 text-slate-400 mb-3">
+                                    <i data-feather="folder" class="w-8 h-8"></i>
+                                </div>
+                                <h5 class="text-sm font-bold text-slate-900">Sua biblioteca está vazia</h5>
+                                <p class="text-xs text-slate-400 mt-1 px-4 max-w-xs mx-auto">Faça o upload do seu primeiro arquivo de estudo usando o painel lateral.</p>
+                            </td>
+                        </tr>
+                    `;
+                    feather.replace();
+                }
+                
+                const statsTotal = document.getElementById('stats-total');
+                if (statsTotal) {
+                    const currentCount = parseInt(statsTotal.textContent);
+                    statsTotal.textContent = Math.max(0, currentCount - 1);
+                }
+            } else {
+                alert('Erro ao excluir documento.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Erro de conexão ao tentar excluir.');
+        });
+    }
+
+    // --- POLLING DE STATUS (CELERY UPDATE) ---
+    let pollingInterval = null;
+
+    function checkAndStartPolling() {
+        const rows = document.querySelectorAll('#documentTableBody tr');
+        let needsPolling = false;
+        
+        rows.forEach(row => {
+            const rowText = row.innerHTML;
+            if (rowText.includes('Pendente') || rowText.includes('Processando')) {
+                needsPolling = true;
+            }
+        });
+
+        if (needsPolling && !pollingInterval) {
+            pollingInterval = setInterval(pollDocumentsStatus, 3000);
+        }
+    }
+
+    function pollDocumentsStatus() {
+        fetch('/api/uploads/documents/')
+        .then(res => res.json())
+        .then(docs => {
+            let stillNeedsPolling = false;
+            
+            docs.forEach(doc => {
+                const row = document.getElementById(`doc-row-${doc.id}`);
+                if (!row) return;
+                
+                const statusContainer = document.getElementById(`status-container-${doc.id}`);
+                if (!statusContainer) return;
+                
+                let badgeHTML = '';
+                if (doc.processing_status === 'pending') {
+                    badgeHTML = `
+                        <span class="inline-flex items-center gap-x-1.5 rounded-full bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 border border-slate-200">
+                            <span class="h-1.5 w-1.5 rounded-full bg-slate-400 animate-pulse"></span>
+                            Pendente
+                        </span>
+                    `;
+                    stillNeedsPolling = true;
+                } else if (doc.processing_status === 'processing') {
+                    badgeHTML = `
+                        <span class="inline-flex items-center gap-x-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 border border-blue-200">
+                            <span class="h-1.5 w-1.5 rounded-full bg-blue-500 animate-ping"></span>
+                            Processando
+                        </span>
+                    `;
+                    stillNeedsPolling = true;
+                } else if (doc.processing_status === 'completed') {
+                    badgeHTML = `
+                        <span class="inline-flex items-center gap-x-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200" title="${doc.chunks_count} chunks criados">
+                            <i data-feather="check-circle" class="w-3.5 h-3.5"></i>
+                            Concluído (${doc.chunks_count})
+                        </span>
+                    `;
+                } else if (doc.processing_status === 'failed') {
+                    badgeHTML = `
+                        <span class="inline-flex items-center gap-x-1.5 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 border border-rose-200">
+                            <i data-feather="alert-triangle" class="w-3.5 h-3.5"></i>
+                            Falhou
+                        </span>
+                    `;
+                }
+                
+                statusContainer.innerHTML = badgeHTML;
+            });
+            
+            feather.replace();
+            
+            if (!stillNeedsPolling && pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        })
+        .catch(err => console.error('Erro no polling de documentos:', err));
+    }
+
+    // --- BUSCA SEMÂNTICA ---
+    const searchInput = document.getElementById('searchInput');
+    const searchButton = document.getElementById('searchButton');
+    const searchResults = document.getElementById('searchResults');
+    const searchResultsContainer = document.getElementById('searchResultsContainer');
+    const searchPlaceholder = document.getElementById('searchPlaceholder');
+    const searchLoading = document.getElementById('searchLoading');
+
+    searchButton.addEventListener('click', runSemanticSearch);
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') runSemanticSearch();
+    });
+
+    function runSemanticSearch() {
+        const query = searchInput.value.trim();
+        if (!query) return;
+
+        searchPlaceholder.classList.add('hidden');
+        searchResults.classList.add('hidden');
+        searchLoading.classList.remove('hidden');
+        searchResultsContainer.innerHTML = '';
+
+        fetch(`/api/knowledge-base/search/?q=${encodeURIComponent(query)}&k=4`)
+        .then(res => res.json())
+        .then(data => {
+            searchLoading.classList.add('hidden');
+            searchResults.classList.remove('hidden');
+            
+            if (data.error) {
+                searchResultsContainer.innerHTML = `<div class="alert alert-danger p-3 rounded-xl text-xs">${data.error}</div>`;
+                return;
+            }
+            
+            if (data.length === 0) {
+                searchResultsContainer.innerHTML = `<div class="text-center text-slate-400 py-6 text-xs">Nenhum resultado relevante encontrado na base.</div>`;
+                return;
+            }
+
+            data.forEach(result => {
+                const scorePercent = Math.round(result.similarity_score * 100);
+                const pageText = result.page_number ? `Pág. ${result.page_number}` : 'N/A';
+                
+                const cardHTML = `
+                    <div class="rounded-xl border border-slate-200 p-4 hover:border-blue-400 transition-colors shadow-3xs hover:shadow-2xs bg-white">
+                        <div class="flex justify-between items-center gap-x-2 mb-2">
+                            <span class="font-bold text-slate-800 text-xs truncate max-w-[160px]" title="${result.document_name}">
+                                <i data-feather="file-text" class="w-3.5 h-3.5 inline mr-1 text-blue-600"></i>${result.document_name}
+                            </span>
+                            <div class="flex items-center gap-x-2 shrink-0">
+                                <span class="text-slate-400 text-[10px]">${pageText}</span>
+                                <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 ring-1 ring-inset ring-blue-700/10">${scorePercent}% Match</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-500 leading-normal italic">
+                            "${result.content.length > 250 ? result.content.substring(0, 250) + '...' : result.content}"
+                        </p>
+                    </div>
+                `;
+                searchResultsContainer.insertAdjacentHTML('beforeend', cardHTML);
+            });
+            feather.replace();
+        })
+        .catch(err => {
+            searchLoading.classList.add('hidden');
+            searchPlaceholder.classList.remove('hidden');
+            console.error(err);
+            alert('Erro de conexão ao realizar busca semântica.');
+        });
+    }
+</script>
+{% endblock %}

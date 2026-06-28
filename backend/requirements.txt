@@ -1,29 +1,30 @@
-# Web
-fastapi==0.115.12
-uvicorn[standard]==0.34.2
+# Django core & extensions
+django>=5.0,<6.1
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+dj-database-url
+whitenoise[brotli]
+uvicorn[standard]
 
-# Database
-sqlalchemy[asyncio]==2.0.41
-asyncpg==0.30.0
-alembic==1.15.2
 
-# Auth
-python-jose[cryptography]==3.5.0
-bcrypt==5.0.0
-python-multipart==0.0.20
+# Database driver (psycopg 3 is default and recommended for Django 5/6)
+psycopg[binary]
 
-# Config
-pydantic-settings==2.9.1
-pydantic[email]==2.11.4
+# Config & Environment
+python-decouple>=3.8
 
-# AI
+# Celery & Redis
+celery
+redis
+django-redis
+
+# AI & LLM integration
 langchain
 langchain-groq
 langchain-core
 
-# Files
+# File handling
 pypdf==4.3.1
 pillow==11.2.1
-
-# Dev utils
-python-decouple==3.8
+reportlab

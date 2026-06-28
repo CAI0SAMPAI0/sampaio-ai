@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Minha Conta - Sampaio AI{% endblock %}
+
+{% block content %}
+<div class="space-y-8 max-w-4xl">
+    <!-- Header -->
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="min-w-0 flex-1">
+            <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">Minha Conta</h2>
+            <p class="mt-1 text-sm leading-6 text-slate-500">Gerencie suas informações de perfil, foto e segurança.</p>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if success_message %}
+    <div class="rounded-xl border border-emerald-500/20 bg-emerald-50 px-4 py-3 text-emerald-700 text-sm flex items-center gap-x-2 shadow-2xs">
+        <i data-feather="check-circle" class="w-4 h-4 shrink-0"></i>
+        <span>{{ success_message }}</span>
+    </div>
+    {% endif %}
+    {% if error_message %}
+    <div class="rounded-xl border border-rose-500/20 bg-rose-50 px-4 py-3 text-rose-700 text-sm flex items-center gap-x-2 shadow-2xs">
+        <i data-feather="alert-triangle" class="w-4 h-4 shrink-0"></i>
+        <span>{{ error_message }}</span>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
+        <!-- Left: Photo/Avatar edit card -->
+        <div class="md:col-span-1 space-y-6">
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs text-center flex flex-col items-center">
+                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4 self-start">Foto do Perfil</h4>
+                
+                <!-- Avatar Preview -->
+                <div class="relative group">
+                    <div class="w-28 h-28 rounded-full overflow-hidden border-2 border-slate-200 shadow-xs">
+                        {% if request.user.avatar %}
+                            <img id="avatarPreview" src="{{ request.user.avatar.url }}" alt="Avatar" class="w-full h-full object-cover">
+                        {% else %}
+                            <img id="avatarPreview" src="{% static 'images/1.png' %}" alt="Avatar" class="w-full h-full object-cover">
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Form for Photo change / deletion -->
+                <form method="post" enctype="multipart/form-data" action="{% url 'profile_page' %}" class="mt-4 w-full space-y-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_profile">
+                    <input type="hidden" name="remove_avatar" id="removeAvatarInput" value="false">
+                    <!-- Carry user details so they are not cleared when updating photo -->
+                    <input type="hidden" name="first_name" value="{{ request.user.first_name }}">
+                    <input type="hidden" name="last_name" value="{{ request.user.last_name }}">
+                    <input type="hidden" name="email" value="{{ request.user.email }}">
+
+                    <label class="w-full flex items-center justify-center gap-x-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs cursor-pointer transition-colors">
+                        <i data-feather="camera" class="w-3.5 h-3.5"></i>
+                        <span>Escolher foto</span>
+                        <input type="file" name="avatar" class="hidden" accept="image/*" onchange="previewImage(this); this.form.submit();">
+                    </label>
+
+                    {% if request.user.avatar %}
+                    <button type="button" onclick="document.getElementById('removeAvatarInput').value='true'; this.form.submit();" class="w-full flex items-center justify-center gap-x-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 px-3 py-2 text-xs font-semibold text-rose-700 shadow-2xs cursor-pointer transition-colors">
+                        <i data-feather="trash-2" class="w-3.5 h-3.5"></i>
+                        <span>Remover foto</span>
+                    </button>
+                    {% endif %}
+                </form>
+                <p class="text-[10px] text-slate-400 mt-2">Formatos suportados: PNG, JPG ou JPEG.</p>
+            </div>
+        </div>
+
+        <!-- Right: Profile Info and Password form (2/3 columns) -->
+        <div class="md:col-span-2 space-y-6">
+            <!-- Profile Info Form -->
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+                <h4 class="text-base font-bold text-slate-900 flex items-center gap-x-2 mb-4">
+                    <i data-feather="user" class="w-5 h-5 text-blue-600"></i>
+                    Informações Pessoais
+                </h4>
+                
+                <form method="post" action="{% url 'profile_page' %}" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_profile">
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="first_name" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nome</label>
+                            <input type="text" id="first_name" name="first_name" value="{{ request.user.first_name }}" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                        </div>
+                        <div>
+                            <label for="last_name" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Sobrenome</label>
+                            <input type="text" id="last_name" name="last_name" value="{{ request.user.last_name }}" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="email" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">E-mail</label>
+                        <input type="email" id="email" name="email" value="{{ request.user.email }}" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" required>
+                    </div>
+
+                    <div class="text-right pt-2">
+                        <button type="submit" class="inline-flex items-center gap-x-1.5 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-blue-500 transition-colors">
+                            <i data-feather="save" class="w-4 h-4"></i>
+                            <span>Salvar Alterações</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Password Change Form -->
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+                <h4 class="text-base font-bold text-slate-900 flex items-center gap-x-2 mb-4">
+                    <i data-feather="lock" class="w-5 h-5 text-blue-600"></i>
+                    Alterar Senha
+                </h4>
+                
+                <form method="post" action="{% url 'profile_page' %}" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="change_password">
+                    
+                    <div>
+                        <label for="current_password" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Senha Atual</label>
+                        <input type="password" id="current_password" name="current_password" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="••••••••" required>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="new_password" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nova Senha</label>
+                            <input type="password" id="new_password" name="new_password" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="••••••••" required>
+                        </div>
+                        <div>
+                            <label for="confirm_password" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Confirmar Nova Senha</label>
+                            <input type="password" id="confirm_password" name="confirm_password" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="••••••••" required>
+                        </div>
+                    </div>
+
+                    <div class="text-right pt-2">
+                        <button type="submit" class="inline-flex items-center gap-x-1.5 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-blue-500 transition-colors">
+                            <i data-feather="key" class="w-4 h-4"></i>
+                            <span>Alterar Senha</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('avatarPreview').src = e.target.result;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>
+{% endblock %}

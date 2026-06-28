@@ -1,0 +1,78 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br" class="h-full bg-slate-950">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - Sampaio AI</title>
+    
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS v4 Play CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    
+    <!-- Feather Icons CDN -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    
+    <style type="text/tailwindcss">
+        @theme {
+            --font-sans: 'Outfit', sans-serif;
+        }
+    </style>
+</head>
+<body class="h-full font-sans antialiased text-slate-100 flex items-center justify-center relative overflow-hidden bg-radial from-slate-900 to-slate-950">
+    <!-- Glowing background decorative circles -->
+    <div class="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-blue-500/10 blur-3xl animate-pulse"></div>
+    <div class="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-indigo-500/10 blur-3xl animate-pulse delay-2000"></div>
+
+    <div class="w-full max-w-md px-6 z-10">
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-xl p-8 shadow-2xl shadow-blue-500/5">
+            <!-- Logo Header -->
+            <div class="text-center mb-8">
+                <span class="text-3xl font-extrabold tracking-wider text-white">SAMPAIO <span class="text-blue-500 shadow-xs">AI</span></span>
+                <p class="text-slate-400 text-xs mt-2">Plataforma Pessoal de Estudos de Programação</p>
+            </div>
+            
+            <!-- Error message if auth fails -->
+            {% if error %}
+            <div class="mb-5 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-rose-400 text-xs text-center flex items-center justify-center gap-x-2">
+                <i data-feather="alert-triangle" class="w-4 h-4 shrink-0"></i>
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            <!-- Login Form -->
+            <form method="post" action="{% url 'login_page' %}" class="space-y-5">
+                {% csrf_token %}
+                <div>
+                    <label for="email" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">E-mail</label>
+                    <input type="email" class="w-full rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-3 text-sm text-white placeholder-slate-600 focus:bg-slate-950/80 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" id="email" name="username" placeholder="seu@email.com" required autocomplete="email">
+                </div>
+                <div>
+                    <label for="password" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Senha</label>
+                    <input type="password" class="w-full rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-3 text-sm text-white placeholder-slate-600 focus:bg-slate-950/80 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                
+                <button type="submit" class="w-full flex items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-md hover:bg-blue-500 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer">
+                    Entrar na Plataforma
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center">
+                <span class="text-slate-500 text-[10px]">Acesse com as credenciais padrão de desenvolvimento.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Initialize icons -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            feather.replace();
+        });
+    </script>
+</body>
+</html>

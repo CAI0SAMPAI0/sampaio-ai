@@ -1,0 +1,150 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v3.0
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.swarmMode=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge=true"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
+      - "--certificatesresolvers.cloudflare.acme.email=admin@sampaio-ai.com.br"
+      - "--certificatesresolvers.cloudflare.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - CLOUDFLARE_DNS_API_TOKEN_FILE=/run/secrets/CLOUDFLARE_DNS_API_TOKEN
+    secrets:
+      - CLOUDFLARE_DNS_API_TOKEN
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_certificates:/letsencrypt
+    networks:
+      - traefik_public
+      - internal_net
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
+  app:
+    image: ghcr.io/caio/sampaio-ai-app:latest
+    environment:
+      - DEBUG=False
+      - SECRET_KEY_FILE=/run/secrets/DJANGO_SECRET_KEY
+      - DATABASE_URL_FILE=/run/secrets/DATABASE_URL # Neon PostgreSQL
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    secrets:
+      - DJANGO_SECRET_KEY
+      - DATABASE_URL
+    networks:
+      - traefik_public
+      - internal_net
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.sampaioai.rule=Host(`sampaio-ai.com.br`) || Host(`*.sampaio-ai.com.br`)"
+        - "traefik.http.routers.sampaioai.entrypoints=websecure"
+        - "traefik.http.routers.sampaioai.tls=true"
+        - "traefik.http.routers.sampaioai.tls.certresolver=cloudflare"
+        - "traefik.http.routers.sampaioai.tls.domains[0].main=sampaio-ai.com.br"
+        - "traefik.http.routers.sampaioai.tls.domains[0].sans=*.sampaio-ai.com.br"
+        - "traefik.http.services.sampaioai.loadbalancer.server.port=8000"
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_prod_data:/data
+    networks:
+      - internal_net
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    volumes:
+      - rabbitmq_prod_data:/var/lib/rabbitmq
+    networks:
+      - internal_net
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  celery_worker:
+    image: ghcr.io/caio/sampaio-ai-app:latest
+    command: celery -A core worker --loglevel=info
+    environment:
+      - DEBUG=False
+      - SECRET_KEY_FILE=/run/secrets/DJANGO_SECRET_KEY
+      - DATABASE_URL_FILE=/run/secrets/DATABASE_URL
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    secrets:
+      - DJANGO_SECRET_KEY
+      - DATABASE_URL
+    networks:
+      - internal_net
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+
+  celery_beat:
+    image: ghcr.io/caio/sampaio-ai-app:latest
+    command: celery -A core beat --loglevel=info
+    environment:
+      - DEBUG=False
+      - SECRET_KEY_FILE=/run/secrets/DJANGO_SECRET_KEY
+      - DATABASE_URL_FILE=/run/secrets/DATABASE_URL
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    secrets:
+      - DJANGO_SECRET_KEY
+      - DATABASE_URL
+    networks:
+      - internal_net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+volumes:
+  traefik_certificates:
+  redis_prod_data:
+  rabbitmq_prod_data:
+
+secrets:
+  CLOUDFLARE_DNS_API_TOKEN:
+    external: true
+  DJANGO_SECRET_KEY:
+    external: true
+  DATABASE_URL:
+    external: true
+
+networks:
+  traefik_public:
+    external: true
+  internal_net:
+    driver: overlay
+    internal: true

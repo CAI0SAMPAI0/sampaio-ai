@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Cronogramas e Planos de Estudo - Sampaio AI{% endblock %}
+
+{% block content %}
+<div class="flex h-[calc(100vh-8.5rem)] rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs" x-data="{ sidebarOpen: true }">
+    <!-- Sidebar - Histórico de Planos -->
+    <div class="w-80 border-r border-slate-200 flex flex-col shrink-0 bg-white transition-all duration-300"
+         :class="sidebarOpen ? 'block' : 'hidden md:flex'">
+        <!-- Criar Novo Plano -->
+        <div class="p-4 border-b border-slate-200 bg-slate-50/50">
+            <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Novo Cronograma (IA)</h5>
+            <form id="createPlanForm" class="flex flex-col gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tecnologia / Framework</label>
+                    <input type="text" id="techInput" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs bg-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="ex: React, Django, Docker" required>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Objetivo Principal</label>
+                    <input type="text" id="objectiveInput" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs bg-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="ex: Passar em entrevista, criar app" required>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">H/Semana</label>
+                        <input type="number" id="hoursInput" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs bg-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" value="10" min="2" max="60">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Semanas</label>
+                        <input type="number" id="weeksInput" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs bg-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" value="4" min="1" max="12">
+                    </div>
+                </div>
+                <button type="submit" id="createPlanBtn" class="w-full flex items-center justify-center gap-x-1.5 rounded-xl bg-blue-600 px-4 py-2 mt-1 text-xs font-semibold text-white shadow-xs hover:bg-blue-500 transition-colors">
+                    <i data-feather="activity" class="w-3.5 h-3.5"></i>
+                    <span>Criar Plano</span>
+                </button>
+            </form>
+            <div id="createPlanLoader" class="text-center py-4 hidden">
+                <span class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></span>
+                <span class="block mt-2 text-xs text-slate-500">A IA está estruturando seu plano...</span>
+            </div>
+        </div>
+
+        <!-- Listagem de Planos -->
+        <div class="flex-1 overflow-y-auto divide-y divide-slate-100" id="plansListContainer">
+            {% for p in plans %}
+            <div class="p-4 cursor-pointer hover:bg-slate-50 transition-colors" id="sidebar-plan-{{ p.id }}" onclick="loadPlan({{ p.id }})">
+                <p class="text-xs font-bold text-slate-900 truncate">{{ p.title }}</p>
+                <div class="flex justify-between items-center mt-1.5 text-[10px] text-slate-400">
+                    <span>{{ p.created_at|date:"d/m/Y" }}</span>
+                    <span class="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-600">{{ p.duration_weeks }} semanas</span>
+                </div>
+            </div>
+            {% empty %}
+            <div class="p-8 text-center text-slate-400 text-xs" id="noPlansPlaceholder">
+                Nenhum plano criado ainda
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Conteúdo Principal do Plano -->
+    <div class="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-y-auto" :class="sidebarOpen ? 'hidden md:flex' : 'flex'">
+        <!-- Header -->
+        <div class="h-16 shrink-0 bg-white border-b border-slate-200 px-6 flex items-center justify-between gap-x-4 shadow-2xs" id="activePlanHeader" style="display: none;">
+            <div class="flex items-center gap-x-3">
+                <button type="button" @click="sidebarOpen = !sidebarOpen" class="md:hidden p-1.5 -ml-1 text-slate-500 hover:text-slate-700">
+                    <i data-feather="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <div>
+                    <h5 class="text-sm font-bold text-slate-900 leading-tight" id="activePlanTitle">Título do Plano</h5>
+                    <p class="text-xs text-slate-500 mt-0.5" id="activePlanObjective">Objetivo: ...</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="inline-flex items-center gap-x-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-600/10" id="activePlanHours">
+                    <i data-feather="clock" class="w-3 h-3 mr-1"></i> 10h/semana
+                </span>
+                <span class="inline-flex items-center gap-x-1 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-600/10" id="activePlanWeeks">
+                    <i data-feather="calendar" class="w-3 h-3 mr-1"></i> 4 semanas
+                </span>
+            </div>
+        </div>
+
+        <!-- Conteúdo do Cronograma -->
+        <div class="p-6 space-y-6 flex-1 flex flex-col">
+            <!-- Initial Welcome Placeholder -->
+            <div class="flex flex-col items-center justify-center text-slate-400 text-center py-12 my-auto" id="plansWelcomePlaceholder">
+                <div class="rounded-full bg-blue-50 p-4 text-blue-600 mb-3">
+                    <i data-feather="activity" class="w-8 h-8"></i>
+                </div>
+                <h5 class="text-sm font-bold text-slate-900">Planos de Estudo Personalizados</h5>
+                <p class="text-xs text-slate-500 max-w-xs mt-2">
+                    Preencha o formulário lateral informando a tecnologia, seus objetivos e carga horária. Nossa IA estruturará um cronograma semanal completo para guiar seu aprendizado.
+                </p>
+            </div>
+
+            <!-- Semanas Container -->
+            <div id="weeksContainer" class="space-y-6 hidden">
+                <!-- Injected dynamically via JS -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Configura o CSRF Token padrão para requisições AJAX do Django
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    // --- CARREGAR DETALHES DO PLANO (API) ---
+    function loadPlan(planId) {
+        document.querySelectorAll('.plan-item-sidebar').forEach(item => {
+            item.classList.remove('bg-blue-50/70', 'border-l-4', 'border-blue-600');
+        });
+        const activeItem = document.getElementById(`sidebar-plan-${planId}`);
+        if (activeItem) {
+            activeItem.classList.add('bg-blue-50/70', 'border-l-4', 'border-blue-600');
+        }
+
+        document.getElementById('plansWelcomePlaceholder').style.display = 'none';
+        
+        const header = document.getElementById('activePlanHeader');
+        const weeksContainer = document.getElementById('weeksContainer');
+        
+        header.style.display = 'flex';
+        weeksContainer.style.display = 'flex';
+        weeksContainer.className = 'space-y-6';
+
+        fetch(`/api/studies/${planId}/`)
+        .then(res => res.json())
+        .then(plan => {
+            document.getElementById('activePlanTitle').textContent = plan.title;
+            document.getElementById('activePlanObjective').textContent = `Objetivo: "${plan.objective}"`;
+            document.getElementById('activePlanHours').innerHTML = `<i data-feather="clock" class="w-3.5 h-3.5 inline mr-1"></i> ${plan.available_hours_per_week}h/semana`;
+            document.getElementById('activePlanWeeks').innerHTML = `<i data-feather="calendar" class="w-3.5 h-3.5 inline mr-1"></i> ${plan.duration_weeks} semanas`;
+
+            weeksContainer.innerHTML = '';
+            
+            const weeksList = plan.plan_content.semanas || [];
+            weeksList.forEach((week, wIdx) => {
+                let tasksHTML = '';
+                const tasks = week.tarefas || [];
+                
+                tasks.forEach((task, tIdx) => {
+                    const taskId = `week-${wIdx}-task-${tIdx}`;
+                    tasksHTML += `
+                        <div class="flex items-start gap-x-3 rounded-xl border border-slate-200 px-4 py-3 bg-white hover:border-blue-200 transition-all" id="item-${taskId}">
+                            <div class="flex items-center mt-0.5">
+                                <input class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500" type="checkbox" id="${taskId}" onchange="toggleTask('${taskId}')">
+                            </div>
+                            <label class="text-xs font-semibold text-slate-700 w-full cursor-pointer leading-relaxed" for="${taskId}">${task}</label>
+                        </div>
+                    `;
+                });
+
+                const weekCardHTML = `
+                    <div class="rounded-2xl border-l-4 border-l-blue-600 border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+                        <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                            <div>
+                                <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[9px] font-bold text-blue-700 ring-1 ring-inset ring-blue-600/10 mb-1">SEMANA ${week.semana}</span>
+                                <h6 class="text-sm font-bold text-slate-900 leading-snug">${week.topico}</h6>
+                            </div>
+                            <span class="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">${week.horas_sugeridas} horas</span>
+                        </div>
+                        <div class="space-y-2">
+                            ${tasksHTML}
+                        </div>
+                    </div>
+                `;
+                weeksContainer.insertAdjacentHTML('beforeend', weekCardHTML);
+            });
+            feather.replace();
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Erro ao carregar o plano de estudos.');
+        });
+    }
+
+    // --- MARCAR TAREFA CONCLUÍDA ---
+    function toggleTask(taskId) {
+        const checkbox = document.getElementById(taskId);
+        const taskCard = document.getElementById(`item-${taskId}`);
+        const label = taskCard.querySelector('label');
+        if (checkbox.checked) {
+            taskCard.classList.add('opacity-50', 'bg-slate-50/50');
+            label.classList.add('line-through', 'text-slate-400');
+        } else {
+            taskCard.classList.remove('opacity-50', 'bg-slate-50/50');
+            label.classList.remove('line-through', 'text-slate-400');
+        }
+    }
+
+    // --- CRIAR PLANO DE ESTUDOS (IA) ---
+    const createForm = document.getElementById('createPlanForm');
+    const createPlanBtn = document.getElementById('createPlanBtn');
+    const createPlanLoader = document.getElementById('createPlanLoader');
+
+    createForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const technology = document.getElementById('techInput').value.trim();
+        const objective = document.getElementById('objectiveInput').value.trim();
+        const hours = parseInt(document.getElementById('hoursInput').value);
+        const weeks = parseInt(document.getElementById('weeksInput').value);
+
+        createForm.style.display = 'none';
+        createPlanLoader.classList.remove('hidden');
+
+        fetch('/api/studies/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({
+                technology: technology,
+                objective: objective,
+                available_hours_per_week: hours,
+                duration_weeks: weeks
+            })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Erro ao criar plano.');
+            return res.json();
+        })
+        .then(newPlan => {
+            createForm.style.display = 'flex';
+            createPlanLoader.classList.add('hidden');
+            createForm.reset();
+            
+            const placeholder = document.getElementById('noPlansPlaceholder');
+            if (placeholder) placeholder.remove();
+
+            const container = document.getElementById('plansListContainer');
+            const itemHTML = `
+                <div class="p-4 cursor-pointer hover:bg-slate-50 transition-colors" id="sidebar-plan-${newPlan.id}" onclick="loadPlan(${newPlan.id})">
+                    <p class="text-xs font-bold text-slate-900 truncate">{{ p.title }}</p>
+                    <div class="flex justify-between items-center mt-1.5 text-[10px] text-slate-400">
+                        <span>Agora mesmo</span>
+                        <span class="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-600">${newPlan.duration_weeks} semanas</span>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('afterbegin', itemHTML);
+
+            alert('Plano de estudos estruturado com sucesso pela IA!');
+            loadPlan(newPlan.id);
+        })
+        .catch(err => {
+            createForm.style.display = 'flex';
+            createPlanLoader.classList.add('hidden');
+            console.error(err);
+            alert('Erro ao criar plano de estudos com IA. Verifique as configurações.');
+        });
+    });
+</script>
+{% endblock %}
