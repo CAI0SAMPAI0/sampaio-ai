@@ -29,9 +29,9 @@ class AgentTests(TestCase):
         process_document_into_chunks(self.doc)
 
     def tearDown(self):
-        if self.doc.file and os.path.exists(self.doc.file.path):
+        if self.doc.file:
             try:
-                os.remove(self.doc.file.path)
+                self.doc.file.delete(save=False)
             except Exception:
                 pass
 

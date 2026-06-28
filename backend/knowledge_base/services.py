@@ -96,85 +96,105 @@ def split_text_recursively(text, chunk_size=800, chunk_overlap=150):
     return _split(text, separators)
 
 
-def extract_text_from_file(file_path, ext):
+def extract_text_from_file(file_obj, ext):
     """
     Extrai o texto de um arquivo com base na sua extensão.
     Retorna uma lista de tuplas: (número_da_página, texto_da_página)
     """
     text_by_page = []
     
-    if ext == 'pdf':
-        try:
-            reader = pypdf.PdfReader(file_path)
-            for idx, page in enumerate(reader.pages):
-                page_text = page.extract_text()
-                if page_text:
-                    text_by_page.append((idx + 1, page_text))
-        except Exception as e:
-            print(f"Erro ao extrair PDF: {e}")
-    elif ext in ['txt', 'md', 'markdown', 'csv']:
-        try:
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                content = f.read()
-                text_by_page.append((1, content))
-        except Exception as e:
-            print(f"Erro ao ler arquivo de texto: {e}")
-    elif ext == 'docx':
-        try:
-            import zipfile
-            import xml.etree.ElementTree as ET
-            
-            with zipfile.ZipFile(file_path) as docx:
-                xml_content = docx.read('word/document.xml')
-                root = ET.fromstring(xml_content)
-                paragraphs = []
-                ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
-                for p in root.findall('.//w:p', ns):
-                    texts = [r.text for r in p.findall('.//w:t', ns) if r.text]
-                    if texts:
-                        paragraphs.append(''.join(texts))
-                text = '\n'.join(paragraphs)
-                text_by_page.append((1, text))
-        except Exception as e:
-            print(f"Erro ao ler DOCX: {e}")
-            text_by_page.append((1, f"[Erro ou DOCX sem texto legível: {os.path.basename(file_path)}]"))
-    elif ext == 'epub':
-        try:
-            import zipfile
-            import re
-            
-            html_tags_re = re.compile(r'<[^>]+>')
-            
-            with zipfile.ZipFile(file_path) as epub:
-                # Find all files inside the epub zip that contain HTML/XHTML content
-                content_files = [f for f in epub.namelist() if f.lower().endswith(('.xhtml', '.html', '.htm'))]
-                # Sort them
-                content_files.sort()
-                
-                text_parts = []
-                for file_name in content_files:
-                    try:
-                        content = epub.read(file_name).decode('utf-8', errors='ignore')
-                        # Remove HTML tags
-                        cleaned_text = html_tags_re.sub(' ', content)
-                        # Normalize spaces and HTML entities
-                        cleaned_text = cleaned_text.replace('&nbsp;', ' ').replace('&lt;', '<').replace('&gt;', '>').replace('&amp;', '&').replace('&quot;', '"').replace('&apos;', "'")
-                        cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
-                        if cleaned_text:
-                            text_parts.append(cleaned_text)
-                    except Exception as inner_e:
-                        print(f"Erro ao ler arquivo {file_name} do EPUB: {inner_e}")
-                
-                full_text = '\n\n'.join(text_parts)
-                if full_text:
-                    text_by_page.append((1, full_text))
-                else:
-                    text_by_page.append((1, f"[EPUB sem texto legível: {os.path.basename(file_path)}]"))
-        except Exception as e:
-            print(f"Erro ao ler EPUB: {e}")
-            text_by_page.append((1, f"[Erro ao ler EPUB {os.path.basename(file_path)}: {e}]"))
+    if isinstance(file_obj, str):
+        f_obj = open(file_obj, 'rb')
+        should_close = True
+        filename = os.path.basename(file_obj)
     else:
-        text_by_page.append((1, f"[Conteúdo indexado do arquivo {ext.upper()}: {os.path.basename(file_path)}]"))
+        f_obj = file_obj
+        if hasattr(f_obj, 'open'):
+            f_obj.open('rb')
+        else:
+            try:
+                f_obj.seek(0)
+            except Exception:
+                pass
+        should_close = False
+        filename = getattr(f_obj, 'name', 'arquivo')
+    
+    try:
+        if ext == 'pdf':
+            try:
+                reader = pypdf.PdfReader(f_obj)
+                for idx, page in enumerate(reader.pages):
+                    page_text = page.extract_text()
+                    if page_text:
+                        text_by_page.append((idx + 1, page_text))
+            except Exception as e:
+                print(f"Erro ao extrair PDF: {e}")
+        elif ext in ['txt', 'md', 'markdown', 'csv']:
+            try:
+                content = f_obj.read().decode('utf-8', errors='ignore')
+                text_by_page.append((1, content))
+            except Exception as e:
+                print(f"Erro ao ler arquivo de texto: {e}")
+        elif ext == 'docx':
+            try:
+                import zipfile
+                import xml.etree.ElementTree as ET
+                
+                with zipfile.ZipFile(f_obj) as docx:
+                    xml_content = docx.read('word/document.xml')
+                    root = ET.fromstring(xml_content)
+                    paragraphs = []
+                    ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
+                    for p in root.findall('.//w:p', ns):
+                        texts = [r.text for r in p.findall('.//w:t', ns) if r.text]
+                        if texts:
+                            paragraphs.append(''.join(texts))
+                    text = '\n'.join(paragraphs)
+                    text_by_page.append((1, text))
+            except Exception as e:
+                print(f"Erro ao ler DOCX: {e}")
+                text_by_page.append((1, f"[Erro ou DOCX sem texto legível: {filename}]"))
+        elif ext == 'epub':
+            try:
+                import zipfile
+                import re
+                
+                html_tags_re = re.compile(r'<[^>]+>')
+                
+                with zipfile.ZipFile(f_obj) as epub:
+                    content_files = [f for f in epub.namelist() if f.lower().endswith(('.xhtml', '.html', '.htm'))]
+                    content_files.sort()
+                    
+                    text_parts = []
+                    for file_name in content_files:
+                        try:
+                            content = epub.read(file_name).decode('utf-8', errors='ignore')
+                            cleaned_text = html_tags_re.sub(' ', content)
+                            cleaned_text = cleaned_text.replace('&nbsp;', ' ').replace('&lt;', '<').replace('&gt;', '>').replace('&amp;', '&').replace('&quot;', '"').replace('&apos;', "'")
+                            cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
+                            if cleaned_text:
+                                text_parts.append(cleaned_text)
+                        except Exception as inner_e:
+                            print(f"Erro ao ler arquivo {file_name} do EPUB: {inner_e}")
+                    
+                    full_text = '\n\n'.join(text_parts)
+                    if full_text:
+                        text_by_page.append((1, full_text))
+                    else:
+                        text_by_page.append((1, f"[EPUB sem texto legível: {filename}]"))
+            except Exception as e:
+                print(f"Erro ao ler EPUB: {e}")
+                text_by_page.append((1, f"[Erro ao ler EPUB {filename}: {e}]"))
+        else:
+            text_by_page.append((1, f"[Conteúdo indexado do arquivo {ext.upper()}: {filename}]"))
+    finally:
+        if should_close:
+            f_obj.close()
+        elif hasattr(f_obj, 'close'):
+            try:
+                f_obj.close()
+            except Exception:
+                pass
         
     return text_by_page
 
@@ -185,11 +205,10 @@ def process_document_into_chunks(document):
     """
     from .models import KnowledgeChunk
     
-    file_path = document.file.path
     ext = document.file_type.lower()
     
     # 1. Extração de texto
-    pages = extract_text_from_file(file_path, ext)
+    pages = extract_text_from_file(document.file, ext)
     if not pages:
         document.processing_status = 'failed'
         document.save()

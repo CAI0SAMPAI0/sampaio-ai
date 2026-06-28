@@ -36,9 +36,9 @@ class SemanticSearchTests(TestCase):
 
     def tearDown(self):
         # Remove o arquivo de teste criado
-        if self.doc.file and os.path.exists(self.doc.file.path):
+        if self.doc.file:
             try:
-                os.remove(self.doc.file.path)
+                self.doc.file.delete(save=False)
             except Exception:
                 pass
 
