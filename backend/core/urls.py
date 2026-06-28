@@ -15,7 +15,8 @@ from .views import (
     flashcards_page,
     quizzes_page,
     study_plans_page,
-    profile_page
+    profile_page,
+    serve_db_media
 )
 
 
@@ -44,4 +45,10 @@ urlpatterns = [
     path('api/quizzes/', include('quizzes.urls')),
     path('api/studies/', include('studies.urls')),
     path('api/notifications/', include('notifications.urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+from django.urls import re_path
+urlpatterns += [
+    re_path(r'^media/(?P<path>.*)$', serve_db_media, name='serve_db_media'),
+]
+

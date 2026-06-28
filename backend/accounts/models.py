@@ -36,3 +36,14 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
+
+
+class StoredFile(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    content = models.BinaryField()
+    size = models.IntegerField()
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+

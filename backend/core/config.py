@@ -25,7 +25,6 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: List[str] = [
         "http://localhost:3000",
-        "https://sampaio-ai.vercel.app",
     ]
 
     debug: bool = False

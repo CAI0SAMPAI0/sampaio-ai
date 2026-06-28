@@ -17,6 +17,8 @@ class KnowledgeDocumentViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         files = request.FILES.getlist('files')
+        import logging
+        logger = logging.getLogger(__name__)
         
         # Se houver múltiplos arquivos (upload múltiplo)
         if files:
@@ -40,8 +42,18 @@ class KnowledgeDocumentViewSet(viewsets.ModelViewSet):
                     tags=request.data.get('tags', '')
                 )
                 
-                # Dispara processamento assíncrono via Celery
-                process_document_task.delay(doc.id)
+                try:
+                    # Dispara processamento assíncrono via Celery
+                    process_document_task.delay(doc.id)
+                except Exception as e:
+                    logger.error(f"Erro ao enfileirar Celery task para o doc {doc.id}: {e}. Processando de forma síncrona...")
+                    try:
+                        process_document_task(doc.id)
+                    except Exception as sync_e:
+                        logger.error(f"Erro no processamento síncrono do doc {doc.id}: {sync_e}")
+                        doc.processing_status = 'failed'
+                        doc.save()
+                
                 created_docs.append(doc)
             
             serializer = self.get_serializer(created_docs, many=True)
@@ -73,11 +85,21 @@ class KnowledgeDocumentViewSet(viewsets.ModelViewSet):
             tags=request.data.get('tags', '')
         )
         
-        # Dispara processamento assíncrono via Celery
-        process_document_task.delay(doc.id)
+        try:
+            # Dispara processamento assíncrono via Celery
+            process_document_task.delay(doc.id)
+        except Exception as e:
+            logger.error(f"Erro ao enfileirar Celery task para o doc {doc.id}: {e}. Processando de forma síncrona...")
+            try:
+                process_document_task(doc.id)
+            except Exception as sync_e:
+                logger.error(f"Erro no processamento síncrono do doc {doc.id}: {sync_e}")
+                doc.processing_status = 'failed'
+                doc.save()
         
         serializer = self.get_serializer(doc)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
     def perform_destroy(self, instance):
         if instance.file:

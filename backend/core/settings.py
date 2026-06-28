@@ -9,7 +9,17 @@ HAS_WHITENOISE = importlib.util.find_spec('whitenoise') is not None
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-CHANGE_ME', cast=str)
 DEBUG = config('DEBUG', default=True, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='.hf.space').split(',')
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in config(
+        'ALLOWED_HOSTS',
+        default='.hf.space, proxy.spaces.internal.huggingface.tech, localhost, 127.0.0.1'
+    ).split(',')
+    if host.strip()
+]
+if 'proxy.spaces.internal.huggingface.tech' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('proxy.spaces.internal.huggingface.tech')
+
 
 GROQ_API_KEY = config('GROQ_API_KEY', default=None)
 
@@ -117,14 +127,18 @@ STATICFILES_DIRS = [
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-CORS_ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in config(
-        'CORS_ALLOWED_ORIGINS',
-        default='http://localhost:3000,https://sampaio-ai.vercel.app',
-    ).split(',')
-    if origin.strip()
-]
+raw_origins = config(
+    'CORS_ALLOWED_ORIGINS',
+    default='http://localhost:3000,https://supercai0-sampaio-ai.hf.space',
+).split(',')
+
+CORS_ALLOWED_ORIGINS = []
+for origin in raw_origins:
+    origin = origin.strip()
+    if origin:
+        if not origin.startswith(('http://', 'https://')):
+            origin = f'https://{origin}'
+        CORS_ALLOWED_ORIGINS.append(origin)
 CORS_ALLOW_CREDENTIALS = True
 
 REST_FRAMEWORK = {
@@ -141,7 +155,7 @@ APPEND_SLASH = True
 
 STORAGES = {
     'default': {
-        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        'BACKEND': 'core.storage.DatabaseStorage',
     },
     'staticfiles': {
         'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',

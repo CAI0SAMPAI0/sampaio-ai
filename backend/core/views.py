@@ -263,3 +263,21 @@ def profile_page(request):
         'success_message': success_message,
         'error_message': error_message
     })
+
+
+def serve_db_media(request, path):
+    from django.http import HttpResponse, Http404
+    from accounts.models import StoredFile
+    import mimetypes
+    
+    try:
+        clean_path = path.replace('\\', '/')
+        stored = StoredFile.objects.get(name=clean_path)
+        content_type, encoding = mimetypes.guess_type(clean_path)
+        if not content_type:
+            content_type = 'application/octet-stream'
+        response = HttpResponse(stored.content, content_type=content_type)
+        response['Content-Length'] = stored.size
+        return response
+    except StoredFile.DoesNotExist:
+        raise Http404("File not found")

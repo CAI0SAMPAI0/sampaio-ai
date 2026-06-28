@@ -1,141 +1,878 @@
-{% extends "base.html" %}
 {% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
 
-{% block title %}Mentor de Programação IA - Sampaio AI{% endblock %}
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mentor de Programação IA — Sampaio AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=Caveat:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  
+  <!-- Highlight.js Stylesheet (Dark Theme) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.css">
 
-{% block extra_css %}
-<!-- Highlight.js Stylesheet (Dark Theme) -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.css">
-{% endblock %}
+  <!-- Feather Icons -->
+  <script src="https://unpkg.com/feather-icons"></script>
 
-{% block content %}
-<!-- Main chat container with Alpine state for mobile view toggles -->
-<div class="flex h-[calc(100vh-8.5rem)] rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs" x-data="{ sidebarOpen: true }">
-    <!-- Sidebar - Histórico de Sessões -->
-    <div class="w-80 border-r border-slate-200 flex flex-col shrink-0 bg-white transition-all duration-300"
-         :class="sidebarOpen ? 'block' : 'hidden md:flex'">
-        <!-- New Chat Button -->
-        <div class="p-4 border-b border-slate-200">
-            <form method="post" action="{% url 'new_chat' %}">
+  <style>
+    :root {
+      --paper: #F3EEE2;
+      --paper-card: #FBF8F0;
+      --ink: #232017;
+      --ink-soft: #4A453A;
+      --pencil: #8C8573;
+      --rule-blue: #5A7A92;
+      --rule-blue-faint: #C7D6DE;
+      --margin-red: #B33A3A;
+      --margin-red-soft: #E8C9C5;
+      --mentor-green: #1F4B3A;
+      --mentor-green-bg: #E4ECE5;
+      --highlight: #F2D472;
+      --tab-1: #B33A3A;
+      --tab-2: #1F4B3A;
+      --tab-3: #5A7A92;
+      --tab-4: #B5832E;
+      --tab-5: #6B5B95;
+      --sidebar-w: 260px;
+      --sidebar-w-collapsed: 64px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      background: #E7E1D2;
+      font-family: 'IBM Plex Sans', sans-serif;
+      color: var(--ink);
+      overflow: hidden;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      height: 100vh;
+      transition: grid-template-columns 0.25s ease;
+    }
+
+    .app.collapsed {
+      grid-template-columns: var(--sidebar-w-collapsed) 1fr;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      background: #1C1A14;
+      padding: 20px 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      border-right: 1px solid #2d2a20;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px 20px 22px;
+      border-bottom: 1px solid #3a362b;
+      margin-bottom: 16px;
+      white-space: nowrap;
+    }
+
+    .brand-text {
+      transition: opacity 0.15s ease;
+    }
+
+    .app.collapsed .brand-text {
+      opacity: 0;
+      width: 0;
+    }
+
+    .brand-title {
+      font-family: 'Fraunces', serif;
+      font-weight: 600;
+      font-size: 21px;
+      color: #F3EEE2;
+    }
+
+    .brand-sub {
+      font-family: 'Caveat', cursive;
+      font-size: 16px;
+      color: var(--highlight);
+      margin-top: 1px;
+    }
+
+    .toggle-btn {
+      width: 28px;
+      height: 28px;
+      flex: none;
+      border-radius: 50%;
+      background: #2c2820;
+      border: 1px solid #463f31;
+      color: #D8D2C2;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .toggle-btn:hover {
+      background: #3a352a;
+      border-color: var(--pencil);
+    }
+
+    .tabs {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding-right: 14px;
+      flex: none;
+    }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 16px 11px 22px;
+      color: #D8D2C2;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      border-radius: 0 4px 4px 0;
+      position: relative;
+      white-space: nowrap;
+      overflow: hidden;
+      transition: background 0.15s ease;
+    }
+
+    .tab-icon {
+      width: 18px;
+      height: 18px;
+      flex: none;
+    }
+
+    .tab-label {
+      transition: opacity 0.15s ease;
+    }
+
+    .app.collapsed .tab-label {
+      opacity: 0;
+    }
+
+    .tab.active {
+      background: var(--paper);
+      color: var(--ink);
+      margin-right: -1px;
+    }
+
+    .app.collapsed .tab.active {
+      margin-right: 0;
+      border-radius: 4px;
+    }
+
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      right: -14px;
+      top: 0;
+      bottom: 0;
+      width: 14px;
+      background: var(--paper);
+      clip-path: polygon(0 0, 100% 0, 0 100%);
+    }
+
+    .app.collapsed .tab.active::after {
+      display: none;
+    }
+
+    .tab:not(.active):hover {
+      background: #26231b;
+    }
+
+    /* SESSIONS IN SIDEBAR */
+    .sessions-section {
+      margin-top: 18px;
+      padding: 16px 14px 0 22px;
+      border-top: 1px solid #3a362b;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .app.collapsed .sessions-section {
+      display: none;
+    }
+
+    .sessions-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--pencil);
+      margin-bottom: 10px;
+    }
+
+    .new-session-btn {
+      background: transparent;
+      border: none;
+      color: var(--highlight);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .new-session-btn:hover {
+      color: #fff;
+    }
+
+    .sessions-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-right: -10px;
+      padding-right: 10px;
+    }
+
+    .session-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 4px;
+      background: #25221a;
+      color: #D8D2C2;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .session-item:hover {
+      background: #312d22;
+    }
+
+    .session-item.active {
+      background: #2d2a20;
+      border-left: 3px solid var(--highlight);
+      color: #FFF;
+      font-weight: 500;
+    }
+
+    .session-title {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .delete-form {
+      display: flex;
+      align-items: center;
+    }
+
+    .delete-session-btn {
+      background: transparent;
+      border: none;
+      color: var(--pencil);
+      font-size: 14px;
+      cursor: pointer;
+      padding: 0 4px;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .session-item:hover .delete-session-btn {
+      opacity: 1;
+    }
+
+    .delete-session-btn:hover {
+      color: var(--margin-red);
+    }
+
+    .no-sessions {
+      font-size: 12px;
+      color: var(--pencil);
+      font-style: italic;
+      padding: 10px 0;
+    }
+
+    /* FOOTER */
+    .sidebar-foot {
+      padding: 14px 0 4px 22px;
+      border-top: 1px solid #3a362b;
+      margin-top: 8px;
+      flex: none;
+    }
+
+    .foot-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-decoration: none;
+    }
+
+    .avatar-sm {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--tab-5);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 12px;
+      flex: none;
+      border: 1px solid #3a362b;
+    }
+
+    .foot-name {
+      color: #EDE8D9;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .foot-mail {
+      color: #8a8472;
+      font-size: 11px;
+    }
+
+    .app.collapsed .foot-text {
+      display: none;
+    }
+
+    /* CHAT WRAPPER */
+    .chat-wrap {
+      background:
+        repeating-linear-gradient(to bottom, transparent 0, transparent 31px, var(--rule-blue-faint) 31px, var(--rule-blue-faint) 32px),
+        var(--paper);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: relative;
+    }
+
+    .chat-wrap::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 60px;
+      width: 2px;
+      background: var(--margin-red);
+      pointer-events: none;
+    }
+
+    .chat-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 32px 18px 88px;
+      border-bottom: 1px solid #DCD4BF;
+      background: var(--paper);
+      flex: none;
+      z-index: 10;
+    }
+
+    .chat-title-block {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .chat-title {
+      font-family: 'Fraunces', serif;
+      font-weight: 600;
+      font-size: 19px;
+    }
+
+    .chat-meta {
+      font-size: 12px;
+      color: var(--pencil);
+      margin-top: 2px;
+    }
+
+    .mentor-pill {
+      font-family: 'Caveat', cursive;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--mentor-green);
+      background: var(--mentor-green-bg);
+      padding: 4px 14px 5px;
+      border-radius: 14px;
+      border: 1px solid #c4d4c6;
+    }
+
+    .chat-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 32px 28px 88px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .chat-body-container {
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .msg {
+      max-width: 82%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .msg.user {
+      align-self: flex-end;
+    }
+
+    .msg.mentor {
+      align-self: flex-start;
+      width: 100%;
+    }
+
+    .bubble {
+      padding: 14px 18px;
+      border-radius: 6px;
+      font-size: 14.5px;
+      line-height: 1.6;
+      position: relative;
+    }
+
+    .msg.user .bubble {
+      background: var(--ink);
+      color: var(--paper);
+      border-radius: 8px 8px 2px 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .msg.mentor .bubble {
+      background: var(--paper-card);
+      border: 1px solid #DCD4BF;
+      border-left: 3px solid var(--mentor-green);
+      border-radius: 2px 8px 8px 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .mentor-tag {
+      font-family: 'Caveat', cursive;
+      font-weight: 600;
+      color: var(--mentor-green);
+      font-size: 15px;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .annot {
+      margin-top: 10px;
+      background: var(--highlight);
+      padding: 8px 12px;
+      border-radius: 4px 4px 4px 0;
+      font-family: 'Caveat', cursive;
+      font-size: 16px;
+      font-weight: 600;
+      color: #5a4a10;
+      display: inline-block;
+    }
+
+    /* MARKDOWN STYLES FOR MENTOR BUBBLE */
+    .markdown-content p {
+      margin: 0 0 12px 0;
+    }
+    
+    .markdown-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    .markdown-content ul, 
+    .markdown-content ol {
+      margin: 8px 0 12px 20px;
+      padding: 0;
+    }
+
+    .markdown-content li {
+      margin-bottom: 6px;
+    }
+
+    .markdown-content pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      background: #1C1A14;
+      color: #E4E0CF;
+      padding: 14px;
+      border-radius: 6px;
+      display: block;
+      margin: 12px 0;
+      overflow-x: auto;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .markdown-content pre code {
+      font-family: 'JetBrains Mono', monospace;
+      background: transparent;
+      padding: 0;
+      color: inherit;
+    }
+
+    .markdown-content code:not(pre code) {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      background: #EBE4D5;
+      color: #7A3333;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .markdown-content h1, 
+    .markdown-content h2, 
+    .markdown-content h3 {
+      font-family: 'Fraunces', serif;
+      font-weight: 600;
+      margin: 18px 0 10px 0;
+    }
+
+    .markdown-content h1 { font-size: 1.5em; }
+    .markdown-content h2 { font-size: 1.3em; }
+    .markdown-content h3 { font-size: 1.15em; }
+
+    .markdown-content strong {
+      color: #000;
+    }
+
+    /* CHAT INPUT BAR */
+    .chat-input-bar {
+      flex: none;
+      padding: 18px 32px 22px 88px;
+      background: var(--paper);
+      border-top: 1px solid #DCD4BF;
+      z-index: 10;
+    }
+
+    .input-row-container {
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .input-row input {
+      flex: 1;
+      padding: 13px 16px;
+      border: 1.5px solid var(--ink);
+      border-radius: 6px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14.5px;
+      background: var(--paper-card);
+      color: var(--ink);
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .input-row input:focus {
+      outline: none;
+      border-color: var(--margin-red);
+      box-shadow: 0 0 0 3px var(--margin-red-soft);
+    }
+
+    .send-btn {
+      padding: 0 22px;
+      border-radius: 6px;
+      border: 1.5px solid var(--margin-red);
+      background: var(--margin-red);
+      color: #fff;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.15s ease;
+    }
+
+    .send-btn:hover {
+      background: #962a2a;
+      border-color: #962a2a;
+    }
+
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px;
+      font-family: 'IBM Plex Sans', sans-serif;
+    }
+
+    .empty-icon {
+      color: var(--pencil);
+      margin-bottom: 16px;
+    }
+
+    .empty-title {
+      font-family: 'Fraunces', serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--ink);
+      margin: 0 0 8px 0;
+    }
+
+    .empty-desc {
+      font-size: 14px;
+      color: var(--ink-soft);
+      max-width: 420px;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    /* SCROLLBARS */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #D5CBB5;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--pencil);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app" id="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-text">
+          <div class="brand-title">SAMPAIO AI</div>
+          <div class="brand-sub">seu caderno de estudos</div>
+        </div>
+        <button class="toggle-btn" id="toggleBtn" aria-label="Recolher menu" title="Recolher menu">‹</button>
+      </div>
+
+      <!-- MAIN TABS -->
+      <nav class="tabs">
+        <a class="tab" href="{% url 'dashboard_page' %}">
+          <i data-feather="grid" class="tab-icon" style="color: var(--tab-2);"></i>
+          <span class="tab-label">Dashboard</span>
+        </a>
+        <a class="tab active" href="{% url 'chat_page' %}">
+          <i data-feather="message-square" class="tab-icon" style="color: var(--tab-3);"></i>
+          <span class="tab-label">Chat com Mentor</span>
+        </a>
+        <a class="tab" href="{% url 'library_page' %}">
+          <i data-feather="book-open" class="tab-icon" style="color: var(--tab-4);"></i>
+          <span class="tab-label">Biblioteca</span>
+        </a>
+        <a class="tab" href="{% url 'study_plans_page' %}">
+          <i data-feather="activity" class="tab-icon" style="color: var(--tab-1);"></i>
+          <span class="tab-label">Planos de Estudo</span>
+        </a>
+        <a class="tab" href="{% url 'flashcards_page' %}">
+          <i data-feather="layers" class="tab-icon" style="color: var(--tab-5);"></i>
+          <span class="tab-label">Flashcards</span>
+        </a>
+        <a class="tab" href="{% url 'quizzes_page' %}">
+          <i data-feather="check-square" class="tab-icon" style="color: var(--tab-2);"></i>
+          <span class="tab-label">Quizzes</span>
+        </a>
+        <a class="tab" href="{% url 'profile_page' %}">
+          <i data-feather="user" class="tab-icon" style="color: var(--tab-3);"></i>
+          <span class="tab-label">Minha Conta</span>
+        </a>
+      </nav>
+
+      <!-- SESSIONS HISTORY -->
+      <div class="sessions-section">
+        <div class="sessions-header">
+          <span>SESSÕES RECENTES</span>
+          <form method="post" action="{% url 'new_chat' %}" class="delete-form">
+            {% csrf_token %}
+            <button type="submit" class="new-session-btn" title="Nova Conversa">+</button>
+          </form>
+        </div>
+        <div class="sessions-list">
+          {% for s in sessions %}
+            <div class="session-item {% if s.id == active_session.id %}active{% endif %}" onclick="window.location.href='?session={{ s.id }}'">
+              <span class="session-title">{{ s.title }}</span>
+              <form method="post" action="{% url 'delete_chat' s.id %}" class="delete-form" onsubmit="event.stopPropagation();">
                 {% csrf_token %}
-                <button type="submit" class="w-full flex items-center justify-center gap-x-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-blue-500 transition-colors">
-                    <i data-feather="plus" class="w-4 h-4"></i>
-                    Nova Conversa
-                </button>
-            </form>
-        </div>
-        
-        <!-- Sessions List -->
-        <div class="flex-1 overflow-y-auto divide-y divide-slate-100">
-            {% for s in sessions %}
-            <div class="flex items-center justify-between p-4 cursor-pointer transition-colors {% if s.id == active_session.id %} bg-blue-50/70 border-l-4 border-blue-600 {% else %} hover:bg-slate-50 {% endif %}"
-                 onclick="window.location.href='?session={{ s.id }}'">
-                <div class="min-w-0 flex-1 pr-3">
-                    <p class="text-sm font-semibold text-slate-900 truncate">{{ s.title }}</p>
-                    <p class="text-xs text-slate-400 mt-0.5">{{ s.created_at|date:"d/m/Y H:i" }}</p>
-                </div>
-                <form method="post" action="{% url 'delete_chat' s.id %}" class="shrink-0" onsubmit="event.stopPropagation();">
-                    {% csrf_token %}
-                    <button type="submit" class="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Excluir">
-                        <i data-feather="trash-2" class="w-4 h-4"></i>
-                    </button>
-                </form>
+                <button type="submit" class="delete-session-btn" title="Excluir">×</button>
+              </form>
             </div>
-            {% empty %}
-            <div class="p-8 text-center text-slate-400 text-sm">
-                Nenhuma conversa recente
-            </div>
-            {% endfor %}
+          {% empty %}
+            <div class="no-sessions">Nenhuma conversa recente</div>
+          {% endfor %}
         </div>
-    </div>
+      </div>
 
-    <!-- Active Chat Panel -->
-    <div class="flex-1 flex flex-col min-w-0 bg-slate-50" :class="sidebarOpen ? 'hidden md:flex' : 'flex'">
-        {% if active_session %}
-        <!-- Header -->
-        <div class="h-16 shrink-0 bg-white border-b border-slate-200 px-6 flex items-center justify-between gap-x-4 shadow-2xs">
-            <div class="flex items-center gap-x-3">
-                <button type="button" @click="sidebarOpen = !sidebarOpen" class="md:hidden p-1.5 -ml-1 text-slate-500 hover:text-slate-700">
-                    <i data-feather="arrow-left" class="w-5 h-5"></i>
-                </button>
-                <div>
-                    <h6 class="text-sm font-bold text-slate-900 leading-tight">{{ active_session.title }}</h6>
-                    <span class="text-xs text-slate-400">Sessão #{{ active_session.id }}</span>
-                </div>
+      <!-- FOOTER -->
+      <div class="sidebar-foot">
+        <a href="{% url 'profile_page' %}" class="foot-user">
+          {% if request.user.avatar %}
+            <img src="{{ request.user.avatar.url }}" alt="Avatar" class="avatar-sm object-cover">
+          {% else %}
+            <div class="avatar-sm">
+              {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
             </div>
-            <div class="flex items-center gap-2">
-                <span class="inline-flex items-center gap-x-1.5 rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/10">
-                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                    LangGraph
-                </span>
-                <span class="hidden sm:inline-flex items-center gap-x-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-600/10">
-                    <i data-feather="globe" class="w-3 h-3"></i> RAG + Web Search
-                </span>
+          {% endif %}
+          <div class="foot-text">
+            <div class="foot-name">{{ request.user.first_name|default:"Usuário" }} {{ request.user.last_name|default:"" }}</div>
+            <div class="foot-mail">{{ request.user.email }}</div>
+          </div>
+        </a>
+      </div>
+    </aside>
+
+    <!-- CHAT CONTAINER -->
+    <div class="chat-wrap">
+      {% if active_session %}
+        <!-- HEADER -->
+        <div class="chat-top">
+          <div class="chat-title-block">
+            <div>
+              <div class="chat-title">{{ active_session.title }}</div>
+              <div class="chat-meta">Sessão #{{ active_session.id }} · {{ active_session.created_at|date:"d/m/Y H:i" }}</div>
             </div>
+          </div>
+          <span class="mentor-pill">Mentor de Programação IA</span>
         </div>
 
-        <!-- Messages List -->
-        <div class="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col" id="chatMessages">
+        <!-- MESSAGES -->
+        <div class="chat-body" id="chatMessages">
+          <div class="chat-body-container">
             {% for msg in messages %}
-            <div class="flex flex-col max-w-[85%] rounded-2xl px-5 py-3.5 shadow-2xs text-sm leading-relaxed {% if msg.role == 'user' %} self-end bg-blue-600 text-white {% else %} self-start bg-white text-slate-800 border border-slate-200/80 {% endif %}"
-                 data-raw-content="{{ msg.content }}">
-                {% if msg.role == 'user' %}
+              <div class="msg {% if msg.role == 'user' %}user{% else %}mentor{% endif %}" data-raw-content="{{ msg.content }}">
+                <div class="bubble">
+                  {% if msg.role == 'user' %}
                     {{ msg.content|linebreaksbr }}
-                {% else %}
-                    <!-- Rendered dynamic markdown -->
-                    {{ msg.content }}
-                {% endif %}
-            </div>
+                  {% else %}
+                    <span class="mentor-tag">resposta do mentor</span>
+                    <div class="markdown-content">{{ msg.content }}</div>
+                  {% endif %}
+                </div>
+              </div>
             {% empty %}
-            <!-- Chat greeting message -->
-            <div class="flex flex-col max-w-[85%] rounded-2xl px-5 py-3.5 shadow-2xs text-sm leading-relaxed self-start bg-white text-slate-800 border border-slate-200/80">
-                <p class="font-bold mb-2 text-slate-900">Olá! Sou seu Mentor de Programação inteligente. 💻</p>
-                <p class="mb-2">Fui programado para ajudar você a dominar código, tirar dúvidas de arquitetura, explicar frameworks e criar cronogramas.</p>
-                <p class="mb-2">Além de buscar conteúdos nos <strong>livros de programação</strong> que você enviar para a biblioteca, eu também realizo pesquisas na <strong>internet</strong> em tempo real para te entregar a resposta mais completa e atualizada!</p>
-                <p class="font-semibold text-blue-600">Como posso ajudar nos seus estudos hoje?</p>
-            </div>
+              <!-- GREETING -->
+              <div class="msg mentor">
+                <div class="bubble">
+                  <span class="mentor-tag">resposta do mentor</span>
+                  <div class="markdown-content">
+                    <p>Olá! Sou seu **Mentor de Programação inteligente**. 💻</p>
+                    <p>Fui programado para ajudar você a dominar código, tirar dúvidas de arquitetura, explicar frameworks e criar cronogramas.</p>
+                    <p>Além de buscar conteúdos nos **livros de programação** que você enviar para a biblioteca, eu também realizo pesquisas na **internet** em tempo real para te entregar a resposta mais completa e atualizada!</p>
+                    <p style="color: var(--tab-3); font-weight: 600;">Como posso ajudar nos seus estudos hoje?</p>
+                  </div>
+                </div>
+              </div>
             {% endfor %}
+          </div>
         </div>
 
-        <!-- Input Form -->
-        <div class="p-4 bg-white border-t border-slate-200">
-            <form method="post" action="{% url 'send_chat_message' active_session.id %}" class="flex gap-x-3 items-center" id="chatForm">
-                {% csrf_token %}
-                <input type="text" name="message" id="messageInput" class="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="Pergunte sobre código ou peça para pesquisar na web..." required autocomplete="off">
-                <button type="submit" class="flex items-center gap-x-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-xs hover:bg-blue-500 transition-colors shrink-0">
-                    <i data-feather="navigation" class="w-4 h-4"></i>
-                    <span>Enviar</span>
-                </button>
+        <!-- INPUT BAR -->
+        <div class="chat-input-bar">
+          <div class="input-row-container">
+            <form method="post" action="{% url 'send_chat_message' active_session.id %}" class="input-row" id="chatForm">
+              {% csrf_token %}
+              <input type="text" name="message" id="messageInput" placeholder="Pergunte sobre código ou peça para pesquisar na web..." required autocomplete="off">
+              <button type="submit" class="send-btn">
+                <i data-feather="send" style="width:16px; height:16px;"></i>
+                <span>Enviar</span>
+              </button>
             </form>
+          </div>
         </div>
-        {% else %}
-        <!-- Sidebar toggle button for mobile if sidebar is closed and no chat active -->
-        <div class="md:hidden p-4 border-b border-slate-200 bg-white">
-            <button type="button" @click="sidebarOpen = true" class="flex items-center gap-x-2 text-sm font-semibold text-blue-600">
-                <i data-feather="arrow-left" class="w-4 h-4"></i> Ver conversas
-            </button>
-        </div>
-        <!-- Welcome empty state -->
-        <div class="flex-1 flex flex-col items-center justify-center p-8 text-center my-auto">
-            <div class="rounded-2xl bg-blue-50 p-4 text-blue-600 mb-4">
-                <i data-feather="cpu" class="w-10 h-10"></i>
-            </div>
-            <h5 class="text-lg font-bold text-slate-900">Mentor de Programação IA</h5>
-            <p class="text-sm text-slate-500 max-w-sm mt-2">
-                Envie livros na biblioteca e converse com o agente inteligente integrado a buscas na internet. Inicie uma nova conversa para começar.
-            </p>
-        </div>
-        {% endif %}
-    </div>
-</div>
-{% endblock %}
 
-{% block extra_js %}
-<!-- Marked (Markdown Parser) & Highlight.js -->
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
-<script>
-    // Configura o marked
+      {% else %}
+        <!-- EMPTY WELCOME STATE -->
+        <div class="empty-state">
+          <i data-feather="cpu" class="empty-icon" style="width:48px; height:48px;"></i>
+          <h2 class="empty-title">Mentor de Programação IA</h2>
+          <p class="empty-desc">
+            Envie livros na biblioteca e converse com o agente inteligente integrado a buscas na internet. 
+            Crie ou selecione uma conversa na barra lateral para iniciar.
+          </p>
+          <form method="post" action="{% url 'new_chat' %}" style="margin-top:20px;">
+            {% csrf_token %}
+            <button type="submit" class="send-btn" style="padding: 10px 24px;">
+              <i data-feather="plus" style="width:16px; height:16px;"></i>
+              <span>Nova Conversa</span>
+            </button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- Marked (Markdown Parser) & Highlight.js -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
+  
+  <script>
+    // Initialize feather icons
+    feather.replace();
+
+    // Toggle Sidebar
+    const app = document.getElementById('app');
+    const toggleBtn = document.getElementById('toggleBtn');
+    
+    // Read from localStorage to persist user sidebar preference
+    const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (sidebarCollapsed) {
+      app.classList.add('collapsed');
+      if (toggleBtn) toggleBtn.textContent = '›';
+    }
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        app.classList.toggle('collapsed');
+        const isCollapsed = app.classList.contains('collapsed');
+        toggleBtn.textContent = isCollapsed ? '›' : '‹';
+        localStorage.setItem('sidebarCollapsed', isCollapsed);
+      });
+    }
+
+    // Configure marked
     marked.setOptions({
         highlight: function(code, lang) {
             const language = hljs.getLanguage(lang) ? lang : 'plaintext';
@@ -146,35 +883,31 @@
 
     const chatMessages = document.getElementById('chatMessages');
 
-    // Renderiza markdown e formata código nas mensagens do assistente
+    // Render markdown in assistant messages
     function renderAssistantMessages() {
         document.querySelectorAll('[data-raw-content]').forEach(el => {
             const rawContent = el.getAttribute('data-raw-content');
-            if (rawContent && !el.classList.contains('message-user')) {
-                el.innerHTML = marked.parse(rawContent);
+            if (rawContent && el.classList.contains('mentor')) {
+                const mdContainer = el.querySelector('.markdown-content');
+                if (mdContainer) {
+                    mdContainer.innerHTML = marked.parse(rawContent);
+                }
             }
         });
         document.querySelectorAll('pre code').forEach((block) => {
             hljs.highlightElement(block);
         });
-        
-        // Add styling classes to markdown tags rendered in assistants bubble
-        document.querySelectorAll('#chatMessages p').forEach(p => p.classList.add('mb-2', 'last:mb-0'));
-        document.querySelectorAll('#chatMessages ul').forEach(ul => ul.classList.add('list-disc', 'pl-5', 'mb-2'));
-        document.querySelectorAll('#chatMessages ol').forEach(ol => ol.classList.add('list-decimal', 'pl-5', 'mb-2'));
-        document.querySelectorAll('#chatMessages code:not(pre code)').forEach(code => code.classList.add('bg-slate-100', 'text-slate-800', 'px-1.5', 'py-0.5', 'rounded', 'font-mono', 'text-xs'));
-        document.querySelectorAll('#chatMessages pre').forEach(pre => pre.classList.add('my-3', 'rounded-xl', 'overflow-hidden', 'shadow-2xs'));
     }
 
-    // Inicializa renderização
+    // Initialize render
     renderAssistantMessages();
 
-    // Rolagem automática para a última mensagem
+    // Scroll to bottom
     if (chatMessages) {
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    // Envio de chat via AJAX
+    // Handle AJAX messaging
     const chatForm = document.getElementById('chatForm');
     const messageInput = document.getElementById('messageInput');
 
@@ -184,20 +917,34 @@
             const text = messageInput.value.trim();
             if (!text) return;
 
-            // Adiciona bolha do usuário
-            const userBubble = document.createElement('div');
-            userBubble.className = 'flex flex-col max-w-[85%] rounded-2xl px-5 py-3.5 shadow-2xs text-sm leading-relaxed self-end bg-blue-600 text-white';
-            userBubble.innerText = text;
-            chatMessages.appendChild(userBubble);
+            // Create User bubble
+            const userMsg = document.createElement('div');
+            userMsg.className = 'msg user';
+            userMsg.innerHTML = `
+              <div class="bubble">
+                ${text.replace(/\n/g, '<br>')}
+              </div>
+            `;
+            
+            const container = chatMessages.querySelector('.chat-body-container');
+            container.appendChild(userMsg);
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
             messageInput.value = '';
 
-            // Adiciona indicador de digitando
-            const typingBubble = document.createElement('div');
-            typingBubble.className = 'flex items-center gap-x-2 max-w-[85%] rounded-2xl px-5 py-3.5 shadow-2xs text-sm leading-relaxed self-start bg-white text-slate-500 border border-slate-200/80';
-            typingBubble.innerHTML = '<span class="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></span><span>Mentor está formulando resposta...</span>';
-            chatMessages.appendChild(typingBubble);
+            // Create Typing bubble
+            const typingMsg = document.createElement('div');
+            typingMsg.className = 'msg mentor';
+            typingMsg.innerHTML = `
+              <div class="bubble">
+                <span class="mentor-tag">resposta do mentor</span>
+                <div class="markdown-content" style="display: flex; align-items: center; gap: 8px; font-style: italic; color: var(--pencil);">
+                  <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--margin-red); animation: pulse 1.2s infinite ease-in-out;"></span>
+                  Mentor está formulando resposta...
+                </div>
+              </div>
+            `;
+            container.appendChild(typingMsg);
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
             const formData = new FormData(chatForm);
@@ -212,32 +959,56 @@
             })
             .then(res => res.json())
             .then(data => {
-                typingBubble.remove();
+                typingMsg.remove();
                 
-                const assistantBubble = document.createElement('div');
-                assistantBubble.className = 'flex flex-col max-w-[85%] rounded-2xl px-5 py-3.5 shadow-2xs text-sm leading-relaxed self-start bg-white text-slate-800 border border-slate-200/80';
-                assistantBubble.setAttribute('data-raw-content', data.content);
-                assistantBubble.innerHTML = marked.parse(data.content);
-                chatMessages.appendChild(assistantBubble);
+                const assistantMsg = document.createElement('div');
+                assistantMsg.className = 'msg mentor';
+                assistantMsg.setAttribute('data-raw-content', data.content);
+                assistantMsg.innerHTML = `
+                  <div class="bubble">
+                    <span class="mentor-tag">resposta do mentor</span>
+                    <div class="markdown-content"></div>
+                  </div>
+                `;
                 
-                // Highlight code blocks and format tags
-                assistantBubble.querySelectorAll('pre code').forEach((block) => {
+                const mdContainer = assistantMsg.querySelector('.markdown-content');
+                mdContainer.innerHTML = marked.parse(data.content);
+                
+                container.appendChild(assistantMsg);
+                
+                assistantMsg.querySelectorAll('pre code').forEach((block) => {
                     hljs.highlightElement(block);
                 });
-                assistantBubble.querySelectorAll('p').forEach(p => p.classList.add('mb-2', 'last:mb-0'));
-                assistantBubble.querySelectorAll('ul').forEach(ul => ul.classList.add('list-disc', 'pl-5', 'mb-2'));
-                assistantBubble.querySelectorAll('ol').forEach(ol => ol.classList.add('list-decimal', 'pl-5', 'mb-2'));
-                assistantBubble.querySelectorAll('code:not(pre code)').forEach(code => code.classList.add('bg-slate-100', 'text-slate-800', 'px-1.5', 'py-0.5', 'rounded', 'font-mono', 'text-xs'));
-                assistantBubble.querySelectorAll('pre').forEach(pre => pre.classList.add('my-3', 'rounded-xl', 'overflow-hidden', 'shadow-2xs'));
                 
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             })
             .catch(err => {
-                typingBubble.className = 'flex flex-col max-w-[85%] rounded-2xl px-5 py-3.5 shadow-2xs text-sm leading-relaxed self-start bg-rose-50 text-rose-600 border border-rose-100';
-                typingBubble.innerText = 'Desculpe, ocorreu um erro de conexão. Tente novamente.';
+                typingMsg.remove();
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'msg mentor';
+                errorMsg.innerHTML = `
+                  <div class="bubble" style="border-left-color: var(--margin-red);">
+                    <span class="mentor-tag" style="color: var(--margin-red);">erro</span>
+                    <div class="markdown-content" style="color: var(--margin-red); font-weight: 500;">
+                      Desculpe, ocorreu um erro de conexão. Tente novamente.
+                    </div>
+                  </div>
+                `;
+                container.appendChild(errorMsg);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
                 console.error(err);
             });
         });
     }
-</script>
-{% endblock %}
+  </script>
+
+  <!-- Add pulse animation for typing indicator -->
+  <style>
+    @keyframes pulse {
+      0%, 100% { transform: scale(0.6); opacity: 0.4; }
+      50% { transform: scale(1.1); opacity: 1; }
+    }
+  </style>
+</body>
+
+</html>
