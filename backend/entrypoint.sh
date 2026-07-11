@@ -32,5 +32,5 @@ fi
 
 # Run Django ASGI app with uvicorn
 echo "Starting Django ASGI application..."
-exec uvicorn core.asgi:application --host 0.0.0.0 --port ${PORT:-8000}
+exec uvicorn core.asgi:application --host 0.0.0.0 --port ${PORT:-7860}
 

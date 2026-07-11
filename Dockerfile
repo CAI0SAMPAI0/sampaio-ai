@@ -24,5 +24,5 @@ RUN useradd -m -u 1000 user && \
 
 USER user
 
-EXPOSE 8000
+EXPOSE 7860
 CMD ["sh", "./entrypoint.sh"]

@@ -10,5 +10,5 @@ RUN python -m pip install --upgrade pip && python -m pip install --no-cache-dir 
 COPY . .
 RUN chmod +x ./entrypoint.sh
 
-EXPOSE 8000
+EXPOSE 7860
 CMD ["sh", "./entrypoint.sh"]
