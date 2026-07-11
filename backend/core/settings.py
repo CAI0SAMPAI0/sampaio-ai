@@ -241,7 +241,7 @@ else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend'
 
 # WAHA Settings
-WAHA_URL = config('WAHA_URL', default='http://localhost:3000')
+WAHA_URL = config('WAHA_URL', default=config('WAHA_RENDER', default='http://localhost:3000'))
 WAHA_API_KEY = config('WAHA_API_KEY', default='')
 
 # Celery Beat Schedule
