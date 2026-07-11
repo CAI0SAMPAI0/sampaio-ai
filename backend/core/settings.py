@@ -201,7 +201,10 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
 if not DEBUG:
-    SECURE_SSL_REDIRECT = True
+    import os
+    # Disable SSL redirect inside Hugging Face Spaces as the reverse proxy handles it,
+    # and forcing it internally breaks Hugging Face's local HTTP health check.
+    SECURE_SSL_REDIRECT = not bool(os.environ.get("SPACE_ID"))
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31536000
