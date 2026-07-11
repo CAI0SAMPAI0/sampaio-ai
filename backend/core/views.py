@@ -525,6 +525,7 @@ def waha_dashboard(request):
     headers = {}
     if waha_key:
         headers['Authorization'] = f"Bearer {waha_key}"
+        headers['X-Api-Key'] = waha_key
         
     session_status = "DESCONECTADO"
     session_details = {}
@@ -574,6 +575,7 @@ def waha_qr_proxy(request):
     headers = {}
     if waha_key:
         headers['Authorization'] = f"Bearer {waha_key}"
+        headers['X-Api-Key'] = waha_key
         
     # Método 1: Tenta obter pelo endpoint de imagem direta
     try:
@@ -606,6 +608,7 @@ def waha_screenshot_proxy(request):
     headers = {}
     if waha_key:
         headers['Authorization'] = f"Bearer {waha_key}"
+        headers['X-Api-Key'] = waha_key
         
     try:
         # WAHA Screenshot endpoint

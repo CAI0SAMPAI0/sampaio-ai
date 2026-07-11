@@ -19,6 +19,7 @@ def send_waha_message(chat_id, text):
     }
     if waha_key:
         headers['Authorization'] = f"Bearer {waha_key}"
+        headers['X-Api-Key'] = waha_key
         
     payload = {
         'chatId': chat_id,
