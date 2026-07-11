@@ -95,7 +95,7 @@ jobs:
       run: |
         HF_SPACE_NAME="${{ secrets.HF_SPACE }}"
         if [ -z "$HF_SPACE_NAME" ]; then
-          HF_SPACE_NAME="SUPERCAI0/sampaio-ai"
+          HF_SPACE_NAME="caio007/sampaio-ai"
         fi
         echo "Deploying to Hugging Face Space: $HF_SPACE_NAME"
         git push --force https://anything:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE_NAME main
