@@ -534,7 +534,7 @@ def waha_dashboard(request):
     
     try:
         # Tenta obter status da sessão 'default'
-        resp = requests.get(f"{waha_url}/api/sessions/default", headers=headers, timeout=5)
+        resp = requests.get(f"{waha_url}/api/sessions/default", headers=headers, timeout=60)
         if resp.status_code == 200:
             session_details = resp.json()
             raw_status = session_details.get("status", "UNKNOWN")
@@ -561,7 +561,7 @@ def waha_dashboard(request):
                 session_status = raw_status
         elif resp.status_code == 404:
             # Tenta criar a sessão se não existir
-            requests.post(f"{waha_url}/api/sessions", json={"name": "default"}, headers=headers, timeout=5)
+            requests.post(f"{waha_url}/api/sessions", json={"name": "default"}, headers=headers, timeout=60)
             session_status = "STOPPED"
     except Exception as e:
         error_msg = f"Sem conexão com o WPP (WAHA): {str(e)}"
@@ -571,9 +571,9 @@ def waha_dashboard(request):
     if session_status in ["STOPPED", "FAILED"]:
         try:
             # Rota padrão WAHA para iniciar sessão
-            requests.post(f"{waha_url}/api/sessions/start", json={"name": "default"}, headers=headers, timeout=5)
+            requests.post(f"{waha_url}/api/sessions/start", json={"name": "default"}, headers=headers, timeout=60)
             # Rota alternativa para compatibilidade
-            requests.post(f"{waha_url}/api/sessions/default/start", headers=headers, timeout=5)
+            requests.post(f"{waha_url}/api/sessions/default/start", headers=headers, timeout=60)
             session_status = "INICIANDO"
         except Exception:
             pass
@@ -602,7 +602,7 @@ def waha_qr_proxy(request):
         
     # Método 1: Tenta obter pelo endpoint de imagem direta
     try:
-        resp = requests.get(f"{waha_url}/api/default/device/qr/image", headers=headers, timeout=5)
+        resp = requests.get(f"{waha_url}/api/default/device/qr/image", headers=headers, timeout=60)
         if resp.status_code == 200:
             return HttpResponse(resp.content, content_type="image/png")
     except Exception:
@@ -612,7 +612,7 @@ def waha_qr_proxy(request):
     try:
         headers_png = headers.copy()
         headers_png['Accept'] = 'image/png'
-        resp = requests.get(f"{waha_url}/api/default/device/qr", headers=headers_png, timeout=5)
+        resp = requests.get(f"{waha_url}/api/default/device/qr", headers=headers_png, timeout=60)
         if resp.status_code == 200:
             return HttpResponse(resp.content, content_type="image/png")
     except Exception:
@@ -635,7 +635,7 @@ def waha_screenshot_proxy(request):
         
     try:
         # WAHA Screenshot endpoint
-        resp = requests.get(f"{waha_url}/api/screenshot?session=default", headers=headers, timeout=5)
+        resp = requests.get(f"{waha_url}/api/screenshot?session=default", headers=headers, timeout=60)
         if resp.status_code == 200:
             return HttpResponse(resp.content, content_type="image/png")
     except Exception:
