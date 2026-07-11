@@ -65,7 +65,7 @@ with gr.Blocks() as demo:
     gr.Markdown("O painel do Django está disponível na raiz `/` e a interface do Gradio em `/gradio_interface`.")
 
 # Mount the FastAPI app (which wraps Django) inside Gradio
-app = gr.mount_to_app(fastapi_app, demo, path="/gradio_interface")
+app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio_interface")
 
 if __name__ == "__main__":
     # For local running/testing
