@@ -545,8 +545,11 @@ def waha_dashboard(request):
         session_status = "ERRO_CONEXAO"
 
     # Se a sessão estiver parada, tenta iniciar
-    if session_status == "STOPPED":
+    if session_status in ["STOPPED", "FAILED"]:
         try:
+            # Rota padrão WAHA para iniciar sessão
+            requests.post(f"{waha_url}/api/sessions/start", json={"name": "default"}, headers=headers, timeout=5)
+            # Rota alternativa para compatibilidade
             requests.post(f"{waha_url}/api/sessions/default/start", headers=headers, timeout=5)
             session_status = "INICIANDO"
         except Exception:
@@ -572,12 +575,24 @@ def waha_qr_proxy(request):
     if waha_key:
         headers['Authorization'] = f"Bearer {waha_key}"
         
+    # Método 1: Tenta obter pelo endpoint de imagem direta
     try:
         resp = requests.get(f"{waha_url}/api/default/device/qr/image", headers=headers, timeout=5)
         if resp.status_code == 200:
             return HttpResponse(resp.content, content_type="image/png")
     except Exception:
         pass
+
+    # Método 2: Tenta obter pelo endpoint geral com cabeçalho Accept: image/png
+    try:
+        headers_png = headers.copy()
+        headers_png['Accept'] = 'image/png'
+        resp = requests.get(f"{waha_url}/api/default/device/qr", headers=headers_png, timeout=5)
+        if resp.status_code == 200:
+            return HttpResponse(resp.content, content_type="image/png")
+    except Exception:
+        pass
+
     raise Http404("QR Code não disponível.")
 
 
