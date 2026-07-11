@@ -30,3 +30,6 @@ backend/staticfiles/
 # IDEs
 .vscode/
 .idea/
+
+# Celery beat cache
+*celerybeat-schedule*

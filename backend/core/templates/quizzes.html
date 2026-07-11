@@ -9,10 +9,11 @@
     <div class="w-80 border-r border-slate-200 flex flex-col shrink-0 bg-white transition-all duration-300"
          :class="sidebarOpen ? 'block' : 'hidden md:flex'">
         <!-- IA Generator -->
-        <div class="p-4 border-b border-slate-200 bg-slate-50/50">
-            <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Gerar Novo Quiz (IA)</h5>
-            <div class="mb-3">
-                <select id="quizDocSelect" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs bg-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+        <div class="p-4 border-b border-slate-200 bg-slate-50/50 space-y-2">
+            <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Gerar Novo Quiz (IA)</h5>
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Material de Estudo</label>
+                <select id="quizDocSelect" class="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs bg-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
                     <option value="">-- Selecione o material --</option>
                     {% for doc in documents %}
                     <option value="{{ doc.id }}">{{ doc.name }}</option>
@@ -20,6 +21,28 @@
                     <option value="" disabled>Nenhum documento processado</option>
                     {% endfor %}
                 </select>
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Tema/Foco Específico (Opcional)</label>
+                <input type="text" id="quizThemeInput" placeholder="Ex: Loops, Arrays, PEP8..." class="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs bg-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Nº Questões</label>
+                    <select id="quizNumInput" class="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                        <option value="3">3 questões</option>
+                        <option value="5">5 questões</option>
+                        <option value="10">10 questões</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Dificuldade</label>
+                    <select id="quizDifficultySelect" class="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                        <option value="Fácil">Fácil</option>
+                        <option value="Médio" selected>Médio</option>
+                        <option value="Difícil">Difícil</option>
+                    </select>
+                </div>
             </div>
             <button type="button" id="generateQuizBtn" class="w-full flex items-center justify-center gap-x-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-500 transition-colors">
                 <i data-feather="zap" class="w-3.5 h-3.5"></i>
@@ -50,7 +73,7 @@
     </div>
 
     <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-y-auto" :class="sidebarOpen ? 'hidden md:flex' : 'flex'">
+    <div class="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-y-auto quiz-main" :class="sidebarOpen ? 'hidden md:flex' : 'flex'">
         <!-- Header -->
         <div class="h-16 shrink-0 bg-white border-b border-slate-200 px-6 flex items-center justify-between gap-x-4 shadow-2xs" id="activeQuizHeader" style="display: none;">
             <div class="flex items-center gap-x-3">
@@ -204,7 +227,7 @@
         })
         .catch(err => {
             console.error(err);
-            alert('Erro ao carregar o quiz.');
+            showToast('Erro ao carregar o quiz.', 'error');
         });
     }
 
@@ -309,7 +332,7 @@
         })
         .catch(err => {
             console.error(err);
-            alert('Erro ao enviar as respostas.');
+            showToast('Erro ao enviar as respostas.', 'error');
         });
     });
 
@@ -320,8 +343,12 @@
 
     generateQuizBtn.addEventListener('click', () => {
         const docId = quizDocSelect.value;
+        const theme = document.getElementById('quizThemeInput').value;
+        const numQuestions = document.getElementById('quizNumInput').value;
+        const difficulty = document.getElementById('quizDifficultySelect').value;
+
         if (!docId) {
-            alert('Por favor, selecione um material de estudo.');
+            showToast('Por favor, selecione um material de estudo.', 'warning');
             return;
         }
 
@@ -334,7 +361,12 @@
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrftoken
             },
-            body: JSON.stringify({ document_id: docId })
+            body: JSON.stringify({
+                document_id: docId,
+                theme: theme,
+                num_questions: numQuestions,
+                difficulty: difficulty
+            })
         })
         .then(res => {
             if (!res.ok) throw new Error('Erro ao gerar quiz.');
@@ -344,6 +376,9 @@
             generateQuizBtn.classList.remove('hidden');
             generateQuizLoader.classList.add('hidden');
             quizDocSelect.value = '';
+            document.getElementById('quizThemeInput').value = '';
+            document.getElementById('quizNumInput').value = '3';
+            document.getElementById('quizDifficultySelect').value = 'Médio';
             
             const placeholder = document.getElementById('noQuizzesPlaceholder');
             if (placeholder) placeholder.remove();
@@ -360,14 +395,14 @@
             `;
             container.insertAdjacentHTML('afterbegin', itemHTML);
             
-            alert('Simulado gerado com sucesso pela inteligência artificial!');
+            showToast('Simulado gerado com sucesso pela inteligência artificial!', 'success');
             loadQuiz(newQuiz.id);
         })
         .catch(err => {
             generateQuizBtn.classList.remove('hidden');
             generateQuizLoader.classList.add('hidden');
             console.error(err);
-            alert('Erro ao gerar o quiz. Verifique se o modelo está configurado corretamente.');
+            showToast('Erro ao gerar o quiz. Verifique se o modelo está configurado corretamente.', 'error');
         });
     });
 </script>

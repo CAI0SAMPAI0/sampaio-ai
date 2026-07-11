@@ -6,6 +6,7 @@
     <meta http-equiv="x-ua-compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Sampaio AI - Mentor de Estudos{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'images/CS_logo.png' %}">
     
     <!-- Google Fonts: Fraunces, IBM Plex Sans, Caveat, JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,6 +21,9 @@
     
     <!-- Feather Icons CDN -->
     <script src="https://unpkg.com/feather-icons"></script>
+    
+    <!-- Toastify CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     
     <style>
         :root {
@@ -409,10 +413,20 @@
                     <i data-feather="check-square" class="tab-icon" style="color: var(--tab-2);"></i>
                     <span class="tab-label">Quizzes</span>
                 </a>
+                <a class="tab {% if request.resolver_match.url_name == 'challenges_page' %}active{% endif %}" href="{% url 'challenges_page' %}">
+                    <i data-feather="terminal" class="tab-icon" style="color: var(--tab-1);"></i>
+                    <span class="tab-label">Desafios Diários</span>
+                </a>
                 <a class="tab {% if request.resolver_match.url_name == 'profile_page' %}active{% endif %}" href="{% url 'profile_page' %}">
                     <i data-feather="user" class="tab-icon" style="color: var(--tab-3);"></i>
                     <span class="tab-label">Minha Conta</span>
                 </a>
+                {% if request.user.is_superuser %}
+                <a class="tab {% if request.resolver_match.url_name == 'waha_dashboard' %}active{% endif %}" href="{% url 'waha_dashboard' %}">
+                    <i data-feather="message-circle" class="tab-icon" style="color: #25d366;"></i>
+                    <span class="tab-label">Status WhatsApp</span>
+                </a>
+                {% endif %}
             </nav>
 
             <!-- SIDEBAR EXTRA BLOCK -->
@@ -489,6 +503,35 @@
                 });
             }
         });
+    </script>
+    
+    <!-- Toastify JS -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script>
+        function showToast(message, type = 'success') {
+            let bgColor = "linear-gradient(to right, #00b09b, #96c93d)"; // Success green
+            if (type === 'error') {
+                bgColor = "linear-gradient(to right, #ff5f6d, #ffc371)"; // Error red/orange
+            } else if (type === 'info') {
+                bgColor = "linear-gradient(to right, #2193b0, #6dd5ed)"; // Info blue
+            } else if (type === 'warning') {
+                bgColor = "linear-gradient(to right, #f857a6, #ff5858)"; // Warning pink/red
+            }
+            
+            Toastify({
+                text: message,
+                duration: 4000,
+                close: true,
+                gravity: "top", // `top` or `bottom`
+                position: "right", // `left`, `center` or `right`
+                stopOnFocus: true, // Prevents dismissing of toast on hover
+                style: {
+                    background: bgColor,
+                    borderRadius: "8px",
+                    fontFamily: "'IBM Plex Sans', sans-serif"
+                }
+            }).showToast();
+        }
     </script>
     {% block extra_js %}{% endblock %}
 </body>

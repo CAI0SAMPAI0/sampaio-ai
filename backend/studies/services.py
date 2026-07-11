@@ -19,7 +19,7 @@ def generate_study_plan(user, objective, technology, available_hours, duration_w
         try:
             llm = ChatGroq(
                 groq_api_key=groq_key,
-                model="llama-3.3-70b-versatile",
+                model="openai/gpt-oss-20b",
                 temperature=0.5
             )
             prompt = (

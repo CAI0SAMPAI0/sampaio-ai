@@ -16,7 +16,14 @@ from .views import (
     quizzes_page,
     study_plans_page,
     profile_page,
-    serve_db_media
+    serve_db_media,
+    challenges_page,
+    run_challenge_code,
+    submit_challenge,
+    waha_dashboard,
+    waha_qr_proxy,
+    waha_screenshot_proxy,
+    test_notification_caio
 )
 
 
@@ -33,7 +40,14 @@ urlpatterns = [
     path('library/', library_page, name='library_page'),
     path('flashcards/', flashcards_page, name='flashcards_page'),
     path('quizzes/', quizzes_page, name='quizzes_page'),
+    path('challenges/', challenges_page, name='challenges_page'),
+    path('challenges/run/', run_challenge_code, name='run_challenge_code'),
+    path('challenges/submit/', submit_challenge, name='submit_challenge'),
     path('studies/', study_plans_page, name='study_plans_page'),
+    path('waha-dashboard/', waha_dashboard, name='waha_dashboard'),
+    path('waha-dashboard/qr/', waha_qr_proxy, name='waha_qr_proxy'),
+    path('waha-dashboard/screenshot/', waha_screenshot_proxy, name='waha_screenshot_proxy'),
+    path('api/notifications/test-caio/', test_notification_caio, name='test_notification_caio'),
     path('admin/', admin.site.urls),
     
     # API endpoints

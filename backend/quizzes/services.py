@@ -6,7 +6,7 @@ from django.conf import settings
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
 
-def generate_quiz_for_document(document_id, user):
+def generate_quiz_for_document(document_id, user, theme=None, num_questions=3, difficulty="Médio"):
     """
     Gera automaticamente um Quiz com perguntas de múltipla escolha com base no conteúdo
     do documento selecionado. Utiliza IA (Groq) se disponível, senão gera conteúdo simulado de alta qualidade.
@@ -16,16 +16,37 @@ def generate_quiz_for_document(document_id, user):
     except KnowledgeDocument.DoesNotExist:
         return None
 
-    # Pega até 3 chunks para ter contexto
-    chunks = doc.chunks.all()[:3]
+    # Se tema for especificado, busca semanticamente os trechos mais relevantes do arquivo
+    if theme:
+        try:
+            from knowledge_base.services import DeterministicEmbeddings, cosine_similarity
+            embedder = DeterministicEmbeddings()
+            query_vector = embedder.embed_query(theme)
+            all_chunks = doc.chunks.all()
+            scored_chunks = []
+            for chunk in all_chunks:
+                score = cosine_similarity(query_vector, chunk.embedding)
+                scored_chunks.append((score, chunk))
+            scored_chunks.sort(key=lambda x: x[0], reverse=True)
+            chunks = [item[1] for item in scored_chunks[:3]]
+        except Exception as e:
+            print(f"Erro na busca semântica de tema: {e}")
+            chunks = doc.chunks.all()[:3]
+    else:
+        chunks = doc.chunks.all()[:3]
+
     text_content = "\n".join([c.content for c in chunks])
     if not text_content:
         text_content = f"Estudos de programação sobre {doc.name}"
 
+    title = f"Quiz sobre {doc.name}"
+    if theme:
+        title += f" (Tema: {theme})"
+
     quiz = Quiz.objects.create(
         user=user,
         document=doc,
-        title=f"Quiz sobre {doc.name}"
+        title=title
     )
 
     groq_key = getattr(settings, 'GROQ_API_KEY', None)
@@ -35,14 +56,17 @@ def generate_quiz_for_document(document_id, user):
         try:
             llm = ChatGroq(
                 groq_api_key=groq_key,
-                model="llama-3.3-70b-versatile",
+                model="openai/gpt-oss-20b",
                 temperature=0.4
             )
             prompt = (
                 "Você é um assistente especialista em programação. Com base no texto de estudo abaixo, "
-                "gere exatamente 3 perguntas de múltipla escolha. Retorne APENAS um array JSON de objetos contendo "
+                f"gere exatamente {num_questions} perguntas de múltipla escolha.\n"
+                f"Foco Temático: {theme if theme else 'Todo o conteúdo do texto'}\n"
+                f"Nível de Dificuldade: {difficulty}\n\n"
+                "Retorne APENAS um array JSON de objetos contendo "
                 "as chaves: 'question' (o enunciado da pergunta), 'options' (um array de exatamente 4 strings de opções), "
-                "'correct_answer' (a opção correta exata que está dentro do array de options) e 'explanation' (uma breve explicação). "
+                "'correct_answer' (a opção correta exata que está dentro do array de options) e 'explanation' (uma breve explicação técnica baseada na PEP8 ou boas práticas).\n"
                 "Não adicione nenhuma introdução ou explicação fora do JSON.\n\n"
                 f"Texto de estudo:\n{text_content}"
             )
@@ -62,34 +86,36 @@ def generate_quiz_for_document(document_id, user):
         except Exception as e:
             print(f"Erro ao gerar quiz via LLM: {e}")
 
-    # Fallback/simulação de geração de quiz
+    # Fallback/simulação de geração de quiz de acordo com os parâmetros
     if not questions:
         questions = [
             QuizQuestion(
                 quiz=quiz,
-                question_text=f"Sobre o conteúdo de '{doc.name}', o que descreve as melhores práticas de desenvolvimento?",
+                question_text=f"Sobre o conteúdo de '{doc.name}' focado em '{theme or 'Geral'}', qual alternativa descreve as melhores práticas?",
                 options=[
-                    "Escrever testes unitários e refatorar código legível",
-                    "Escrever código correndo sem se preocupar com testes",
+                    "Escrever testes unitários e refatorar código legível seguindo a PEP8",
+                    "Escrever código correndo sem se preocupar com testes ou estilo",
                     "Ignorar modularização e usar arquivos únicos gigantes",
                     "Não refatorar e duplicar lógicas de código"
                 ],
-                correct_answer="Escrever testes unitários e refatorar código legível",
-                explanation="Modularização e cobertura de testes são pilares fundamentais da engenharia de software de alta performance."
-            ),
-            QuizQuestion(
-                quiz=quiz,
-                question_text="Qual a melhor forma de validar o processamento correto de arquivos?",
-                options=[
-                    "Implementando testes de integração de ponta a ponta",
-                    "Apenas checando logs manualmente uma vez",
-                    "Confiando que o código sempre funcionará sem testes",
-                    "Delegando toda a validação para o usuário final"
-                ],
-                correct_answer="Implementando testes de integração de ponta a ponta",
-                explanation="Testes de integração garantem que todos os componentes (views, tasks, DB) interajam corretamente no sistema."
+                correct_answer="Escrever testes unitários e refatorar código legível seguindo a PEP8",
+                explanation="Modularização, legibilidade seguindo a PEP8 e cobertura de testes são pilares fundamentais da engenharia de software."
             )
         ]
+        # Se pediu mais questões no fallback
+        for idx in range(1, num_questions):
+            questions.append(QuizQuestion(
+                quiz=quiz,
+                question_text=f"Questão {idx+1} [Simulada Nível {difficulty}]: Qual a melhor forma de validar o processamento correto?",
+                options=[
+                    "Implementando testes automatizados adequados ao fluxo",
+                    "Apenas checando logs manualmente uma vez",
+                    "Confiando que o código sempre funcionará sem validações",
+                    "Delegando toda a validação para o usuário final"
+                ],
+                correct_answer="Implementando testes automatizados adequados ao fluxo",
+                explanation="Garantir validações automáticas reduz a taxa de regressão e aumenta o desempenho geral do sistema."
+            ))
 
     QuizQuestion.objects.bulk_create(questions)
     return quiz

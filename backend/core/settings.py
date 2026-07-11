@@ -181,6 +181,19 @@ CACHES = {
     }
 }
 
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+
+# Overrides para ambiente de testes automatizados
+import sys
+if 'test' in sys.argv:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        }
+    }
+    GROQ_API_KEY = 'gsk_placeholder_for_development'
+
 # File upload limits (100MB)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB in bytes
 FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB in bytes
@@ -201,3 +214,30 @@ if not DEBUG:
 CSRF_TRUSTED_ORIGINS = [
     'https://supercai0-sampaio-ai.hf.space',
 ]
+
+# Email Settings
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', cast=int, default=587)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool, default=True)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='no-reply@sampaio-ai.com')
+
+# WAHA Settings
+WAHA_URL = config('WAHA_URL', default='http://localhost:3000')
+WAHA_API_KEY = config('WAHA_API_KEY', default='')
+
+# Celery Beat Schedule
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    'generate-daily-challenges': {
+        'task': 'studies.tasks.generate_daily_challenges_task',
+        'schedule': crontab(hour=9, minute=0),
+    },
+    'waha-keepalive': {
+        'task': 'studies.tasks.ping_waha_task',
+        'schedule': crontab(minute='*/12'),
+    },
+}

@@ -137,7 +137,7 @@ def generate_response_node(state: AgentState) -> dict:
         try:
             llm = ChatGroq(
                 groq_api_key=groq_key,
-                model="llama-3.3-70b-versatile",
+                model="openai/gpt-oss-20b",
                 temperature=0.3
             )
             response = llm.invoke(lc_messages)

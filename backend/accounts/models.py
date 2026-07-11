@@ -28,6 +28,17 @@ class User(AbstractUser):
     username = None
     email = models.EmailField('Endereço de Email', unique=True)
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
+    level = models.CharField(
+        'Nível de Programação',
+        max_length=20,
+        default='iniciante',
+        choices=[
+            ('iniciante', 'Iniciante'),
+            ('intermediario', 'Intermediário'),
+            ('avancado', 'Avançado')
+        ]
+    )
+    whatsapp_number = models.CharField('WhatsApp (WAHA)', max_length=50, blank=True, null=True)
 
     objects = UserManager()
 

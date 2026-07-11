@@ -189,7 +189,7 @@
         })
         .catch(err => {
             console.error(err);
-            alert('Erro ao carregar o plano de estudos.');
+            showToast('Erro ao carregar o plano de estudos.', 'error');
         });
     }
 
@@ -260,14 +260,14 @@
             `;
             container.insertAdjacentHTML('afterbegin', itemHTML);
 
-            alert('Plano de estudos estruturado com sucesso pela IA!');
+            showToast('Plano de estudos estruturado com sucesso pela IA!', 'success');
             loadPlan(newPlan.id);
         })
         .catch(err => {
             createForm.style.display = 'flex';
             createPlanLoader.classList.add('hidden');
             console.error(err);
-            alert('Erro ao criar plano de estudos com IA. Verifique as configurações.');
+            showToast('Erro ao criar plano de estudos com IA. Verifique as configurações.', 'error');
         });
     });
 </script>

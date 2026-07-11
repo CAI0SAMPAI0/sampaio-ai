@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Painel de Conexão WhatsApp - Sampaio AI{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8 px-4">
+    <!-- Header Card -->
+    <div class="bg-white border-2 border-[var(--ink)] shadow-[4px_4px_0px_0px_rgba(35,32,23,1)] rounded-xl p-6 mb-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold font-fraunces text-[var(--ink)] mb-2">Painel WhatsApp (WAHA)</h1>
+                <p class="text-sm text-[var(--ink-soft)]">Gerencie o pareamento do WhatsApp do sistema e envie notificações de teste.</p>
+            </div>
+            <div>
+                <button onclick="sendTestNotification()" 
+                        class="px-5 py-3 bg-[#25d366] text-white font-semibold rounded-lg border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer flex items-center gap-2">
+                    <i data-feather="send" class="w-5 h-5"></i>
+                    Testar Notificação Caio
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Details Card -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Status Indicator -->
+        <div class="bg-white border-2 border-[var(--ink)] shadow-[4px_4px_0px_0px_rgba(35,32,23,1)] rounded-xl p-6 flex flex-col items-center justify-center text-center">
+            <span class="text-xs font-bold uppercase tracking-wider text-[var(--pencil)] mb-2">Status da Conexão</span>
+            {% if status == 'CONNECTED' %}
+                <div class="w-4 h-4 bg-emerald-500 rounded-full animate-pulse mb-3"></div>
+                <h3 class="text-xl font-bold text-emerald-600">Conectado</h3>
+                <p class="text-xs text-[var(--ink-soft)] mt-2">Pronto para disparar mensagens no WhatsApp.</p>
+            {% elif status == 'SCAN_QR_CODE' or status == 'INICIANDO' %}
+                <div class="w-4 h-4 bg-amber-500 rounded-full animate-pulse mb-3"></div>
+                <h3 class="text-xl font-bold text-amber-500">Aguardando Leitura</h3>
+                <p class="text-xs text-[var(--ink-soft)] mt-2">Escaneie o QR Code abaixo com seu celular.</p>
+            {% else %}
+                <div class="w-4 h-4 bg-rose-500 rounded-full mb-3"></div>
+                <h3 class="text-xl font-bold text-rose-600">Desconectado</h3>
+                <p class="text-xs text-[var(--ink-soft)] mt-2">{{ error_msg|default:"Sem conexão ativa ou sessão desligada." }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Session Config -->
+        <div class="bg-white border-2 border-[var(--ink)] shadow-[4px_4px_0px_0px_rgba(35,32,23,1)] rounded-xl p-6 md:col-span-2">
+            <h3 class="text-lg font-bold font-fraunces text-[var(--ink)] mb-4 flex items-center gap-2">
+                <i data-feather="settings" class="w-5 h-5 text-[var(--pencil)]"></i>
+                Detalhes Técnicos da Sessão
+            </h3>
+            <div class="space-y-2 text-sm text-[var(--ink-soft)]">
+                <div><strong>Sessão ativa:</strong> <code class="bg-slate-100 px-1 py-0.5 rounded text-rose-600">default</code></div>
+                <div><strong>Servidor WAHA:</strong> <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-700">{{ waha_url }}</code></div>
+                {% if details %}
+                    <div><strong>Nome do Dispositivo:</strong> {{ details.engine|default:"Default Engine" }}</div>
+                {% endif %}
+                <div class="pt-2 flex gap-3">
+                    <a href="" class="text-xs font-semibold text-sky-600 hover:underline">Atualizar Status</a>
+                    <span class="text-slate-300">|</span>
+                    <a href="https://waha.dev" target="_blank" class="text-xs font-semibold text-[var(--pencil)] hover:underline">Documentação WAHA</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code / Debug Screenshot Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- QR Code Card -->
+        <div class="bg-white border-2 border-[var(--ink)] shadow-[4px_4px_0px_0px_rgba(35,32,23,1)] rounded-xl p-6">
+            <h2 class="text-xl font-bold font-fraunces text-[var(--ink)] mb-4 flex items-center gap-2">
+                <i data-feather="qr-code" class="w-5 h-5"></i>
+                Escaneie o QR Code
+            </h2>
+            <div class="flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed border-slate-200 rounded-lg p-4 bg-slate-50">
+                {% if status == 'SCAN_QR_CODE' or status == 'INICIANDO' %}
+                    <img src="{% url 'waha_qr_proxy' %}?t={{ now|date:'U' }}" alt="WAHA QR Code" class="max-w-[250px] border border-slate-300 shadow rounded bg-white">
+                    <p class="text-xs text-[var(--pencil)] mt-4 text-center">O QR Code atualiza dinamicamente. Abra o WhatsApp > Configurações > Aparelhos Conectados e escaneie.</p>
+                {% elif status == 'CONNECTED' %}
+                    <div class="text-center">
+                        <i data-feather="check-circle" class="w-16 h-16 text-emerald-500 mx-auto mb-4"></i>
+                        <h4 class="font-bold text-slate-700">Aparelho já Conectado!</h4>
+                        <p class="text-xs text-[var(--pencil)] mt-2">Nenhum QR Code é necessário enquanto estiver conectado.</p>
+                    </div>
+                {% else %}
+                    <div class="text-center text-[var(--pencil)]">
+                        <i data-feather="alert-triangle" class="w-12 h-12 mx-auto mb-3"></i>
+                        <p class="text-sm">Sem sinal do QR Code. Verifique se o container ou serviço WAHA está rodando.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Screenshot / Debug Card -->
+        <div class="bg-white border-2 border-[var(--ink)] shadow-[4px_4px_0px_0px_rgba(35,32,23,1)] rounded-xl p-6">
+            <h2 class="text-xl font-bold font-fraunces text-[var(--ink)] mb-4 flex items-center gap-2">
+                <i data-feather="monitor" class="w-5 h-5"></i>
+                WhatsApp Web Screenshot
+            </h2>
+            <div class="flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed border-slate-200 rounded-lg overflow-hidden bg-slate-50 relative group">
+                {% if status != 'ERRO_CONEXAO' %}
+                    <img src="{% url 'waha_screenshot_proxy' %}?t={{ now|date:'U' }}" alt="WhatsApp Screenshot" class="w-full h-full object-contain max-h-[280px]">
+                    <div class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded">
+                        Debug Mode
+                    </div>
+                {% else %}
+                    <div class="text-center text-[var(--pencil)] p-4">
+                        <i data-feather="eye-off" class="w-12 h-12 mx-auto mb-3"></i>
+                        <p class="text-sm">Screenshot não disponível enquanto o WAHA estiver fora do ar.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function sendTestNotification() {
+        showToast("Enviando notificação de teste para Caio Sampaio...", "info");
+        
+        fetch("{% url 'test_notification_caio' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/json"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(`Sucesso! Notificação enviada para ${data.recipient_name} por E-mail e WhatsApp!`, "success");
+            } else {
+                showToast("Erro ao enviar a notificação. Verifique se o destinatário tem WhatsApp cadastrado.", "error");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast("Erro de conexão ao tentar enviar a notificação de teste.", "error");
+        });
+    }
+</script>
+{% endblock %}

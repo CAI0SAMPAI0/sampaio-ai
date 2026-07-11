@@ -173,6 +173,28 @@
                         </div>
                     </div>
 
+                    <!-- Digitar Resposta e Avaliação da IA -->
+                    <div id="ia-evaluation-container" class="space-y-3 max-w-md mx-auto p-4 rounded-2xl border border-slate-200 bg-slate-50/50 shadow-2xs">
+                        <div class="space-y-1.5">
+                            <label for="userFlashcardAnswer" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sua Resposta (a IA avaliará o raciocínio logicamente):</label>
+                            <div class="flex gap-x-2">
+                                <input type="text" id="userFlashcardAnswer" placeholder="O que você responderia para esta pergunta?" class="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs bg-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                                <button type="button" id="btnVerifyAnswer" class="inline-flex items-center gap-x-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 px-4 py-2 text-xs font-semibold text-white shadow-2xs transition-colors shrink-0">
+                                    <i data-feather="cpu" class="w-3.5 h-3.5"></i>
+                                    <span>Avaliar IA</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- AI Feedback Container (Hidden initially) -->
+                        <div id="ia-feedback-box" class="rounded-xl border border-slate-200 p-3 bg-white text-[11px] space-y-1.5 hidden shadow-3xs">
+                            <div class="flex items-center gap-x-1.5 font-bold" id="ia-feedback-title">
+                                <!-- Dynamic Icon and status -->
+                            </div>
+                            <p class="text-slate-500 leading-relaxed font-medium" id="ia-feedback-text"></p>
+                        </div>
+                    </div>
+
                     <!-- Spaced Repetition Review Ratings -->
                     <div class="flex flex-col items-center gap-3">
                         <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Como foi responder a esse card?</div>
@@ -300,6 +322,10 @@
         document.getElementById('card-front-text').textContent = card.front;
         document.getElementById('card-back-text').textContent = card.back;
         
+        // Limpa a resposta digitada anteriormente e esconde o feedback da IA
+        document.getElementById('userFlashcardAnswer').value = '';
+        document.getElementById('ia-feedback-box').classList.add('hidden');
+        
         progressIndicator.textContent = `Card ${currentIndex + 1} de ${filteredFlashcards.length}`;
         
         const boxBadge = document.getElementById('card-box-badge');
@@ -367,7 +393,7 @@
         })
         .catch(err => {
             console.error(err);
-            alert('Erro ao enviar revisão do card.');
+            showToast('Erro ao enviar revisão do card.', 'error');
         });
     }
 
@@ -379,7 +405,7 @@
     generateBtn.addEventListener('click', () => {
         const docId = docSelect.value;
         if (!docId) {
-            alert('Por favor, selecione um documento para gerar flashcards.');
+            showToast('Por favor, selecione um documento para gerar flashcards.', 'warning');
             return;
         }
 
@@ -403,14 +429,73 @@
             generateLoader.classList.add('hidden');
             docSelect.value = '';
             
-            alert(`Sucesso! ${newCards.length} novos flashcards foram gerados pela IA.`);
+            showToast(`Sucesso! ${newCards.length} novos flashcards foram gerados pela IA.`, 'success');
             loadFlashcardsFromAPI();
         })
         .catch(err => {
             generateBtn.classList.remove('hidden');
             generateLoader.classList.add('hidden');
             console.error(err);
-            alert('Erro ao gerar os flashcards. Verifique se o modelo está configurado corretamente.');
+            showToast('Erro ao gerar os flashcards. Verifique se o modelo está configurado corretamente.', 'error');
+        });
+    });
+
+    // --- AVALIAR RESPOSTA COM IA ---
+    document.getElementById('btnVerifyAnswer').addEventListener('click', () => {
+        if (filteredFlashcards.length === 0) return;
+        const card = filteredFlashcards[currentIndex];
+        const userAns = document.getElementById('userFlashcardAnswer').value.trim();
+        
+        if (!userAns) {
+            showToast('Por favor, escreva uma resposta antes de pedir a avaliação.', 'warning');
+            return;
+        }
+
+        const btn = document.getElementById('btnVerifyAnswer');
+        btn.disabled = true;
+        btn.textContent = 'Avaliando...';
+
+        fetch(`/api/flashcards/${card.id}/verify-answer/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ user_answer: userAns })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Erro na avaliação.');
+            return res.json();
+        })
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = `<i data-feather="cpu" class="w-3.5 h-3.5"></i> <span>Avaliar IA</span>`;
+            feather.replace();
+
+            const feedbackBox = document.getElementById('ia-feedback-box');
+            const feedbackTitle = document.getElementById('ia-feedback-title');
+            const feedbackText = document.getElementById('ia-feedback-text');
+
+            feedbackBox.classList.remove('hidden');
+            feedbackText.textContent = data.feedback;
+
+            if (data.correct) {
+                feedbackBox.className = "rounded-xl border border-emerald-200 p-3 bg-emerald-50/50 text-[11px] space-y-1.5 shadow-3xs";
+                feedbackTitle.className = "flex items-center gap-x-1.5 font-bold text-emerald-800";
+                feedbackTitle.innerHTML = `<i data-feather="check-circle" class="w-3.5 h-3.5 text-emerald-600"></i> Lógica Correta (${data.score}%)`;
+            } else {
+                feedbackBox.className = "rounded-xl border border-rose-200 p-3 bg-rose-50/50 text-[11px] space-y-1.5 shadow-3xs";
+                feedbackTitle.className = "flex items-center gap-x-1.5 font-bold text-rose-800";
+                feedbackTitle.innerHTML = `<i data-feather="x-circle" class="w-3.5 h-3.5 text-rose-600"></i> Lógica Incompleta/Incorreta (${data.score}%)`;
+            }
+            feather.replace();
+        })
+        .catch(err => {
+            console.error(err);
+            btn.disabled = false;
+            btn.innerHTML = `<i data-feather="cpu" class="w-3.5 h-3.5"></i> <span>Avaliar IA</span>`;
+            feather.replace();
+            showToast('Ocorreu um erro ao avaliar a resposta com a IA.', 'error');
         });
     });
 </script>

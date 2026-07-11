@@ -370,12 +370,12 @@
                     statsTotal.textContent = Math.max(0, currentCount - 1);
                 }
             } else {
-                alert('Erro ao excluir documento.');
+                showToast('Erro ao excluir documento.', 'error');
             }
         })
         .catch(err => {
             console.error(err);
-            alert('Erro de conexão ao tentar excluir.');
+            showToast('Erro de conexão ao tentar excluir.', 'error');
         });
     }
 
@@ -523,7 +523,7 @@
             searchLoading.classList.add('hidden');
             searchPlaceholder.classList.remove('hidden');
             console.error(err);
-            alert('Erro de conexão ao realizar busca semântica.');
+            showToast('Erro de conexão ao realizar busca semântica.', 'error');
         });
     }
 </script>

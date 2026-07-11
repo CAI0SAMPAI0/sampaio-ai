@@ -20,10 +20,20 @@ class QuizViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def generate(self, request):
         document_id = request.data.get('document_id')
+        theme = request.data.get('theme') or None
+        num_questions = int(request.data.get('num_questions') or 3)
+        difficulty = request.data.get('difficulty') or "Médio"
+        
         if not document_id:
             return Response({'error': 'Parâmetro document_id é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
             
-        quiz = generate_quiz_for_document(document_id, request.user)
+        quiz = generate_quiz_for_document(
+            document_id=document_id,
+            user=request.user,
+            theme=theme,
+            num_questions=num_questions,
+            difficulty=difficulty
+        )
         if not quiz:
             return Response({'error': 'Erro ao gerar quiz.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
