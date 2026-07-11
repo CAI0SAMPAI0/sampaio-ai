@@ -217,7 +217,12 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = True
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://supercai0-sampaio-ai.hf.space',
+    origin.strip()
+    for origin in config(
+        'CSRF_TRUSTED_ORIGINS',
+        default='https://supercai0-sampaio-ai.hf.space'
+    ).split(',')
+    if origin.strip()
 ]
 
 # Trust the X-Forwarded-Proto header from the Hugging Face proxy for HTTPS detection
