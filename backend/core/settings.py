@@ -13,7 +13,7 @@ ALLOWED_HOSTS = [
     host.strip()
     for host in config(
         'ALLOWED_HOSTS',
-        default='.hf.space, proxy.spaces.internal.huggingface.tech, localhost, 127.0.0.1'
+        default='.hf.space, .onrender.com, proxy.spaces.internal.huggingface.tech, localhost, 127.0.0.1'
     ).split(',')
     if host.strip()
 ]
@@ -220,7 +220,7 @@ CSRF_TRUSTED_ORIGINS = [
     origin.strip()
     for origin in config(
         'CSRF_TRUSTED_ORIGINS',
-        default='https://supercai0-sampaio-ai.hf.space'
+        default='https://supercai0-sampaio-ai.hf.space,https://sampaio-ai.onrender.com'
     ).split(',')
     if origin.strip()
 ]
