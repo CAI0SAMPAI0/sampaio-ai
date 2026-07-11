@@ -27,10 +27,12 @@ def send_waha_message(chat_id, text):
     }
     
     try:
+        print(f"Enviando mensagem WAHA para {chat_id}...")
         response = requests.post(endpoint, json=payload, headers=headers, timeout=10)
+        print(f"Resposta WAHA para {chat_id}: status={response.status_code}, content={response.text}")
         return response.status_code in [200, 201]
     except Exception as e:
-        print(f"Erro ao enviar mensagem WAHA para {chat_id}: {e}")
+        print(f"Erro de conexão ao enviar mensagem WAHA para {chat_id}: {e}")
         return False
 
 def send_user_notification(user, title, message):
