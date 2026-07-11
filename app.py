@@ -4,6 +4,10 @@ import subprocess
 import shutil
 import gradio as gr
 
+# Ensure local loopback checks bypass any proxy configuration
+os.environ["NO_PROXY"] = "localhost,127.0.0.1"
+
+
 # Add the backend directory to Python sys.path
 backend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend")
 sys.path.insert(0, backend_dir)

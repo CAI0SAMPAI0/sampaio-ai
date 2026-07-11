@@ -19,6 +19,11 @@ ALLOWED_HOSTS = [
 ]
 if 'proxy.spaces.internal.huggingface.tech' not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append('proxy.spaces.internal.huggingface.tech')
+if 'localhost' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('localhost')
+if '127.0.0.1' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('127.0.0.1')
+
 
 
 GROQ_API_KEY = config('GROQ_API_KEY', default=None)
