@@ -3,6 +3,9 @@ import sys
 import subprocess
 import shutil
 import gradio as gr
+from fastapi import FastAPI
+from fastapi.middleware.wsgi import WSGIMiddleware
+from django.core.wsgi import get_wsgi_application
 
 # Ensure local loopback checks bypass any proxy configuration
 os.environ["NO_PROXY"] = "localhost,127.0.0.1"
@@ -48,24 +51,24 @@ except Exception as e:
 import threading
 threading.Thread(target=run_background_services, daemon=True).start()
 
-# Define dummy Gradio blocks to satisfy Hugging Face Space requirements
+# Initialize the standard Django WSGI application
+django_app = get_wsgi_application()
+
+# Create a FastAPI wrapper to manage the Django route
+fastapi_app = FastAPI()
+fastapi_app.mount("/", WSGIMiddleware(django_app))
+
+# Define visual dummy Gradio blocks to satisfy Hugging Face Space requirements
 with gr.Blocks() as demo:
-    gr.Markdown("# Sampaio AI (Gradio Integrated Mode)")
-    gr.Markdown("O backend Django está rodando com sucesso no caminho principal `/`.")
-    gr.Markdown("A interface do Gradio está integrada e montada.")
+    gr.Markdown("# Painel de Controle - Sampaio AI")
+    gr.Markdown("A aplicação Django está rodando em segundo plano integrada a este Space.")
+    gr.Markdown("O painel do Django está disponível na raiz `/` e a interface do Gradio em `/gradio_interface`.")
 
-# Import Django ASGI app
-from core.asgi import application as django_asgi_app
-
-# Create Gradio's FastAPI application structure
-demo.app = gr.routes.App.create_app(demo)
-
-# Mount Django ASGI app at the root '/' of Gradio's FastAPI application.
-# This ensures Django receives all traffic not handled by Gradio.
-demo.app.mount("/", django_asgi_app)
+# Mount the FastAPI app (which wraps Django) inside Gradio
+app = gr.mount_to_app(fastapi_app, demo, path="/gradio_interface")
 
 if __name__ == "__main__":
-    # Launch Gradio on port 7860 using server_name="0.0.0.0"
-    # This satisfies Hugging Face's wrapper, keeps it running, and avoids loopback check errors
-    print("Launching Gradio with integrated Django ASGI on port 7860...")
-    demo.launch(server_name="0.0.0.0", server_port=7860, share=True)
+    # For local running/testing
+    import uvicorn
+    uvicorn.run("app:app", host="0.0.0.0", port=7860, log_level="info")
+
