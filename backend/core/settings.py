@@ -212,6 +212,9 @@ CSRF_TRUSTED_ORIGINS = [
     'https://supercai0-sampaio-ai.hf.space',
 ]
 
+# Trust the X-Forwarded-Proto header from the Hugging Face proxy for HTTPS detection
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # Email Settings
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', cast=int, default=587)
