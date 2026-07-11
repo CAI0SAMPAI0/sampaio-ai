@@ -511,6 +511,7 @@ def submit_challenge(request):
 
 from django.contrib.auth.decorators import user_passes_test
 from django.http import HttpResponse, Http404
+import requests
 from notifications.services import send_user_notification, send_waha_message
 
 @user_passes_test(lambda u: u.is_superuser, login_url='login_page')
@@ -540,7 +541,7 @@ def waha_dashboard(request):
             requests.post(f"{waha_url}/api/sessions", json={"name": "default"}, headers=headers, timeout=5)
             session_status = "STOPPED"
     except Exception as e:
-        error_msg = f"Sem conexão com o WAHA ({waha_url}): {str(e)}"
+        error_msg = f"Sem conexão com o WPP (WAHA): {str(e)}"
         session_status = "ERRO_CONEXAO"
 
     # Se a sessão estiver parada, tenta iniciar
