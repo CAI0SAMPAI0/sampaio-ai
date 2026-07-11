@@ -1,0 +1,33 @@
+# Django core & extensions
+django>=5.0,<6.1
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+dj-database-url
+whitenoise[brotli]
+uvicorn[standard]
+
+# Database driver
+psycopg[binary]
+
+# Config & Environment
+python-decouple>=3.8
+
+# Celery & Redis
+celery
+redis
+django-redis
+
+# AI & LLM integration
+langchain
+langchain-groq
+langchain-core
+
+# File handling
+pypdf==4.3.1
+pillow>=10.0.0,<11.0.0
+reportlab
+
+# Hugging Face Space integration
+gradio==4.44.0
+huggingface-hub>=0.23.0
