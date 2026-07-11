@@ -3,7 +3,6 @@ import sys
 import subprocess
 import shutil
 import gradio as gr
-from fastapi import FastAPI
 
 # Add the backend directory to Python sys.path
 backend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend")
@@ -47,26 +46,22 @@ threading.Thread(target=run_background_services, daemon=True).start()
 
 # Define dummy Gradio blocks to satisfy Hugging Face Space requirements
 with gr.Blocks() as demo:
-    gr.Markdown("# Sampaio AI (Gradio Mount Mode)")
+    gr.Markdown("# Sampaio AI (Gradio Integrated Mode)")
     gr.Markdown("O backend Django está rodando com sucesso no caminho principal `/`.")
-    gr.Markdown("A interface do Gradio está montada em `/gradio`.")
+    gr.Markdown("A interface do Gradio está integrada e montada.")
 
 # Import Django ASGI app
 from core.asgi import application as django_asgi_app
 
-# Create a unified FastAPI app
-app = FastAPI()
+# Create Gradio's FastAPI application structure
+demo.app = gr.routes.App.create_app(demo)
 
-# Mount Gradio app onto FastAPI under '/gradio'
-# This bypasses demo.launch() completely and avoids the "localhost not accessible" issue
-app = gr.mount_gradio_app(app, demo, path="/gradio")
-
-# Mount Django ASGI app at the root '/'
-# FastAPI will route '/gradio' to Gradio and all other paths to Django
-app.mount("/", django_asgi_app)
+# Mount Django ASGI app at the root '/' of Gradio's FastAPI application.
+# This ensures Django receives all traffic not handled by Gradio.
+demo.app.mount("/", django_asgi_app)
 
 if __name__ == "__main__":
-    import uvicorn
-    # Start the unified application on port 7860
-    print("Starting unified FastAPI/Django ASGI server on port 7860...")
-    uvicorn.run(app, host="0.0.0.0", port=7860)
+    # Launch Gradio on port 7860 using server_name="0.0.0.0"
+    # This satisfies Hugging Face's wrapper, keeps it running, and avoids loopback check errors
+    print("Launching Gradio with integrated Django ASGI on port 7860...")
+    demo.launch(server_name="0.0.0.0", server_port=7860)
