@@ -68,4 +68,4 @@ if __name__ == "__main__":
     # Launch Gradio on port 7860 using server_name="0.0.0.0"
     # This satisfies Hugging Face's wrapper, keeps it running, and avoids loopback check errors
     print("Launching Gradio with integrated Django ASGI on port 7860...")
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    demo.launch(server_name="0.0.0.0", server_port=7860, share=True)
