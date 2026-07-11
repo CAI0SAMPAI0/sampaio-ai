@@ -22,6 +22,7 @@ def send_waha_message(chat_id, text):
         headers['X-Api-Key'] = waha_key
         
     payload = {
+        'session': 'default',
         'chatId': chat_id,
         'text': text
     }
