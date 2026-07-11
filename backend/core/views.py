@@ -530,13 +530,35 @@ def waha_dashboard(request):
     session_status = "DESCONECTADO"
     session_details = {}
     error_msg = None
+    engine_name = "UNKNOWN"
     
     try:
         # Tenta obter status da sessão 'default'
         resp = requests.get(f"{waha_url}/api/sessions/default", headers=headers, timeout=5)
         if resp.status_code == 200:
             session_details = resp.json()
-            session_status = session_details.get("status", "UNKNOWN")
+            raw_status = session_details.get("status", "UNKNOWN")
+            
+            # Extrai o nome do engine do WAHA
+            engine_data = session_details.get("engine")
+            if isinstance(engine_data, dict):
+                engine_name = engine_data.get("engine", "UNKNOWN")
+            elif isinstance(engine_data, str):
+                engine_name = engine_data
+            else:
+                engine_name = session_details.get("config", {}).get("engine", "UNKNOWN")
+            
+            # Normaliza o status para o Django Template
+            if raw_status == "WORKING":
+                session_status = "CONNECTED"
+            elif raw_status == "SCAN_QR_CODE":
+                session_status = "SCAN_QR_CODE"
+            elif raw_status == "STARTING":
+                session_status = "INICIANDO"
+            elif raw_status == "STOPPED":
+                session_status = "STOPPED"
+            else:
+                session_status = raw_status
         elif resp.status_code == 404:
             # Tenta criar a sessão se não existir
             requests.post(f"{waha_url}/api/sessions", json={"name": "default"}, headers=headers, timeout=5)
@@ -561,6 +583,7 @@ def waha_dashboard(request):
         'details': session_details,
         'error_msg': error_msg,
         'waha_url': waha_url,
+        'engine': engine_name,
     })
 
 
