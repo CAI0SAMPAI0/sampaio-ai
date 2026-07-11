@@ -17,12 +17,9 @@ ALLOWED_HOSTS = [
     ).split(',')
     if host.strip()
 ]
-if 'proxy.spaces.internal.huggingface.tech' not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append('proxy.spaces.internal.huggingface.tech')
-if 'localhost' not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append('localhost')
-if '127.0.0.1' not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append('127.0.0.1')
+for host in ['.onrender.com', 'proxy.spaces.internal.huggingface.tech', 'localhost', '127.0.0.1']:
+    if host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(host)
 
 
 
@@ -224,6 +221,8 @@ CSRF_TRUSTED_ORIGINS = [
     ).split(',')
     if origin.strip()
 ]
+if 'https://sampaio-ai.onrender.com' not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append('https://sampaio-ai.onrender.com')
 
 # Trust the X-Forwarded-Proto header from the Hugging Face proxy for HTTPS detection
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
