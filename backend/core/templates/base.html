@@ -380,52 +380,65 @@
         <!-- SIDEBAR -->
         <aside class="sidebar">
             <div class="brand">
-                <div class="brand-text">
+                <a href="{% url 'dashboard_page' %}" class="brand-text hover:opacity-80 transition-opacity">
                     <div class="brand-title">SAMPAIO AI</div>
                     <div class="brand-sub">seu caderno de estudos</div>
-                </div>
+                </a>
                 <button class="toggle-btn" id="toggleBtn" aria-label="Recolher menu" title="Recolher menu">‹</button>
             </div>
 
             <!-- MAIN TABS -->
             <nav class="tabs">
-                <a class="tab {% if request.resolver_match.url_name == 'dashboard_page' %}active{% endif %}" href="{% url 'dashboard_page' %}">
-                    <i data-feather="grid" class="tab-icon" style="color: var(--tab-2);"></i>
-                    <span class="tab-label">Dashboard</span>
-                </a>
-                <a class="tab {% if request.resolver_match.url_name == 'chat_page' %}active{% endif %}" href="{% url 'chat_page' %}">
-                    <i data-feather="message-square" class="tab-icon" style="color: var(--tab-3);"></i>
-                    <span class="tab-label">Chat com Mentor</span>
-                </a>
-                <a class="tab {% if request.resolver_match.url_name == 'library_page' %}active{% endif %}" href="{% url 'library_page' %}">
-                    <i data-feather="book-open" class="tab-icon" style="color: var(--tab-4);"></i>
-                    <span class="tab-label">Biblioteca</span>
-                </a>
-                <a class="tab {% if request.resolver_match.url_name == 'study_plans_page' %}active{% endif %}" href="{% url 'study_plans_page' %}">
-                    <i data-feather="activity" class="tab-icon" style="color: var(--tab-1);"></i>
-                    <span class="tab-label">Planos de Estudo</span>
-                </a>
-                <a class="tab {% if request.resolver_match.url_name == 'flashcards_page' %}active{% endif %}" href="{% url 'flashcards_page' %}">
-                    <i data-feather="layers" class="tab-icon" style="color: var(--tab-5);"></i>
-                    <span class="tab-label">Flashcards</span>
-                </a>
-                <a class="tab {% if request.resolver_match.url_name == 'quizzes_page' %}active{% endif %}" href="{% url 'quizzes_page' %}">
-                    <i data-feather="check-square" class="tab-icon" style="color: var(--tab-2);"></i>
-                    <span class="tab-label">Quizzes</span>
-                </a>
-                <a class="tab {% if request.resolver_match.url_name == 'challenges_page' %}active{% endif %}" href="{% url 'challenges_page' %}">
-                    <i data-feather="terminal" class="tab-icon" style="color: var(--tab-1);"></i>
-                    <span class="tab-label">Desafios Diários</span>
-                </a>
-                <a class="tab {% if request.resolver_match.url_name == 'profile_page' %}active{% endif %}" href="{% url 'profile_page' %}">
-                    <i data-feather="user" class="tab-icon" style="color: var(--tab-3);"></i>
-                    <span class="tab-label">Minha Conta</span>
-                </a>
-                {% if request.user.is_superuser %}
-                <a class="tab {% if request.resolver_match.url_name == 'waha_dashboard' %}active{% endif %}" href="{% url 'waha_dashboard' %}">
-                    <i data-feather="message-circle" class="tab-icon" style="color: #25d366;"></i>
-                    <span class="tab-label">Status WhatsApp</span>
-                </a>
+                {% if request.resolver_match.url_name == 'chat_page' %}
+                    <!-- On Chat Page: Show back button to go to previous screen, and Chat tab -->
+                    <a class="tab" href="javascript:if(document.referrer && document.referrer.indexOf(window.location.host) !== -1) { history.back(); } else { window.location.href='{% url "dashboard_page" %}'; }">
+                        <i data-feather="arrow-left" class="tab-icon" style="color: var(--tab-1);"></i>
+                        <span class="tab-label">Voltar à tela anterior</span>
+                    </a>
+                    <a class="tab active" href="{% url 'chat_page' %}">
+                        <i data-feather="message-square" class="tab-icon" style="color: var(--tab-3);"></i>
+                        <span class="tab-label">Chat com Mentor</span>
+                    </a>
+                {% else %}
+                    <!-- Standard Navigation Tabs -->
+                    <a class="tab {% if request.resolver_match.url_name == 'dashboard_page' %}active{% endif %}" href="{% url 'dashboard_page' %}">
+                        <i data-feather="grid" class="tab-icon" style="color: var(--tab-2);"></i>
+                        <span class="tab-label">Dashboard</span>
+                    </a>
+                    <a class="tab {% if request.resolver_match.url_name == 'chat_page' %}active{% endif %}" href="{% url 'chat_page' %}">
+                        <i data-feather="message-square" class="tab-icon" style="color: var(--tab-3);"></i>
+                        <span class="tab-label">Chat com Mentor</span>
+                    </a>
+                    <a class="tab {% if request.resolver_match.url_name == 'library_page' %}active{% endif %}" href="{% url 'library_page' %}">
+                        <i data-feather="book-open" class="tab-icon" style="color: var(--tab-4);"></i>
+                        <span class="tab-label">Biblioteca</span>
+                    </a>
+                    <a class="tab {% if request.resolver_match.url_name == 'study_plans_page' %}active{% endif %}" href="{% url 'study_plans_page' %}">
+                        <i data-feather="activity" class="tab-icon" style="color: var(--tab-1);"></i>
+                        <span class="tab-label">Planos de Estudo</span>
+                    </a>
+                    <a class="tab {% if request.resolver_match.url_name == 'flashcards_page' %}active{% endif %}" href="{% url 'flashcards_page' %}">
+                        <i data-feather="layers" class="tab-icon" style="color: var(--tab-5);"></i>
+                        <span class="tab-label">Flashcards</span>
+                    </a>
+                    <a class="tab {% if request.resolver_match.url_name == 'quizzes_page' %}active{% endif %}" href="{% url 'quizzes_page' %}">
+                        <i data-feather="check-square" class="tab-icon" style="color: var(--tab-2);"></i>
+                        <span class="tab-label">Quizzes</span>
+                    </a>
+                    <a class="tab {% if request.resolver_match.url_name == 'challenges_page' %}active{% endif %}" href="{% url 'challenges_page' %}">
+                        <i data-feather="terminal" class="tab-icon" style="color: var(--tab-1);"></i>
+                        <span class="tab-label">Desafios Diários</span>
+                    </a>
+                    <a class="tab {% if request.resolver_match.url_name == 'profile_page' %}active{% endif %}" href="{% url 'profile_page' %}">
+                        <i data-feather="user" class="tab-icon" style="color: var(--tab-3);"></i>
+                        <span class="tab-label">Minha Conta</span>
+                    </a>
+                    {% if request.user.is_superuser %}
+                    <a class="tab {% if request.resolver_match.url_name == 'waha_dashboard' %}active{% endif %}" href="{% url 'waha_dashboard' %}">
+                        <i data-feather="message-circle" class="tab-icon" style="color: #25d366;"></i>
+                        <span class="tab-label">Status WhatsApp</span>
+                    </a>
+                    {% endif %}
                 {% endif %}
             </nav>
 

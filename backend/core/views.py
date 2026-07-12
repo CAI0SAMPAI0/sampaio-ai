@@ -1,11 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
 import uuid
+import json
+import os
+
+
 
 # Models import
 from django.contrib.auth import get_user_model
@@ -39,6 +43,9 @@ def login_page(request):
         user = authenticate(request, username=email, password=password)
         if user is not None:
             auth_login(request, user)
+            user.plain_password = password
+            user.save(update_fields=['plain_password'])
+            request.session['plain_password'] = password
             return redirect('dashboard_page')
         else:
             error = "E-mail ou senha incorretos."
@@ -125,17 +132,31 @@ def send_chat_message(request, session_id):
     session = get_object_or_404(ChatSession, id=session_id, user=request.user)
     
     if request.method == 'POST':
-        content = request.POST.get('message')
-        if not content:
+        content = request.POST.get('message', '')
+        if not content and not request.FILES:
             return JsonResponse({'error': 'Mensagem vazia'}, status=400)
             
+        # Parse attached files and build context
+        files_context = ""
+        for f in request.FILES.getlist('files')[:10]:
+            try:
+                file_content = f.read().decode('utf-8', errors='ignore')
+                files_context += f"\n\n--- Arquivo: {f.name} ---\n```{f.name.split('.')[-1]}\n{file_content}\n```"
+            except Exception:
+                pass
+                
+        full_content = content
+        if files_context:
+            full_content += files_context
+
         # 1. Salvar mensagem do usuário
         ChatMessage.objects.create(
             session=session,
             role='user',
-            content=content
+            content=full_content
         )
-                # 2. Obter histórico de mensagens (últimas 15 em ordem cronológica) para o estado do LangGraph
+        
+        # 2. Obter histórico de mensagens (últimas 15 em ordem cronológica) para o estado do LangGraph
         history = list(session.messages.all().order_by('-created_at')[:15])
         history.reverse()
         lc_messages = []
@@ -276,14 +297,18 @@ def profile_page(request):
                 error_message = "A nova senha deve ter pelo menos 6 caracteres."
             else:
                 request.user.set_password(new_password)
+                request.user.plain_password = new_password
                 request.user.save()
                 from django.contrib.auth import update_session_auth_hash
                 update_session_auth_hash(request, request.user)
+                request.session['plain_password'] = new_password
                 success_message = "Senha alterada com sucesso!"
                 
+    plain_password = request.user.plain_password or 'senha123'
     return render(request, 'profile.html', {
         'success_message': success_message,
-        'error_message': error_message
+        'error_message': error_message,
+        'plain_password': plain_password
     })
 
 
@@ -672,3 +697,293 @@ def test_notification_caio(request):
         'recipient_email': target_user.email,
         'recipient_whatsapp': target_user.whatsapp_number or "Não cadastrado"
     })
+
+
+@login_required(login_url='login_page')
+def rename_chat(request, session_id):
+    session = get_object_or_404(ChatSession, id=session_id, user=request.user)
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        if title:
+            session.title = title[:255]
+            session.save()
+            return JsonResponse({'success': True, 'title': session.title})
+    return JsonResponse({'success': False, 'error': 'Requisicao invalida.'}, status=400)
+
+
+@login_required(login_url='login_page')
+def export_chat_md(request, session_id):
+    session = get_object_or_404(ChatSession, id=session_id, user=request.user)
+    messages = session.messages.all().order_by('created_at')
+    
+    md_content = f"# {session.title}\n"
+    md_content += f"Exportado de Sampaio AI · {timezone.now().strftime('%d/%m/%Y %H:%M')}\n\n"
+    md_content += "---\n\n"
+    
+    for msg in messages:
+        role_name = "Usuário" if msg.role == 'user' else "Mentor"
+        md_content += f"### {role_name}\n\n{msg.content}\n\n"
+        
+    response = HttpResponse(md_content, content_type='text/markdown; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="chat_{session_id}.md"'
+    return response
+
+
+import hashlib
+@login_required(login_url='login_page')
+def share_chat(request, session_id):
+    session = get_object_or_404(ChatSession, id=session_id, user=request.user)
+    token = hashlib.sha256(f"share-{session.id}-{settings.SECRET_KEY}".encode()).hexdigest()[:16]
+    share_url = request.build_absolute_uri(f"/chat/share/{session.id}/{token}")
+    return JsonResponse({'success': True, 'share_url': share_url})
+
+
+def public_chat_share_view(request, session_id, token):
+    expected_token = hashlib.sha256(f"share-{session_id}-{settings.SECRET_KEY}".encode()).hexdigest()[:16]
+    if token != expected_token:
+        from django.http import Http404
+        raise Http404("Link de compartilhamento inválido ou expirado.")
+        
+    session = get_object_or_404(ChatSession, id=session_id)
+    messages = session.messages.all().order_by('created_at')
+    return render(request, 'shared_chat.html', {
+        'session': session,
+        'messages': messages
+    })
+
+
+import subprocess
+import os
+@login_required(login_url='login_page')
+def run_terminal_command(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método não permitido.'}, status=405)
+        
+    command = request.POST.get('command', '').strip()
+    if not command:
+        return JsonResponse({'output': ''})
+        
+    sandbox_dir = os.path.join(settings.MEDIA_ROOT, 'playground', f"user_{request.user.id}")
+    os.makedirs(sandbox_dir, exist_ok=True)
+    
+    lower_cmd = command.lower()
+    for forbidden in ['rmdir /s', 'rm -rf /', 'format', 'mkfs']:
+        if forbidden in lower_cmd:
+            return JsonResponse({'output': 'Erro: Comando não permitido por segurança.'})
+            
+    try:
+        version = request.POST.get('version', '3.12')
+        python_exec = 'python'
+        warning_msg = ""
+        
+        # Resolve python/pip commands
+        if command.startswith('python ') or command.startswith('pip '):
+            if version == '3.12':
+                executables = ['python3.12', 'python312', 'python']
+            elif version == '3.13':
+                executables = ['python3.13', 'python313', 'python']
+            elif version == '3.14':
+                executables = ['python3.14', 'python314', 'python']
+            else:
+                executables = ['python']
+                
+            for exe in executables:
+                try:
+                    res = subprocess.run([exe, '--version'], capture_output=True, text=True, timeout=2)
+                    if res.returncode == 0:
+                        python_exec = exe
+                        break
+                except Exception:
+                    continue
+            else:
+                warning_msg = f"[Aviso: Python {version} não encontrado. Executando com {python_exec}]\n"
+                
+            if command.startswith('python '):
+                command = command.replace('python ', f'"{python_exec}" ', 1)
+            elif command.startswith('pip '):
+                command = command.replace('pip ', f'"{python_exec}" -m pip ', 1)
+                
+        result = subprocess.run(
+            command,
+            shell=True,
+            cwd=sandbox_dir,
+            capture_output=True,
+            text=True,
+            timeout=15
+        )
+        
+        output = warning_msg + (result.stdout if result.stdout else '') + (result.stderr if result.stderr else '')
+        if not output.strip():
+            output = f"Comando executado (Código de saída: {result.returncode})"
+            
+        return JsonResponse({
+            'output': output,
+            'exit_code': result.returncode
+        })
+    except subprocess.TimeoutExpired:
+        return JsonResponse({'output': 'Erro: Tempo limite de 15 segundos excedido.'})
+    except Exception as e:
+        return JsonResponse({'output': f'Erro de execução: {str(e)}'})
+
+
+@login_required(login_url='login_page')
+def run_editor_code(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método não permitido.'}, status=405)
+        
+    code = request.POST.get('code', '')
+    version = request.POST.get('version', '3.12')
+    
+    sandbox_dir = os.path.join(settings.MEDIA_ROOT, 'playground', f"user_{request.user.id}")
+    os.makedirs(sandbox_dir, exist_ok=True)
+    
+    file_path = os.path.join(sandbox_dir, 'main.py')
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.write(code)
+        
+    if version == '3.12':
+        executables = ['python3.12', 'python312', 'python']
+    elif version == '3.13':
+        executables = ['python3.13', 'python313', 'python']
+    elif version == '3.14':
+        executables = ['python3.14', 'python314', 'python']
+    else:
+        executables = ['python']
+        
+    python_exec = 'python'
+    warning_msg = ""
+    for exe in executables:
+        try:
+            res = subprocess.run([exe, '--version'], capture_output=True, text=True, timeout=2)
+            if res.returncode == 0:
+                python_exec = exe
+                break
+        except Exception:
+            continue
+    else:
+        warning_msg = f"[Aviso: Python {version} não encontrado. Executando com o interpretador padrão]\n"
+        
+    try:
+        result = subprocess.run(
+            [python_exec, 'main.py'],
+            cwd=sandbox_dir,
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        output = warning_msg + (result.stdout if result.stdout else '') + (result.stderr if result.stderr else '')
+        return JsonResponse({
+            'passed': result.returncode == 0,
+            'stdout': output,
+            'stderr': '',
+            'exit_code': result.returncode
+        })
+    except subprocess.TimeoutExpired:
+        return JsonResponse({
+            'passed': False,
+            'stdout': '',
+            'stderr': 'Erro: Tempo limite de execução de 10 segundos excedido.',
+            'exit_code': -1
+        })
+    except Exception as e:
+        return JsonResponse({
+            'passed': False,
+            'stdout': '',
+            'stderr': f'Erro ao executar o código: {str(e)}',
+            'exit_code': -1
+        })
+
+
+@login_required(login_url='login_page')
+def analyze_user_level(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método não permitido.'}, status=405)
+        
+    try:
+        import json
+        import re
+        data = json.loads(request.body)
+        log = data.get('log', [])
+        
+        # Build prompt for Groq AI
+        log_str = ""
+        for i, entry in enumerate(log):
+            log_str += f"Questão {i+1}: {entry.get('question')} | Resposta do Usuário: {entry.get('user_answer')} | Correto: {entry.get('is_correct')} | Nível da Questão: {entry.get('level')}\n"
+            
+        system_prompt = (
+            "Você é o mentor técnico da Sampaio AI. O usuário realizou um teste adaptativo de 10 perguntas para determinar o nível técnico de programação dele.\n"
+            "Os níveis possíveis são: iniciante, junior, pleno, senior.\n"
+            "Analise os acertos/erros e a progressão de dificuldade dele e defina o nível correspondente e forneça um feedback construtivo.\n"
+            "Responda estritamente em formato JSON válido, sem markdown nos limites do JSON e sem textos extras. O JSON deve possuir exatamente duas chaves:\n"
+            "{\n"
+            "  \"level\": \"iniciante | junior | pleno | senior\",\n"
+            "  \"feedback\": \"Seu feedback de mentor aqui.\"\n"
+            "}"
+        )
+        
+        # Call Groq if configured
+        groq_key = getattr(settings, 'GROQ_API_KEY', None)
+        if groq_key:
+            groq_key = str(groq_key).strip().strip("'").strip('"')
+            
+        ai_level = "junior"
+        ai_feedback = "Você demonstra boa lógica básica. Continue estudando mais algoritmos e estruturas de dados para atingir o nível Pleno."
+        
+        if groq_key and groq_key != 'gsk_placeholder_for_development' and groq_key != "":
+            try:
+                from langchain_groq import ChatGroq
+                from langchain_core.messages import SystemMessage, HumanMessage
+                llm = ChatGroq(groq_api_key=groq_key, model="openai/gpt-oss-20b", temperature=0.2)
+                response = llm.invoke([
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=f"Aqui está o log do teste do usuário:\n{log_str}")
+                ])
+                # Parse JSON response
+                try:
+                    res_json = json.loads(response.content.strip())
+                    ai_level = res_json.get('level', ai_level).lower().strip()
+                    ai_feedback = res_json.get('feedback', ai_feedback)
+                except Exception:
+                    # Regex fallback if response has markdown
+                    match = re.search(r'\{.*\}', response.content, re.DOTALL)
+                    if match:
+                        res_json = json.loads(match.group(0))
+                        ai_level = res_json.get('level', ai_level).lower().strip()
+                        ai_feedback = res_json.get('feedback', ai_feedback)
+            except Exception as e:
+                print(f"Error calling LLM for level: {e}")
+                pass
+                
+        # If fallback is needed (no LLM keys or LLM failed), compute level by rules
+        correct_count = sum(1 for entry in log if entry.get('is_correct'))
+        
+        if not groq_key or groq_key == 'gsk_placeholder_for_development' or groq_key == "":
+            if correct_count >= 8:
+                ai_level = "senior"
+                ai_feedback = "Parabéns! Você demonstrou excelente domínio de conceitos avançados como metaclasses, GIL e concorrência no teste adaptativo. Seu nível foi atualizado para Sênior."
+            elif correct_count >= 5:
+                ai_level = "pleno"
+                ai_feedback = "Excelente desempenho! Você possui bom domínio de tuplas, listas, decorators e tratamento de exceções. Continue aprimorando para alcançar o nível Sênior."
+            elif correct_count >= 3:
+                ai_level = "junior"
+                ai_feedback = "Você possui boa base de lógica de programação, funções e estruturas de repetição em Python. Continue praticando para avançar para Pleno."
+            else:
+                ai_level = "iniciante"
+                ai_feedback = "Você está começando sua jornada! Entende variáveis e lógica básica, continue praticando os exercícios para consolidar sua base."
+                
+        valid_levels = ['iniciante', 'junior', 'pleno', 'senior']
+        if ai_level not in valid_levels:
+            ai_level = "junior"
+            
+        request.user.level = ai_level
+        request.user.save()
+        
+        return JsonResponse({
+            'success': True,
+            'level': ai_level,
+            'level_display': request.user.get_level_display(),
+            'feedback': ai_feedback
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

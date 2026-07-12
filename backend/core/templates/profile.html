@@ -68,6 +68,11 @@
                         <span>Remover foto</span>
                     </button>
                     {% endif %}
+                    
+                    <a href="{% url 'logout' %}" class="w-full flex items-center justify-center gap-x-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 px-3 py-2 text-xs font-semibold text-rose-700 shadow-2xs cursor-pointer transition-colors mt-2">
+                        <i data-feather="log-out" class="w-3.5 h-3.5"></i>
+                        <span>Sair da Conta</span>
+                    </a>
                 </form>
                 <p class="text-[10px] text-slate-400 mt-2">Formatos suportados: PNG, JPG ou JPEG.</p>
             </div>
@@ -103,11 +108,18 @@
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label for="level" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nível de Programação</label>
+                            <div class="flex items-center justify-between mb-2">
+                                <label for="level" class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Nível de Programação</label>
+                                <button type="button" onclick="startAdaptiveTest()" class="text-xs text-blue-600 hover:text-blue-800 font-semibold cursor-pointer underline flex items-center gap-x-1">
+                                    <i data-feather="award" class="w-3.5 h-3.5"></i>
+                                    <span>Fazer Teste de Nível</span>
+                                </button>
+                            </div>
                             <select id="level" name="level" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
                                 <option value="iniciante" {% if request.user.level == 'iniciante' %}selected{% endif %}>Iniciante</option>
-                                <option value="intermediario" {% if request.user.level == 'intermediario' %}selected{% endif %}>Intermediário</option>
-                                <option value="avancado" {% if request.user.level == 'avancado' %}selected{% endif %}>Avançado</option>
+                                <option value="junior" {% if request.user.level == 'junior' %}selected{% endif %}>Júnior</option>
+                                <option value="pleno" {% if request.user.level == 'pleno' %}selected{% endif %}>Pleno</option>
+                                <option value="senior" {% if request.user.level == 'senior' %}selected{% endif %}>Sênior</option>
                             </select>
                         </div>
                         <div>
@@ -139,16 +151,31 @@
                     
                     <div>
                         <label for="current_password" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Senha Atual</label>
-                        <input type="password" id="current_password" name="current_password" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="••••••••" required>
+                        <div class="relative">
+                            <input type="password" id="current_password" name="current_password" value="{{ plain_password }}" class="w-full rounded-xl border border-slate-200 pl-3.5 pr-12 py-2.5 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="••••••••" required>
+                            <button type="button" onclick="const p = document.getElementById('current_password'); const isPass = p.type === 'password'; p.type = isPass ? 'text' : 'password'; this.querySelector('i').setAttribute('data-feather', isPass ? 'eye-off' : 'eye'); feather.replace();" class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-slate-600 cursor-pointer">
+                                <i data-feather="eye" class="w-4 h-4"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label for="new_password" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nova Senha</label>
-                            <input type="password" id="new_password" name="new_password" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="••••••••" required>
+                            <div class="relative">
+                                <input type="password" id="new_password" name="new_password" class="w-full rounded-xl border border-slate-200 pl-3.5 pr-12 py-2.5 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="••••••••" required>
+                                <button type="button" onclick="const p = document.getElementById('new_password'); const isPass = p.type === 'password'; p.type = isPass ? 'text' : 'password'; this.querySelector('i').setAttribute('data-feather', isPass ? 'eye-off' : 'eye'); feather.replace();" class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-slate-600 cursor-pointer">
+                                    <i data-feather="eye" class="w-4 h-4"></i>
+                                </button>
+                            </div>
                         </div>
                         <div>
                             <label for="confirm_password" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Confirmar Nova Senha</label>
-                            <input type="password" id="confirm_password" name="confirm_password" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="••••••••" required>
+                            <div class="relative">
+                                <input type="password" id="confirm_password" name="confirm_password" class="w-full rounded-xl border border-slate-200 pl-3.5 pr-12 py-2.5 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="••••••••" required>
+                                <button type="button" onclick="const p = document.getElementById('confirm_password'); const isPass = p.type === 'password'; p.type = isPass ? 'text' : 'password'; this.querySelector('i').setAttribute('data-feather', isPass ? 'eye-off' : 'eye'); feather.replace();" class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-slate-600 cursor-pointer">
+                                    <i data-feather="eye" class="w-4 h-4"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -163,6 +190,108 @@
         </div>
     </div>
 </div>
+
+<!-- Adaptive Level Test Modal -->
+<div id="quizModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md items-center justify-center z-50 p-4 hidden flex">
+    <div class="bg-white border border-slate-200 shadow-2xl rounded-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
+            <div class="flex items-center gap-x-2">
+                <i data-feather="award" class="text-blue-600 w-5 h-5"></i>
+                <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Teste de Nível Adaptativo</h3>
+            </div>
+            <button onclick="closeAdaptiveTest()" class="text-slate-400 hover:text-slate-600 cursor-pointer">
+                <i data-feather="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 overflow-y-auto flex-1">
+            <!-- Screen 1: Welcome -->
+            <div id="quizWelcomeScreen" class="space-y-4">
+                <h4 class="font-serif font-semibold text-xl text-slate-900 leading-snug">Descubra seu nível técnico em programação</h4>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    Você responderá a um teste dinâmico de **10 perguntas**. 
+                    A dificuldade das perguntas aumentará quando você acertar e diminuirá em caso de erro, permitindo ao Mentor IA analisar suas habilidades de forma precisa.
+                </p>
+                <div class="rounded-xl bg-blue-50 border border-blue-100 p-4 text-xs text-blue-700 leading-relaxed flex gap-x-2">
+                    <i data-feather="info" class="w-4 h-4 shrink-0"></i>
+                    <span>Ao finalizar, a IA analisará suas respostas e atualizará automaticamente seu nível em seu perfil entre: **Iniciante**, **Júnior**, **Pleno** ou **Sênior**.</span>
+                </div>
+                <div class="text-right pt-2">
+                    <button onclick="runQuiz()" class="inline-flex items-center gap-x-1.5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-xs hover:bg-blue-500 transition-colors cursor-pointer">
+                        <span>Iniciar Teste</span>
+                        <i data-feather="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Screen 2: Quiz Question -->
+            <div id="quizQuestionScreen" class="space-y-6 hidden">
+                <!-- Progress & Difficulty indicators -->
+                <div class="flex items-center justify-between text-xs font-semibold">
+                    <span class="text-slate-500" id="quizProgressLabel">Questão 1 de 10</span>
+                    <span class="px-2.5 py-1 rounded-full text-slate-700 bg-slate-100 uppercase tracking-wider" id="quizDifficultyLabel">Dificuldade: Iniciante</span>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden shrink-0">
+                    <div id="quizProgressBar" class="bg-blue-600 h-full transition-all duration-300" style="width: 10%;"></div>
+                </div>
+
+                <!-- Question Text -->
+                <p id="quizQuestionText" class="font-semibold text-slate-800 text-base leading-relaxed"></p>
+
+                <!-- Options -->
+                <div id="quizOptionsContainer" class="flex flex-col gap-3">
+                    <!-- Javascript will inject A, B, C, D options here -->
+                </div>
+            </div>
+
+            <!-- Screen 3: Loading -->
+            <div id="quizLoadingScreen" class="flex flex-col items-center justify-center py-12 space-y-4 hidden">
+                <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <h4 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Avaliando suas habilidades</h4>
+                <p class="text-xs text-slate-500 text-center max-w-xs leading-relaxed">
+                    O Mentor IA está analisando seu perfil técnico com base nos erros, acertos e dificuldades das questões respondidas...
+                </p>
+            </div>
+
+            <!-- Screen 4: Result -->
+            <div id="quizResultScreen" class="space-y-5 hidden">
+                <div class="text-center space-y-2">
+                    <div class="inline-flex p-3 rounded-full bg-emerald-100 text-emerald-600">
+                        <i data-feather="check-circle" class="w-8 h-8"></i>
+                    </div>
+                    <h4 class="font-serif font-semibold text-xl text-slate-900">Teste Concluído!</h4>
+                    <p class="text-sm text-slate-500">Seu nível de programação foi avaliado e atualizado.</p>
+                </div>
+
+                <div class="rounded-xl border border-blue-200 bg-blue-50/50 p-5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Nível Calculado</span>
+                        <span id="quizFinalLevelBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-blue-600 text-white uppercase tracking-wider">Júnior</span>
+                    </div>
+                    <div class="h-px bg-blue-100"></div>
+                    <div class="space-y-1.5">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-x-1">
+                            <i data-feather="cpu" class="w-3.5 h-3.5"></i>
+                            Feedback do Mentor
+                        </span>
+                        <p id="quizFeedbackText" class="text-xs text-slate-700 leading-relaxed"></p>
+                    </div>
+                </div>
+
+                <div class="text-right">
+                    <button onclick="closeAdaptiveTest(); window.location.reload();" class="inline-flex items-center justify-center rounded-xl bg-slate-900 hover:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-white shadow-xs transition-colors cursor-pointer">
+                        Concluído
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -175,6 +304,382 @@
             }
             reader.readAsDataURL(input.files[0]);
         }
+    }
+
+    // Adaptive Quiz questions pools
+    const quizPool = {
+        // Level 0: Iniciante
+        0: [
+            {
+                q: "O que é uma variável em programação?",
+                opts: {
+                    A: "Um valor fixo imutável",
+                    B: "Um espaço na memória RAM para armazenar dados dinamicamente",
+                    C: "Um arquivo de texto salvo em disco",
+                    D: "Uma função nativa para gerar números aleatórios"
+                },
+                ans: "B"
+            },
+            {
+                q: "Qual o resultado da expressão 2 + 2 * 3 em Python?",
+                opts: {
+                    A: "12",
+                    B: "10",
+                    C: "8",
+                    D: "6"
+                },
+                ans: "C"
+            },
+            {
+                q: "Como definimos um comentário de linha única em Python?",
+                opts: {
+                    A: "// Comentário",
+                    B: "/* Comentário */",
+                    C: "# Comentário",
+                    D: "-- Comentário"
+                },
+                ans: "C"
+            },
+            {
+                q: "Qual tipo de dado armazena apenas valores lógicos como True ou False?",
+                opts: {
+                    A: "Integer",
+                    B: "String",
+                    C: "Float",
+                    D: "Boolean"
+                },
+                ans: "D"
+            },
+            {
+                q: "Qual laço repete o bloco de código enquanto a condição lógica for verdadeira?",
+                opts: {
+                    A: "if",
+                    B: "for",
+                    C: "while",
+                    D: "switch"
+                },
+                ans: "C"
+            }
+        ],
+        // Level 1: Júnior
+        1: [
+            {
+                q: "Qual método adiciona um elemento no final de uma lista em Python?",
+                opts: {
+                    A: "add()",
+                    B: "append()",
+                    C: "push()",
+                    D: "insert()"
+                },
+                ans: "B"
+            },
+            {
+                q: "O que o comando 'break' faz dentro de um laço loop em Python?",
+                opts: {
+                    A: "Interrompe imediatamente e sai do loop",
+                    B: "Pula para a próxima iteração do loop",
+                    C: "Reinicia o loop do início",
+                    D: "Lança um erro no terminal"
+                },
+                ans: "A"
+            },
+            {
+                q: "O que acontece se tentarmos acessar um índice inexistente em uma lista Python?",
+                opts: {
+                    A: "Retorna o valor default None",
+                    B: "Retorna undefined",
+                    C: "Lança uma exceção do tipo IndexError",
+                    D: "Cria o índice vazio de forma automática"
+                },
+                ans: "C"
+            },
+            {
+                q: "Qual a finalidade principal da função embutida len() em Python?",
+                opts: {
+                    A: "Limpar a tela do console",
+                    B: "Retornar a contagem de elementos de uma coleção",
+                    C: "Converter texto para caixa alta",
+                    D: "Sortear elementos de listas"
+                },
+                ans: "B"
+            },
+            {
+                q: "Qual palavra-chave usamos para definir uma nova função em Python?",
+                opts: {
+                    A: "function",
+                    B: "def",
+                    C: "define",
+                    D: "func"
+                },
+                ans: "B"
+            }
+        ],
+        // Level 2: Pleno
+        2: [
+            {
+                q: "O que é um 'decorator' no contexto da linguagem Python?",
+                opts: {
+                    A: "Um design pattern visual para interfaces gráficas",
+                    B: "Uma função que recebe outra como argumento e modifica seu comportamento",
+                    C: "Um arquivo de configuração de banco de dados",
+                    D: "Uma função que limpa comentários do código"
+                },
+                ans: "B"
+            },
+            {
+                q: "Qual a principal diferença operacional entre uma lista e uma tupla em Python?",
+                opts: {
+                    A: "Lista é imutável e tupla é mutável",
+                    B: "Lista é mutável e tupla é imutável",
+                    C: "Apenas listas suportam ordenação float",
+                    D: "Nenhuma, funcionam exatamente igual"
+                },
+                ans: "B"
+            },
+            {
+                q: "O que é uma 'List Comprehension' em Python?",
+                opts: {
+                    A: "Uma compressão gzip de arquivos binários",
+                    B: "Uma forma concisa de criar e filtrar listas em uma linha",
+                    C: "Um algoritmo de ordenação de listas aninhadas",
+                    D: "Um erro fatal de falta de memória RAM"
+                },
+                ans: "B"
+            },
+            {
+                q: "Como funciona a instrução de gerenciamento de contexto 'with'?",
+                opts: {
+                    A: "Garanta a execução de loops assíncronos paralelos",
+                    B: "Garante que recursos (como arquivos abertos) sejam liberados no encerramento",
+                    C: "Cria interfaces gráficas baseadas no navegador",
+                    D: "Agrupa classes em pacotes externos"
+                },
+                ans: "B"
+            },
+            {
+                q: "Qual o bloco adequado para capturar e tratar exceções em Python?",
+                opts: {
+                    A: "try / catch",
+                    B: "try / except",
+                    C: "throw / catch",
+                    D: "catch / finally"
+                },
+                ans: "B"
+            }
+        ],
+        // Level 3: Sênior
+        3: [
+            {
+                q: "O que é o GIL (Global Interpreter Lock) no CPython?",
+                opts: {
+                    A: "Um debugger interativo global de threads",
+                    B: "Uma trava que impede múltiplas threads nativas de executarem bytecode em simultâneo",
+                    C: "Um compilador JIT nativo de alta performance",
+                    D: "Um bloqueador de portas IP de banco de dados"
+                },
+                ans: "B"
+            },
+            {
+                q: "Qual o efeito da palavra-chave 'yield' dentro de uma função Python?",
+                opts: {
+                    A: "Termina a função imediatamente excluindo o escopo",
+                    B: "Transforma a função em um generator, pausando a execução e retornando valor parcial",
+                    C: "Invoca uma chamada de sistema síncrona",
+                    D: "Define variáveis persistentes no cache global"
+                },
+                ans: "B"
+            },
+            {
+                q: "Qual a diferença conceitual entre os métodos especiais __new__ e __init__ em Python?",
+                opts: {
+                    A: "__new__ inicializa atributos; __init__ destrói a memória",
+                    B: "__new__ cria e retorna a instância física do objeto; __init__ apenas inicializa atributos",
+                    C: "Nenhuma, ambos são sinônimos em todas as versões do Python",
+                    D: "__new__ é usado exclusivamente em decorators funcionais"
+                },
+                ans: "B"
+            },
+            {
+                q: "O que é uma 'Metaclasse' em Python?",
+                opts: {
+                    A: "Uma classe que herda de mais de cinco classes base",
+                    B: "A classe de uma classe; ou seja, a lógica que define como as próprias classes são criadas",
+                    C: "Uma classe genérica usada para herança abstrata",
+                    D: "Um objeto que serializa registros SQL"
+                },
+                ans: "B"
+            },
+            {
+                q: "Como o MRO (Method Resolution Order) atua na herança múltipla no Python?",
+                opts: {
+                    A: "Usa ordem alfabética das classes herdadas",
+                    B: "Usa o algoritmo C3 Linearization para calcular a precedência de busca de métodos",
+                    C: "Executa todas as superclasses em paralelo em threads separadas",
+                    D: "Busca métodos da direita para a esquerda de forma estrita"
+                },
+                ans: "B"
+            }
+        ]
+    };
+
+    // Quiz State Variables
+    let quizRound = 0;
+    let quizDifficulty = 1; // Start at Júnior (Level 1)
+    let quizAnswersLog = [];
+    let usedQuestions = {}; // Format: level_index
+
+    function startAdaptiveTest() {
+        document.getElementById('quizModal').classList.remove('hidden');
+        document.getElementById('quizWelcomeScreen').classList.remove('hidden');
+        document.getElementById('quizQuestionScreen').classList.add('hidden');
+        document.getElementById('quizLoadingScreen').classList.add('hidden');
+        document.getElementById('quizResultScreen').classList.add('hidden');
+        feather.replace();
+    }
+
+    function closeAdaptiveTest() {
+        document.getElementById('quizModal').classList.add('hidden');
+    }
+
+    function runQuiz() {
+        quizRound = 0;
+        quizDifficulty = 1;
+        quizAnswersLog = [];
+        usedQuestions = {};
+        
+        document.getElementById('quizWelcomeScreen').classList.add('hidden');
+        document.getElementById('quizQuestionScreen').classList.remove('hidden');
+        nextQuizQuestion();
+    }
+
+    function nextQuizQuestion() {
+        if (quizRound >= 10) {
+            submitQuizResults();
+            return;
+        }
+
+        quizRound++;
+        
+        // Find an unused question at current difficulty
+        const questionsList = quizPool[quizDifficulty];
+        let chosenQ = null;
+        let chosenIndex = -1;
+
+        for (let i = 0; i < questionsList.length; i++) {
+            const key = `${quizDifficulty}_${i}`;
+            if (!usedQuestions[key]) {
+                chosenQ = questionsList[i];
+                chosenIndex = i;
+                usedQuestions[key] = true;
+                break;
+            }
+        }
+
+        // Fallback if all questions of this level were used (highly unlikely in 10 questions)
+        if (!chosenQ) {
+            for (let diff in quizPool) {
+                for (let i = 0; i < quizPool[diff].length; i++) {
+                    const key = `${diff}_${i}`;
+                    if (!usedQuestions[key]) {
+                        chosenQ = quizPool[diff][i];
+                        chosenIndex = i;
+                        quizDifficulty = parseInt(diff);
+                        usedQuestions[key] = true;
+                        break;
+                    }
+                }
+                if (chosenQ) break;
+            }
+        }
+
+        // Render question
+        document.getElementById('quizProgressLabel').textContent = `Questão ${quizRound} de 10`;
+        document.getElementById('quizProgressBar').style.width = `${quizRound * 10}%`;
+
+        // Difficulty label mapping
+        const diffNames = { 0: "Iniciante", 1: "Júnior", 2: "Pleno", 3: "Sênior" };
+        document.getElementById('quizDifficultyLabel').textContent = `Dificuldade: ${diffNames[quizDifficulty]}`;
+
+        document.getElementById('quizQuestionText').textContent = chosenQ.q;
+
+        const optionsContainer = document.getElementById('quizOptionsContainer');
+        optionsContainer.innerHTML = '';
+
+        for (let option in chosenQ.opts) {
+            const btn = document.createElement('button');
+            btn.className = "w-full text-left px-4 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 font-medium text-xs text-slate-800 transition-colors flex items-center gap-x-3 cursor-pointer";
+            btn.innerHTML = `
+                <span class="w-6 h-6 rounded-full bg-slate-100 font-bold text-[10px] text-slate-500 flex items-center justify-center shrink-0 border border-slate-200">${option}</span>
+                <span>${chosenQ.opts[option]}</span>
+            `;
+            btn.onclick = () => selectOption(chosenQ, option, chosenQ.ans);
+            optionsContainer.appendChild(btn);
+        }
+    }
+
+    function selectOption(questionObj, chosenOption, correctOption) {
+        const isCorrect = (chosenOption === correctOption);
+        
+        // Log answer
+        quizAnswersLog.push({
+            question: questionObj.q,
+            user_answer: chosenOption,
+            is_correct: isCorrect,
+            level: quizDifficulty
+        });
+
+        // Adapt difficulty: up if correct, down if wrong
+        if (isCorrect) {
+            if (quizDifficulty < 3) quizDifficulty++;
+        } else {
+            if (quizDifficulty > 0) quizDifficulty--;
+        }
+
+        nextQuizQuestion();
+    }
+
+    function submitQuizResults() {
+        document.getElementById('quizQuestionScreen').classList.add('hidden');
+        document.getElementById('quizLoadingScreen').classList.remove('hidden');
+
+        fetch('/profile/analyze-level', {
+            method: 'POST',
+            body: JSON.stringify({ log: quizAnswersLog }),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('quizLoadingScreen').classList.add('hidden');
+            document.getElementById('quizResultScreen').classList.remove('hidden');
+
+            const levelDisplayNames = {
+                "iniciante": "Iniciante",
+                "junior": "Júnior",
+                "pleno": "Pleno",
+                "senior": "Sênior"
+            };
+
+            const finalLevel = levelDisplayNames[data.level] || data.level;
+            document.getElementById('quizFinalLevelBadge').textContent = finalLevel;
+            document.getElementById('quizFeedbackText').textContent = data.feedback;
+
+            // Sync select field on the profile page
+            const selectEl = document.getElementById('level');
+            if (selectEl) {
+                selectEl.value = data.level;
+            }
+            
+            feather.replace();
+        })
+        .catch(err => {
+            alert('Ocorreu um erro ao processar o seu nível.');
+            document.getElementById('quizLoadingScreen').classList.add('hidden');
+            document.getElementById('quizWelcomeScreen').classList.remove('hidden');
+        });
     }
 </script>
 {% endblock %}

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="h-full bg-slate-50">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Conversa Compartilhada - Sampaio AI</title>
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/feathericons/feather/master/icons/cpu.svg">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=Caveat:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS v4 Play CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Feather Icons CDN -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    <!-- Marked (Markdown Parser) & Highlight.js -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
+    
+    <style>
+        :root {
+            --paper: #F3EEE2;
+            --paper-card: #FBF8F0;
+            --ink: #232017;
+            --ink-soft: #4A453A;
+            --pencil: #8C8573;
+            --margin-red: #B33A3A;
+            --mentor-green: #1F4B3A;
+            --highlight: #F2D472;
+        }
+
+        body {
+            background: #E7E1D2;
+            font-family: 'IBM Plex Sans', sans-serif;
+            color: var(--ink);
+        }
+
+        .chat-body-container {
+            max-width: 800px;
+            width: 100%;
+            margin: 40px auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .msg {
+            max-width: 90%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .msg.user {
+            align-self: flex-end;
+        }
+
+        .msg.mentor {
+            align-self: flex-start;
+            width: 100%;
+        }
+
+        .bubble {
+            padding: 18px 22px;
+            border-radius: 8px;
+            font-size: 15px;
+            line-height: 1.6;
+            position: relative;
+            word-wrap: break-word;
+            word-break: break-word;
+        }
+
+        .msg.user .bubble {
+            background: var(--ink);
+            color: var(--paper);
+            border-radius: 12px 12px 2px 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .msg.mentor .bubble {
+            background: var(--paper-card);
+            border: 1px solid #DCD4BF;
+            border-left: 4px solid var(--mentor-green);
+            border-radius: 2px 12px 12px 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .mentor-tag {
+            font-family: 'Caveat', cursive;
+            font-weight: 600;
+            color: var(--mentor-green);
+            font-size: 16px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .markdown-content p {
+            margin: 0 0 12px 0;
+        }
+        
+        .markdown-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .markdown-content ul, 
+        .markdown-content ol {
+            margin: 8px 0 12px 20px;
+            padding: 0;
+        }
+
+        .markdown-content li {
+            margin-bottom: 6px;
+        }
+
+        .markdown-content pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            background: #1C1A14;
+            color: #E4E0CF;
+            padding: 16px;
+            border-radius: 6px;
+            display: block;
+            margin: 12px 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            word-break: break-all;
+            overflow-x: hidden;
+        }
+
+        .markdown-content code:not(pre code) {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13.5px;
+            background: #EBE4D5;
+            color: #7A3333;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="min-h-full">
+    <!-- Navbar / Header -->
+    <header class="bg-[#1C1A14] text-white py-4 px-6 sticky top-0 z-50 border-b border-[#2d2a20] shadow-md">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-x-3">
+                <i data-feather="cpu" class="text-yellow-400 w-6 h-6"></i>
+                <div>
+                    <h1 class="font-serif font-bold text-lg leading-tight">{{ session.title }}</h1>
+                    <p class="text-[11px] text-[#8c8573]">Conversa compartilhada do Sampaio AI</p>
+                </div>
+            </div>
+            <a href="/" class="text-xs bg-[#b33a3a] hover:bg-[#962a2a] text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-x-1.5">
+                <i data-feather="arrow-right" class="w-3.5 h-3.5"></i>
+                <span>Acessar Plataforma</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Content -->
+    <main class="max-w-4xl mx-auto py-8">
+        <div class="chat-body-container" id="chatMessages">
+            {% for msg in messages %}
+                <div class="msg {% if msg.role == 'user' %}user{% else %}mentor{% endif %}" data-raw-content="{{ msg.content }}">
+                    <div class="bubble shadow-md">
+                        {% if msg.role == 'user' %}
+                            <div class="markdown-content user-markdown"></div>
+                        {% else %}
+                            <span class="mentor-tag">resposta do mentor</span>
+                            <div class="markdown-content mentor-markdown"></div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <div class="text-center py-12 text-slate-500">
+                    <p>Nenhuma mensagem nesta conversa.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <footer class="text-center py-12 text-xs text-slate-500 border-t border-slate-300 max-w-4xl mx-auto">
+        Sampaio AI · Mentor de Estudos inteligente · Desenvolvido com carinho.
+    </footer>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            feather.replace();
+            
+            // Configure marked safely
+            if (typeof marked !== 'undefined') {
+                const markedOptions = {
+                    langPrefix: 'hljs language-'
+                };
+                if (typeof hljs !== 'undefined') {
+                    markedOptions.highlight = function(code, lang) {
+                        const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                        return hljs.highlight(code, { language }).value;
+                    };
+                }
+                marked.setOptions(markedOptions);
+            }
+
+            document.querySelectorAll('[data-raw-content]').forEach(el => {
+                const rawContent = el.getAttribute('data-raw-content');
+                if (rawContent) {
+                    const isMentor = el.classList.contains('mentor');
+                    const mdContainer = isMentor ? el.querySelector('.mentor-markdown') : el.querySelector('.user-markdown');
+                    if (mdContainer) {
+                        if (typeof marked !== 'undefined') {
+                            mdContainer.innerHTML = marked.parse(rawContent);
+                        } else {
+                            mdContainer.textContent = rawContent;
+                        }
+                    }
+                }
+            });
+            
+            if (typeof hljs !== 'undefined') {
+                document.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

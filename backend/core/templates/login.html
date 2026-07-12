@@ -54,7 +54,12 @@
                 </div>
                 <div>
                     <label for="password" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Senha</label>
-                    <input type="password" class="w-full rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-3 text-sm text-white placeholder-slate-600 focus:bg-slate-950/80 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+                    <div class="relative">
+                        <input type="password" class="w-full rounded-xl border border-slate-800 bg-slate-950/50 pl-4 pr-12 py-3 text-sm text-white placeholder-slate-600 focus:bg-slate-950/80 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+                        <button type="button" onclick="const p = document.getElementById('password'); const isPass = p.type === 'password'; p.type = isPass ? 'text' : 'password'; this.querySelector('i').setAttribute('data-feather', isPass ? 'eye-off' : 'eye'); feather.replace();" class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-white cursor-pointer">
+                            <i data-feather="eye" class="w-4 h-4"></i>
+                        </button>
+                    </div>
                 </div>
                 
                 <button type="submit" class="w-full flex items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-md hover:bg-blue-500 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer">

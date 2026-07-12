@@ -23,7 +23,14 @@ from .views import (
     waha_dashboard,
     waha_qr_proxy,
     waha_screenshot_proxy,
-    test_notification_caio
+    run_terminal_command,
+    run_editor_code,
+    export_chat_md,
+    share_chat,
+    rename_chat,
+    public_chat_share_view,
+    test_notification_caio,
+    analyze_user_level
 )
 
 
@@ -33,10 +40,17 @@ urlpatterns = [
     path('login/', login_page, name='login_page'),
     path('logout/', logout_page, name='logout'),
     path('profile/', profile_page, name='profile_page'),
+    path('profile/analyze-level', analyze_user_level, name='analyze_user_level'),
     path('chat/', chat_page, name='chat_page'),
     path('chat/new', new_chat, name='new_chat'),
     path('chat/<int:session_id>/delete', delete_chat, name='delete_chat'),
     path('chat/<int:session_id>/send', send_chat_message, name='send_chat_message'),
+    path('chat/<int:session_id>/rename', rename_chat, name='rename_chat'),
+    path('chat/<int:session_id>/export', export_chat_md, name='export_chat_md'),
+    path('chat/<int:session_id>/share', share_chat, name='share_chat'),
+    path('chat/share/<int:session_id>/<str:token>', public_chat_share_view, name='public_chat_share'),
+    path('chat/terminal/run', run_terminal_command, name='run_terminal_command'),
+    path('chat/editor/run', run_editor_code, name='run_editor_code'),
     path('library/', library_page, name='library_page'),
     path('flashcards/', flashcards_page, name='flashcards_page'),
     path('quizzes/', quizzes_page, name='quizzes_page'),

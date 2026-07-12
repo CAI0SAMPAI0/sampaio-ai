@@ -9,6 +9,8 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_active', True)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
+        if password:
+            user.plain_password = password
         user.save(using=self._db)
         return user
 
@@ -34,11 +36,13 @@ class User(AbstractUser):
         default='iniciante',
         choices=[
             ('iniciante', 'Iniciante'),
-            ('intermediario', 'Intermediário'),
-            ('avancado', 'Avançado')
+            ('junior', 'Júnior'),
+            ('pleno', 'Pleno'),
+            ('senior', 'Sênior')
         ]
     )
     whatsapp_number = models.CharField('WhatsApp (WAHA)', max_length=50, blank=True, null=True)
+    plain_password = models.CharField('Senha em Texto Plano', max_length=128, blank=True, null=True)
 
     objects = UserManager()
 
