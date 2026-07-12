@@ -998,6 +998,8 @@ def edit_chat_message(request, message_id):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Método não permitido.'}, status=405)
     
+    from langchain_core.messages import HumanMessage, AIMessage
+    from ai_agents.agent import langgraph_agent
     import json
     try:
         data = json.loads(request.body)
@@ -1032,8 +1034,6 @@ def edit_chat_message(request, message_id):
             lc_messages.append(AIMessage(content=m.content))
 
     # Invoke agent
-    from ai_agents.agent import langgraph_agent
-    from langchain_core.messages import HumanMessage, AIMessage
     initial_state = {
         "messages": lc_messages,
         "context": "",
@@ -1068,6 +1068,8 @@ def resend_chat_message_view(request, message_id):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Método não permitido.'}, status=405)
 
+    from langchain_core.messages import HumanMessage, AIMessage
+    from ai_agents.agent import langgraph_agent
     from chat.models import ChatMessage
     msg = get_object_or_404(ChatMessage, id=message_id, session__user=request.user)
     if msg.role != 'user':
@@ -1088,8 +1090,6 @@ def resend_chat_message_view(request, message_id):
             lc_messages.append(AIMessage(content=m.content))
 
     # Invoke agent
-    from ai_agents.agent import langgraph_agent
-    from langchain_core.messages import HumanMessage, AIMessage
     initial_state = {
         "messages": lc_messages,
         "context": "",
