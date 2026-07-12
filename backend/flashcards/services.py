@@ -29,7 +29,7 @@ def generate_flashcards_for_document(document_id, user):
         try:
             llm = ChatGroq(
                 groq_api_key=groq_key,
-                model="openai/gpt-oss-20b",
+                model="llama-3.3-70b-specdec",
                 temperature=0.4
             )
             prompt = (

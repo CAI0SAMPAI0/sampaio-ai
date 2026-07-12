@@ -691,7 +691,11 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
     function handleFileSelection(e) {
         const files = Array.from(e.target.files);
         if (selectedFiles.length + files.length > 10) {
-            alert('Você pode anexar no máximo 10 arquivos.');
+            Toastify({
+                text: "Você pode anexar no máximo 10 arquivos.",
+                backgroundColor: "#ef4444",
+                duration: 3000
+            }).showToast();
             return;
         }
         
@@ -750,36 +754,88 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
 
     // Sidebar operations
     function renameSession(id, currentTitle) {
-        const newTitle = prompt("Digite o novo título da conversa:", currentTitle);
-        if (newTitle === null) return;
-        const trimmed = newTitle.trim();
-        if (!trimmed) return;
-
-        const formData = new FormData();
-        formData.append('title', trimmed);
-        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-
-        fetch(`/chat/${id}/rename`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+        const titleEl = document.getElementById(`session-title-${id}`);
+        if (!titleEl) return;
+        
+        // If already editing, do nothing
+        if (titleEl.querySelector('input')) return;
+        
+        // Create input element
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentTitle;
+        input.className = 'w-full bg-[#2a2720] text-slate-200 text-xs rounded border border-[#3e392f] px-1 py-0.5 focus:outline-hidden focus:border-blue-500';
+        
+        // Prevent sidebar item click from navigating when editing
+        input.onclick = (e) => e.stopPropagation();
+        
+        // Save handler
+        const saveRename = () => {
+            const newTitle = input.value.trim();
+            if (!newTitle || newTitle === currentTitle) {
+                titleEl.textContent = currentTitle;
+                return;
             }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                const el = document.getElementById(`session-title-${id}`);
-                if (el) el.textContent = data.title;
+            
+            // Show optimistic update
+            titleEl.textContent = newTitle;
+            
+            const formData = new FormData();
+            formData.append('title', newTitle);
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            
+            fetch(`/chat/${id}/rename`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    titleEl.textContent = data.title;
+                    Toastify({
+                        text: "Conversa renomeada com sucesso!",
+                        backgroundColor: "#1F4B3A",
+                        duration: 3000
+                    }).showToast();
+                } else {
+                    titleEl.textContent = currentTitle;
+                    Toastify({
+                        text: "Erro ao renomear: " + data.error,
+                        backgroundColor: "#ef4444",
+                        duration: 3000
+                    }).showToast();
+                }
+            })
+            .catch(err => {
+                titleEl.textContent = currentTitle;
+                console.error(err);
                 Toastify({
-                    text: "Conversa renomeada com sucesso!",
-                    backgroundColor: "#1F4B3A",
+                    text: "Erro de conexão ao renomear.",
+                    backgroundColor: "#ef4444",
                     duration: 3000
                 }).showToast();
-            } else {
-                alert("Erro ao renomear conversa.");
+            });
+        };
+        
+        input.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                saveRename();
             }
-        });
+            if (e.key === 'Escape') {
+                titleEl.textContent = currentTitle;
+            }
+        };
+        
+        input.onblur = saveRename;
+        
+        // Replace span content with input
+        titleEl.textContent = '';
+        titleEl.appendChild(input);
+        input.focus();
+        input.select();
     }
 
     function shareSession(id) {
@@ -794,7 +850,11 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                     duration: 3000
                 }).showToast();
             } else {
-                alert("Erro ao gerar link de compartilhamento.");
+                Toastify({
+                    text: "Erro ao gerar link de compartilhamento.",
+                    backgroundColor: "#ef4444",
+                    duration: 3000
+                }).showToast();
             }
         });
     }
@@ -895,7 +955,11 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
     function askAIForCodeHelp() {
         const code = codeEditor.value;
         if (!code.trim()) {
-            alert('Escreva algum código no editor para pedir ajuda.');
+            Toastify({
+                text: "Escreva algum código no editor para pedir ajuda.",
+                backgroundColor: "#ef4444",
+                duration: 3000
+            }).showToast();
             return;
         }
         messageInput.value = `Por favor, revise e me ajude com o seguinte código Python:\n\n\`\`\`python\n${code}\n\`\`\``;
@@ -1082,10 +1146,18 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
         if (!rawEl) return;
         
         navigator.clipboard.writeText(rawEl.value).then(() => {
-            // Success alert (temporary custom toast or alert)
-            alert('Mensagem copiada para a área de transferência!');
+            Toastify({
+                text: "Mensagem copiada para a área de transferência!",
+                backgroundColor: "#1F4B3A",
+                duration: 3000
+            }).showToast();
         }).catch(err => {
             console.error('Erro ao copiar: ', err);
+            Toastify({
+                text: "Erro ao copiar mensagem.",
+                backgroundColor: "#ef4444",
+                duration: 3000
+            }).showToast();
         });
     }
 
@@ -1202,14 +1274,28 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                     renderMessages();
                     feather.replace();
                     chatMessages.scrollTop = chatMessages.scrollHeight;
+                    
+                    Toastify({
+                        text: "Mensagem editada e atualizada!",
+                        backgroundColor: "#1F4B3A",
+                        duration: 3000
+                    }).showToast();
                 } else {
-                    alert('Erro ao editar: ' + data.error);
+                    Toastify({
+                        text: "Erro ao editar: " + data.error,
+                        backgroundColor: "#ef4444",
+                        duration: 3000
+                    }).showToast();
                     window.location.reload();
                 }
             })
             .catch(err => {
                 console.error(err);
-                alert('Erro de conexão ao salvar mensagem.');
+                Toastify({
+                    text: "Erro de conexão ao salvar mensagem.",
+                    backgroundColor: "#ef4444",
+                    duration: 3000
+                }).showToast();
                 window.location.reload();
             });
         };
@@ -1268,14 +1354,28 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                 renderMessages();
                 feather.replace();
                 chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                Toastify({
+                    text: "Mensagem reenviada com sucesso!",
+                    backgroundColor: "#1F4B3A",
+                    duration: 3000
+                }).showToast();
             } else {
-                alert('Erro ao reenviar: ' + data.error);
+                Toastify({
+                    text: "Erro ao reenviar: " + data.error,
+                    backgroundColor: "#ef4444",
+                    duration: 3000
+                }).showToast();
             }
         })
         .catch(err => {
             bubble.classList.remove('opacity-70');
             console.error(err);
-            alert('Erro de conexão ao reenviar.');
+            Toastify({
+                text: "Erro de conexão ao reenviar.",
+                backgroundColor: "#ef4444",
+                duration: 3000
+            }).showToast();
         });
     }
   </script>

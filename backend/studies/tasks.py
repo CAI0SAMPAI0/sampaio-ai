@@ -50,7 +50,7 @@ def generate_daily_challenges_task():
         try:
             llm = ChatGroq(
                 groq_api_key=groq_key,
-                model="openai/gpt-oss-20b",
+                model="llama-3.3-70b-specdec",
                 temperature=0.7
             )
             
