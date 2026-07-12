@@ -489,7 +489,7 @@ def submit_challenge(request):
         try:
             llm = ChatGroq(
                 groq_api_key=groq_key,
-                model="llama-3.3-70b-specdec",
+                model="llama-3.3-70b-versatile",
                 temperature=0.4
             )
             
@@ -938,7 +938,7 @@ def analyze_user_level(request):
             try:
                 from langchain_groq import ChatGroq
                 from langchain_core.messages import SystemMessage, HumanMessage
-                llm = ChatGroq(groq_api_key=groq_key, model="llama-3.3-70b-specdec", temperature=0.2)
+                llm = ChatGroq(groq_api_key=groq_key, model="llama-3.3-70b-versatile", temperature=0.2)
                 response = llm.invoke([
                     SystemMessage(content=system_prompt),
                     HumanMessage(content=f"Aqui está o log do teste do usuário:\n{log_str}")

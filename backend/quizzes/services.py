@@ -56,7 +56,7 @@ def generate_quiz_for_document(document_id, user, theme=None, num_questions=3, d
         try:
             llm = ChatGroq(
                 groq_api_key=groq_key,
-                model="llama-3.3-70b-specdec",
+                model="llama-3.3-70b-versatile",
                 temperature=0.4
             )
             prompt = (
