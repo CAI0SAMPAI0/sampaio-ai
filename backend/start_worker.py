@@ -31,6 +31,9 @@ def run_celery_worker():
     pool_args = []
     if os.name == 'nt':
         pool_args = ['-P', 'solo']
+    else:
+        # Limit concurrency to 1 on Render Free Tier to avoid running out of memory (512MB limit)
+        pool_args = ['--concurrency=1']
         
     cmd = ["celery", "-A", "core", "worker", "--loglevel=info"] + pool_args
     print(f"Running command: {' '.join(cmd)}")
