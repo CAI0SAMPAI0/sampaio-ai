@@ -30,7 +30,9 @@ from .views import (
     rename_chat,
     public_chat_share_view,
     test_notification_caio,
-    analyze_user_level
+    analyze_user_level,
+    edit_chat_message,
+    resend_chat_message_view
 )
 
 
@@ -45,6 +47,8 @@ urlpatterns = [
     path('chat/new', new_chat, name='new_chat'),
     path('chat/<int:session_id>/delete', delete_chat, name='delete_chat'),
     path('chat/<int:session_id>/send', send_chat_message, name='send_chat_message'),
+    path('chat/message/<int:message_id>/edit', edit_chat_message, name='edit_chat_message'),
+    path('chat/message/<int:message_id>/resend', resend_chat_message_view, name='resend_chat_message_view'),
     path('chat/<int:session_id>/rename', rename_chat, name='rename_chat'),
     path('chat/<int:session_id>/export', export_chat_md, name='export_chat_md'),
     path('chat/<int:session_id>/share', share_chat, name='share_chat'),

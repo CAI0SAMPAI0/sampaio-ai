@@ -132,7 +132,7 @@ def send_chat_message(request, session_id):
     session = get_object_or_404(ChatSession, id=session_id, user=request.user)
     
     if request.method == 'POST':
-        content = request.POST.get('message', '')
+        content = request.POST.get('message', '').strip()
         if not content and not request.FILES:
             return JsonResponse({'error': 'Mensagem vazia'}, status=400)
             
@@ -150,7 +150,7 @@ def send_chat_message(request, session_id):
             full_content += files_context
 
         # 1. Salvar mensagem do usuário
-        ChatMessage.objects.create(
+        user_msg = ChatMessage.objects.create(
             session=session,
             role='user',
             content=full_content
@@ -181,7 +181,7 @@ def send_chat_message(request, session_id):
             assistant_content = f"Desculpe, ocorreu um erro no processamento do agente: {str(e)}"
             
         # 4. Salvar mensagem do assistente
-        ChatMessage.objects.create(
+        ai_msg = ChatMessage.objects.create(
             session=session,
             role='assistant',
             content=assistant_content
@@ -189,7 +189,11 @@ def send_chat_message(request, session_id):
         
         # Se for requisição AJAX
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({'content': assistant_content})
+            return JsonResponse({
+                'content': assistant_content,
+                'user_message_id': user_msg.id,
+                'assistant_message_id': ai_msg.id
+            })
             
         return redirect(f"/chat/?session={session.id}")
         
@@ -987,3 +991,128 @@ def analyze_user_level(request):
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required(login_url='login_page')
+def edit_chat_message(request, message_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método não permitido.'}, status=405)
+    
+    import json
+    try:
+        data = json.loads(request.body)
+        new_content = data.get('content', '').strip()
+    except Exception:
+        new_content = request.POST.get('content', '').strip()
+
+    if not new_content:
+        return JsonResponse({'success': False, 'error': 'Mensagem vazia.'}, status=400)
+
+    from chat.models import ChatMessage
+    msg = get_object_or_404(ChatMessage, id=message_id, session__user=request.user)
+    if msg.role != 'user':
+        return JsonResponse({'success': False, 'error': 'Apenas mensagens do usuário podem ser editadas.'}, status=400)
+
+    # Update content
+    msg.content = new_content
+    msg.save()
+
+    session = msg.session
+    # Delete all messages after this one
+    session.messages.filter(created_at__gt=msg.created_at).delete()
+
+    # Get history
+    history = list(session.messages.all().order_by('-created_at')[:15])
+    history.reverse()
+    lc_messages = []
+    for m in history:
+        if m.role == 'user':
+            lc_messages.append(HumanMessage(content=m.content))
+        else:
+            lc_messages.append(AIMessage(content=m.content))
+
+    # Invoke agent
+    from ai_agents.agent import langgraph_agent
+    from langchain_core.messages import HumanMessage, AIMessage
+    initial_state = {
+        "messages": lc_messages,
+        "context": "",
+        "web_context": "",
+        "user": request.user
+    }
+
+    try:
+        result = langgraph_agent.invoke(initial_state)
+        assistant_content = result['messages'][-1].content
+    except Exception as e:
+        assistant_content = f"Desculpe, ocorreu um erro no processamento do agente: {str(e)}"
+
+    # Save new AI reply
+    ai_msg = ChatMessage.objects.create(
+        session=session,
+        role='assistant',
+        content=assistant_content
+    )
+
+    return JsonResponse({
+        'success': True,
+        'user_message_id': msg.id,
+        'user_content': msg.content,
+        'ai_message_id': ai_msg.id,
+        'ai_content': ai_msg.content
+    })
+
+
+@login_required(login_url='login_page')
+def resend_chat_message_view(request, message_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método não permitido.'}, status=405)
+
+    from chat.models import ChatMessage
+    msg = get_object_or_404(ChatMessage, id=message_id, session__user=request.user)
+    if msg.role != 'user':
+        return JsonResponse({'success': False, 'error': 'Apenas mensagens do usuário podem ser reenviadas.'}, status=400)
+
+    session = msg.session
+    # Delete all messages after this one
+    session.messages.filter(created_at__gt=msg.created_at).delete()
+
+    # Get history
+    history = list(session.messages.all().order_by('-created_at')[:15])
+    history.reverse()
+    lc_messages = []
+    for m in history:
+        if m.role == 'user':
+            lc_messages.append(HumanMessage(content=m.content))
+        else:
+            lc_messages.append(AIMessage(content=m.content))
+
+    # Invoke agent
+    from ai_agents.agent import langgraph_agent
+    from langchain_core.messages import HumanMessage, AIMessage
+    initial_state = {
+        "messages": lc_messages,
+        "context": "",
+        "web_context": "",
+        "user": request.user
+    }
+
+    try:
+        result = langgraph_agent.invoke(initial_state)
+        assistant_content = result['messages'][-1].content
+    except Exception as e:
+        assistant_content = f"Desculpe, ocorreu um erro no processamento do agente: {str(e)}"
+
+    # Save new AI reply
+    ai_msg = ChatMessage.objects.create(
+        session=session,
+        role='assistant',
+        content=assistant_content
+    )
+
+    return JsonResponse({
+        'success': True,
+        'user_message_id': msg.id,
+        'ai_message_id': ai_msg.id,
+        'ai_content': ai_msg.content
+    })
