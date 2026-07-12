@@ -434,7 +434,8 @@
         <div class="chat-body flex-1 overflow-y-auto" id="chatMessages" style="padding: 28px 32px 28px 32px;">
           <div class="chat-body-container">
             {% for msg in messages %}
-              <div class="msg {% if msg.role == 'user' %}user{% else %}mentor{% endif %}" data-raw-content="{{ msg.content }}">
+              <div class="msg {% if msg.role == 'user' %}user{% else %}mentor{% endif %}">
+                <textarea class="hidden raw-message-content" style="display:none;">{{ msg.content }}</textarea>
                 <div class="bubble shadow-sm">
                   {% if msg.role == 'user' %}
                     <div class="markdown-content user-markdown"></div>
@@ -619,9 +620,10 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
 
     // Render markdown in messages safely
     function renderMessages() {
-        document.querySelectorAll('[data-raw-content]').forEach(el => {
-            const rawContent = el.getAttribute('data-raw-content');
-            if (rawContent) {
+        document.querySelectorAll('.msg').forEach(el => {
+            const rawEl = el.querySelector('.raw-message-content');
+            if (rawEl) {
+                const rawContent = rawEl.value;
                 const isMentor = el.classList.contains('mentor');
                 const mdContainer = isMentor ? el.querySelector('.mentor-markdown') : el.querySelector('.user-markdown');
                 if (mdContainer) {
@@ -934,8 +936,8 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
             // Create user bubble
             const userMsg = document.createElement('div');
             userMsg.className = 'msg user';
-            userMsg.setAttribute('data-raw-content', text);
             userMsg.innerHTML = `
+              <textarea class="hidden raw-message-content" style="display:none;"></textarea>
               <div class="bubble shadow-sm">
                 <div class="markdown-content user-markdown"></div>
               </div>
@@ -945,13 +947,14 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
             container.appendChild(userMsg);
             
             // Format files list in raw content preview if files exist
+            let filesLabel = "";
             if (selectedFiles.length > 0) {
-                let filesLabel = "\n\n**Arquivos anexados:**\n";
+                filesLabel = "\n\n**Arquivos anexados:**\n";
                 selectedFiles.forEach(f => {
                     filesLabel += `- \`${f.name}\`\n`;
                 });
-                userMsg.setAttribute('data-raw-content', text + filesLabel);
             }
+            userMsg.querySelector('.raw-message-content').value = text + filesLabel;
             
             renderMessages();
             chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -996,13 +999,14 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
 
                 const assistantMsg = document.createElement('div');
                 assistantMsg.className = 'msg mentor';
-                assistantMsg.setAttribute('data-raw-content', data.content);
                 assistantMsg.innerHTML = `
+                  <textarea class="hidden raw-message-content" style="display:none;"></textarea>
                   <div class="bubble shadow-sm">
                     <span class="mentor-tag">resposta do mentor</span>
                     <div class="markdown-content mentor-markdown"></div>
                   </div>
                 `;
+                assistantMsg.querySelector('.raw-message-content').value = data.content;
                 
                 container.appendChild(assistantMsg);
                 renderMessages();

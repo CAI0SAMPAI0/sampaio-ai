@@ -165,7 +165,8 @@
     <main class="max-w-4xl mx-auto py-8">
         <div class="chat-body-container" id="chatMessages">
             {% for msg in messages %}
-                <div class="msg {% if msg.role == 'user' %}user{% else %}mentor{% endif %}" data-raw-content="{{ msg.content }}">
+                <div class="msg {% if msg.role == 'user' %}user{% else %}mentor{% endif %}">
+                    <textarea class="hidden raw-message-content" style="display:none;">{{ msg.content }}</textarea>
                     <div class="bubble shadow-md">
                         {% if msg.role == 'user' %}
                             <div class="markdown-content user-markdown"></div>
@@ -205,9 +206,10 @@
                 marked.setOptions(markedOptions);
             }
 
-            document.querySelectorAll('[data-raw-content]').forEach(el => {
-                const rawContent = el.getAttribute('data-raw-content');
-                if (rawContent) {
+            document.querySelectorAll('.msg').forEach(el => {
+                const rawEl = el.querySelector('.raw-message-content');
+                if (rawEl) {
+                    const rawContent = rawEl.value;
                     const isMentor = el.classList.contains('mentor');
                     const mdContainer = isMentor ? el.querySelector('.mentor-markdown') : el.querySelector('.user-markdown');
                     if (mdContainer) {
