@@ -2,6 +2,8 @@ import hashlib
 import json
 import os
 import subprocess
+import threading
+import uuid
 
 from django.conf import settings
 from django.contrib.auth import (
@@ -22,6 +24,73 @@ from uploads.models import KnowledgeDocument
 
 User = get_user_model()
 
+_local_tasks = {}
+_local_tasks_lock = threading.Lock()
+
+
+def _run_sync_agent(task_id, session_id, user_id, messages_data):
+    try:
+        from ai_agents.agent import langgraph_agent
+        from langchain_core.messages import (
+            HumanMessage, AIMessage
+        )
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+
+        lc_messages = []
+        for m in messages_data:
+            if m['role'] == 'user':
+                lc_messages.append(
+                    HumanMessage(content=m['content'])
+                )
+            else:
+                lc_messages.append(
+                    AIMessage(content=m['content'])
+                )
+
+        result = langgraph_agent.invoke({
+            "messages": lc_messages,
+            "context": "",
+            "web_context": "",
+            "user": User.objects.get(id=user_id)
+        })
+        assistant_content = result['messages'][-1].content
+    except Exception as e:
+        assistant_content = (
+            f"Erro no agente: {str(e)}"
+        )
+
+    ai_msg = ChatMessage.objects.create(
+        session_id=session_id,
+        role='assistant',
+        content=assistant_content
+    )
+
+    with _local_tasks_lock:
+        _local_tasks[task_id] = {
+            'state': 'SUCCESS',
+            'result': {
+                'assistant_content': assistant_content,
+                'assistant_message_id': ai_msg.id
+            }
+        }
+
+
+def _dispatch_sync_agent(session_id, user_id, messages_data):
+    task_id = str(uuid.uuid4())
+    with _local_tasks_lock:
+        _local_tasks[task_id] = {
+            'state': 'PENDING', 'result': None
+        }
+    t = threading.Thread(
+        target=_run_sync_agent,
+        args=(task_id, session_id, user_id, messages_data),
+        daemon=True
+    )
+    t.start()
+    return task_id
+
 
 def health_check(request):
     return JsonResponse({'status': 'ok', 'service': 'sampaio-ai-api'})
@@ -33,22 +102,39 @@ def task_status(request, task_id):
     Endpoint para polling do status de uma tarefa Celery.
     Retorna o resultado quando a tarefa termina.
     """
-    result = AsyncResult(task_id)
+    try:
+        with _local_tasks_lock:
+            local = _local_tasks.get(task_id)
+        if local:
+            return JsonResponse(local)
 
-    if result.state == 'PENDING':
+        result = AsyncResult(task_id)
+
+        if result.state == 'PENDING':
+            return JsonResponse({
+                'state': 'PENDING',
+                'status': 'Aguardando processamento...'
+            })
+        elif result.state == 'FAILURE':
+            return JsonResponse({
+                'state': 'FAILURE',
+                'error': str(result.result)
+            })
+        elif result.state == 'SUCCESS':
+            return JsonResponse({
+                'state': 'SUCCESS',
+                'result': result.result
+            })
+        else:
+            return JsonResponse({
+                'state': result.state,
+                'status': 'Processando...'
+            })
+    except Exception as e:
         return JsonResponse({
-            'state': 'PENDING',
-            'status': 'Aguardando processamento...'
-        })
-    elif result.state == 'FAILURE':
-        return JsonResponse({'state': 'FAILURE', 'error': str(result.result)})
-    elif result.state == 'SUCCESS':
-        return JsonResponse({'state': 'SUCCESS', 'result': result.result})
-    else:
-        return JsonResponse({
-            'state': result.state,
-            'status': 'Processando...'
-        })
+            'state': 'FAILURE',
+            'error': f'Erro ao consultar tarefa: {str(e)}'
+        }, status=500)
 
 
 def login_page(request):
@@ -166,107 +252,100 @@ def delete_chat(request, session_id):
 
 @login_required(login_url='login_page')
 def send_chat_message(request, session_id):
-    session = get_object_or_404(
-        ChatSession, id=session_id, user=request.user
+    is_ajax = (
+        request.headers.get('x-requested-with')
+        == 'XMLHttpRequest'
     )
 
-    if request.method == 'POST':
-        content = request.POST.get('message', '').strip()
-        if not content and not request.FILES:
-            return JsonResponse(
-                {'error': 'Mensagem vazia'}, status=400
-            )
+    try:
+        session = get_object_or_404(
+            ChatSession, id=session_id, user=request.user
+        )
 
-        files_context = ""
-        for f in request.FILES.getlist('files')[:10]:
-            try:
-                file_content = f.read().decode('utf-8', errors='ignore')
-                ext = f.name.split('.')[-1]
-                files_context += (
-                    f"\n\n--- Arquivo: {f.name} ---"
-                    f"\n```{ext}\n{file_content}\n```"
+        if request.method == 'POST':
+            content = request.POST.get('message', '').strip()
+            if not content and not request.FILES:
+                return JsonResponse(
+                    {'error': 'Mensagem vazia'}, status=400
                 )
-            except Exception:
-                pass
 
-        full_content = content
-        if files_context:
-            full_content += files_context
-
-        user_msg = ChatMessage.objects.create(
-            session=session,
-            role='user',
-            content=full_content
-        )
-
-        history = list(
-            session.messages.all().order_by('-created_at')[:15]
-        )
-        history.reverse()
-        messages_data = [
-            {'role': m.role, 'content': m.content}
-            for m in history
-        ]
-
-        try:
-            from core.tasks import invoke_chat_agent_task
-            task = invoke_chat_agent_task.delay(
-                session.id, request.user.id, messages_data
-            )
-            task_dispatched = True
-        except Exception:
-            task_dispatched = False
-
-        is_ajax = (
-            request.headers.get('x-requested-with')
-            == 'XMLHttpRequest'
-        )
-        if task_dispatched and is_ajax:
-            return JsonResponse({
-                'task_id': task.id,
-                'user_message_id': user_msg.id,
-                'status': 'processing'
-            })
-        elif not task_dispatched:
-            from ai_agents.agent import langgraph_agent
-            from langchain_core.messages import (
-                AIMessage, HumanMessage
-            )
-            lc_messages = []
-            for m in messages_data:
-                if m['role'] == 'user':
-                    lc_messages.append(
-                        HumanMessage(content=m['content'])
+            files_context = ""
+            for f in request.FILES.getlist('files')[:10]:
+                try:
+                    file_content = f.read().decode(
+                        'utf-8', errors='ignore'
                     )
-                else:
-                    lc_messages.append(
-                        AIMessage(content=m['content'])
+                    ext = f.name.split('.')[-1]
+                    files_context += (
+                        f"\n\n--- Arquivo: {f.name} ---"
+                        f"\n```{ext}\n{file_content}\n```"
                     )
-            try:
-                result = langgraph_agent.invoke({
-                    "messages": lc_messages,
-                    "context": "",
-                    "web_context": "",
-                    "user": request.user
-                })
-                assistant_content = result['messages'][-1].content
-            except Exception as e:
-                assistant_content = f"Erro no agente: {str(e)}"
-            ai_msg = ChatMessage.objects.create(
+                except Exception:
+                    pass
+
+            full_content = content
+            if files_context:
+                full_content += files_context
+
+            user_msg = ChatMessage.objects.create(
                 session=session,
-                role='assistant',
-                content=assistant_content
+                role='user',
+                content=full_content
             )
-            if is_ajax:
+
+            history = list(
+                session.messages.all().order_by(
+                    '-created_at'
+                )[:15]
+            )
+            history.reverse()
+            messages_data = [
+                {'role': m.role, 'content': m.content}
+                for m in history
+            ]
+
+            task_dispatched = False
+            task = None
+            try:
+                from core.tasks import invoke_chat_agent_task
+                task = invoke_chat_agent_task.delay(
+                    session.id, request.user.id,
+                    messages_data
+                )
+                task_dispatched = True
+            except Exception:
+                task_dispatched = False
+
+            if task_dispatched and is_ajax:
                 return JsonResponse({
-                    'content': assistant_content,
+                    'task_id': task.id,
                     'user_message_id': user_msg.id,
-                    'assistant_message_id': ai_msg.id
+                    'status': 'processing'
                 })
+            elif not task_dispatched:
+                sync_task_id = _dispatch_sync_agent(
+                    session.id, request.user.id,
+                    messages_data
+                )
+                if is_ajax:
+                    return JsonResponse({
+                        'task_id': sync_task_id,
+                        'user_message_id': user_msg.id,
+                        'status': 'processing'
+                    })
 
-        return redirect(f"/chat/?session={session.id}")
+            return redirect(
+                f"/chat/?session={session.id}"
+            )
 
-    return redirect('chat_page')
+        return redirect('chat_page')
+
+    except Exception as e:
+        if is_ajax:
+            return JsonResponse({
+                'error': f'Erro interno: {str(e)}'
+            }, status=500)
+        return redirect('chat_page')
 
 
 @login_required(login_url='login_page')
@@ -430,15 +509,32 @@ def challenges_page(request):
     today = timezone.localdate()
     user_level = getattr(request.user, 'level', 'iniciante')
 
+    level_to_difficulty = {
+        'iniciante': 'iniciante',
+        'junior': 'iniciante',
+        'pleno': 'intermediario',
+        'senior': 'avancado',
+    }
+    difficulty = level_to_difficulty.get(
+        user_level, 'iniciante'
+    )
+
     challenge = DailyChallenge.objects.filter(
-        date=today, difficulty=user_level
+        date=today, difficulty=difficulty
     ).first()
 
     if not challenge:
-        from studies.tasks import _generate_mock_daily_challenges
+        challenge = DailyChallenge.objects.filter(
+            date=today
+        ).first()
+
+    if not challenge:
+        from studies.tasks import (
+            _generate_mock_daily_challenges
+        )
         _generate_mock_daily_challenges()
         challenge = DailyChallenge.objects.filter(
-            date=today, difficulty=user_level
+            date=today
         ).first()
 
     submission = None
@@ -1026,100 +1122,89 @@ def edit_chat_message(request, message_id):
             status=405
         )
 
-    import json
     try:
-        data = json.loads(request.body)
-        new_content = data.get('content', '').strip()
-    except Exception:
-        new_content = request.POST.get('content', '').strip()
+        import json
+        try:
+            data = json.loads(request.body)
+            new_content = data.get('content', '').strip()
+        except Exception:
+            new_content = (
+                request.POST.get('content', '').strip()
+            )
 
-    if not new_content:
-        return JsonResponse(
-            {'success': False, 'error': 'Mensagem vazia.'},
-            status=400
+        if not new_content:
+            return JsonResponse(
+                {'success': False, 'error': 'Mensagem vazia.'},
+                status=400
+            )
+
+        from chat.models import ChatMessage
+        msg = get_object_or_404(
+            ChatMessage, id=message_id,
+            session__user=request.user
         )
+        if msg.role != 'user':
+            return JsonResponse(
+                {
+                    'success': False,
+                    'error': (
+                        'Apenas mensagens do usuário '
+                        'podem ser editadas.'
+                    )
+                },
+                status=400
+            )
 
-    from chat.models import ChatMessage
-    msg = get_object_or_404(
-        ChatMessage, id=message_id,
-        session__user=request.user
-    )
-    if msg.role != 'user':
-        return JsonResponse(
-            {
-                'success': False,
-                'error': 'Apenas mensagens do usuário '
-                         'podem ser editadas.'
-            },
-            status=400
+        msg.content = new_content
+        msg.save()
+
+        session = msg.session
+        session.messages.filter(
+            created_at__gt=msg.created_at
+        ).delete()
+
+        history = list(
+            session.messages.all().order_by(
+                '-created_at'
+            )[:15]
         )
+        history.reverse()
+        messages_data = [
+            {'role': m.role, 'content': m.content}
+            for m in history
+        ]
 
-    msg.content = new_content
-    msg.save()
+        try:
+            from core.tasks import invoke_chat_agent_task
+            task = invoke_chat_agent_task.delay(
+                session.id, request.user.id, messages_data
+            )
+            return JsonResponse({
+                'success': True,
+                'task_id': task.id,
+                'user_message_id': msg.id,
+                'user_content': msg.content,
+                'status': 'processing'
+            })
+        except Exception:
+            pass
 
-    session = msg.session
-    session.messages.filter(
-        created_at__gt=msg.created_at
-    ).delete()
-
-    history = list(
-        session.messages.all().order_by('-created_at')[:15]
-    )
-    history.reverse()
-    messages_data = [
-        {'role': m.role, 'content': m.content}
-        for m in history
-    ]
-
-    try:
-        from core.tasks import invoke_chat_agent_task
-        task = invoke_chat_agent_task.delay(
+        sync_task_id = _dispatch_sync_agent(
             session.id, request.user.id, messages_data
         )
         return JsonResponse({
             'success': True,
-            'task_id': task.id,
+            'task_id': sync_task_id,
             'user_message_id': msg.id,
             'user_content': msg.content,
             'status': 'processing'
         })
-    except Exception:
-        pass
 
-    from ai_agents.agent import langgraph_agent
-    from langchain_core.messages import AIMessage, HumanMessage
-    lc_messages = []
-    for m in messages_data:
-        if m['role'] == 'user':
-            lc_messages.append(
-                HumanMessage(content=m['content'])
-            )
-        else:
-            lc_messages.append(
-                AIMessage(content=m['content'])
-            )
-    try:
-        result = langgraph_agent.invoke({
-            "messages": lc_messages,
-            "context": "",
-            "web_context": "",
-            "user": request.user
-        })
-        assistant_content = result['messages'][-1].content
     except Exception as e:
-        assistant_content = f"Erro no agente: {str(e)}"
-    ai_msg = ChatMessage.objects.create(
-        session=session,
-        role='assistant',
-        content=assistant_content
-    )
-    return JsonResponse({
-        'success': True,
-        'user_message_id': msg.id,
-        'user_content': msg.content,
-        'ai_message_id': ai_msg.id,
-        'ai_content': ai_msg.content
-    })
+        return JsonResponse({
+            'success': False,
+            'error': f'Erro interno: {str(e)}'
+        }, status=500)
 
 
 @login_required(login_url='login_page')
@@ -1130,82 +1215,69 @@ def resend_chat_message_view(request, message_id):
             status=405
         )
 
-    from chat.models import ChatMessage
-    msg = get_object_or_404(
-        ChatMessage, id=message_id,
-        session__user=request.user
-    )
-    if msg.role != 'user':
-        return JsonResponse(
-            {
-                'success': False,
-                'error': 'Apenas mensagens do usuário '
-                         'podem ser reenviadas.'
-            },
-            status=400
-        )
-
-    session = msg.session
-    session.messages.filter(
-        created_at__gt=msg.created_at
-    ).delete()
-
-    history = list(
-        session.messages.all().order_by('-created_at')[:15]
-    )
-    history.reverse()
-    messages_data = [
-        {'role': m.role, 'content': m.content}
-        for m in history
-    ]
-
     try:
-        from core.tasks import invoke_chat_agent_task
-        task = invoke_chat_agent_task.delay(
+        from chat.models import ChatMessage
+        msg = get_object_or_404(
+            ChatMessage, id=message_id,
+            session__user=request.user
+        )
+        if msg.role != 'user':
+            return JsonResponse(
+                {
+                    'success': False,
+                    'error': (
+                        'Apenas mensagens do usuário '
+                        'podem ser reenviadas.'
+                    )
+                },
+                status=400
+            )
+
+        session = msg.session
+        session.messages.filter(
+            created_at__gt=msg.created_at
+        ).delete()
+
+        history = list(
+            session.messages.all().order_by(
+                '-created_at'
+            )[:15]
+        )
+        history.reverse()
+        messages_data = [
+            {'role': m.role, 'content': m.content}
+            for m in history
+        ]
+
+        try:
+            from core.tasks import invoke_chat_agent_task
+            task = invoke_chat_agent_task.delay(
+                session.id, request.user.id, messages_data
+            )
+            return JsonResponse({
+                'success': True,
+                'task_id': task.id,
+                'user_message_id': msg.id,
+                'status': 'processing'
+            })
+        except Exception:
+            pass
+
+        sync_task_id = _dispatch_sync_agent(
             session.id, request.user.id, messages_data
         )
         return JsonResponse({
             'success': True,
-            'task_id': task.id,
+            'task_id': sync_task_id,
             'user_message_id': msg.id,
             'status': 'processing'
         })
-    except Exception:
-        pass
 
-    from ai_agents.agent import langgraph_agent
-    from langchain_core.messages import AIMessage, HumanMessage
-    lc_messages = []
-    for m in messages_data:
-        if m['role'] == 'user':
-            lc_messages.append(
-                HumanMessage(content=m['content'])
-            )
-        else:
-            lc_messages.append(
-                AIMessage(content=m['content'])
-            )
-    try:
-        result = langgraph_agent.invoke({
-            "messages": lc_messages,
-            "context": "",
-            "web_context": "",
-            "user": request.user
-        })
-        assistant_content = result['messages'][-1].content
     except Exception as e:
-        assistant_content = f"Erro no agente: {str(e)}"
-    ai_msg = ChatMessage.objects.create(
-        session=session,
-        role='assistant',
-        content=assistant_content
-    )
-    return JsonResponse({
-        'success': True,
-        'user_message_id': msg.id,
-        'ai_message_id': ai_msg.id,
-        'ai_content': ai_msg.content
-    })
+        return JsonResponse({
+            'success': False,
+            'error': f'Erro interno: {str(e)}'
+        }, status=500)
 
 
 # ============================================================

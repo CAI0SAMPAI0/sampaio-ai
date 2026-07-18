@@ -429,7 +429,12 @@
   {% if active_session %}
     <div class="flex flex-row flex-1 overflow-hidden w-full h-full relative" id="chatPlaygroundSplit">
       <!-- Left Panel: Chat -->
-      <div class="flex flex-col flex-1 min-w-[300px] h-full" id="leftChatPanel">
+      <div class="flex flex-col flex-1 min-w-[300px] h-full relative" id="leftChatPanel">
+        <!-- Scroll to Bottom Button -->
+        <button id="scrollToBottomBtn" onclick="scrollToBottom()" class="hidden absolute bottom-28 left-1/2 -translate-x-1/2 z-50 bg-slate-800 text-white px-4 py-2 rounded-full shadow-lg text-xs font-medium hover:bg-slate-700 transition-all items-center gap-2 cursor-pointer border border-slate-600" style="display:none;">
+          <i data-feather="chevrons-down" class="w-4 h-4"></i>
+          <span>Última mensagem</span>
+        </button>
         <!-- MESSAGES -->
         <div class="chat-body flex-1 overflow-y-auto" id="chatMessages" style="padding: 28px 32px 28px 32px;">
           <div class="chat-body-container">
@@ -1073,7 +1078,16 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    return res.json().catch(() => {
+                        throw new Error('Erro de conexão com o servidor');
+                    }).then(err => {
+                        throw new Error(err.error || 'Erro desconhecido');
+                    });
+                }
+                return res.json();
+            })
             .then(data => {
                 // Handle async task response (Celery dispatched)
                 if (data.status === 'processing' && data.task_id) {
@@ -1275,72 +1289,67 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    return res.json().catch(() => {
+                        throw new Error('Erro de conexão');
+                    }).then(err => {
+                        throw new Error(err.error || 'Erro');
+                    });
+                }
+                return res.json();
+            })
             .then(data => {
-                if (data.success) {
-                    // Update current message content
+                if (data.success && data.status === 'processing' && data.task_id) {
                     rawEl.value = data.user_content;
-                    
-                    // Remove all subsequent message elements in the UI
                     let nextEl = msgEl.nextElementSibling;
                     while (nextEl) {
                         const toRemove = nextEl;
                         nextEl = nextEl.nextElementSibling;
                         toRemove.remove();
                     }
-
-                    // Restore user message view
                     msgEl.querySelector('.bubble').outerHTML = `
                       <div class="bubble shadow-sm relative group">
                         <div class="markdown-content user-markdown pb-5"></div>
-                        <!-- Toolbar for user message -->
-                        <div class="absolute right-2 bottom-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-x-2 bg-slate-800/90 px-2 py-1 rounded-md text-[10px] text-slate-300">
-                          <button onclick="copyMsg('${data.user_message_id}')" title="Copiar Mensagem" class="hover:text-yellow-400 cursor-pointer flex items-center">
-                            <i data-feather="copy" class="w-3 h-3"></i>
-                          </button>
-                          <button onclick="editMsg('${data.user_message_id}')" title="Editar Mensagem" class="hover:text-blue-400 cursor-pointer flex items-center">
-                            <i data-feather="edit-2" class="w-3 h-3"></i>
-                          </button>
-                          <button onclick="resendMsg('${data.user_message_id}')" title="Reenviar Mensagem" class="hover:text-green-400 cursor-pointer flex items-center">
-                            <i data-feather="refresh-cw" class="w-3 h-3"></i>
-                          </button>
+                        <div class="user-actions-container absolute right-2 bottom-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-x-2 bg-slate-800/90 px-2 py-1 rounded-md text-[10px] text-slate-300">
+                          <button onclick="copyMsg('${data.user_message_id}')" title="Copiar Mensagem" class="hover:text-yellow-400 cursor-pointer flex items-center"><i data-feather="copy" class="w-3 h-3"></i></button>
+                          <button onclick="editMsg('${data.user_message_id}')" title="Editar Mensagem" class="hover:text-blue-400 cursor-pointer flex items-center"><i data-feather="edit-2" class="w-3 h-3"></i></button>
+                          <button onclick="resendMsg('${data.user_message_id}')" title="Reenviar Mensagem" class="hover:text-green-400 cursor-pointer flex items-center"><i data-feather="refresh-cw" class="w-3 h-3"></i></button>
                         </div>
                       </div>
                     `;
-
-                    // Create and append the new AI response bubble
-                    const container = chatMessages.querySelector('.chat-body-container');
-                    const assistantMsg = document.createElement('div');
-                    assistantMsg.className = 'msg mentor';
-                    assistantMsg.setAttribute('data-id', data.ai_message_id);
-                    assistantMsg.innerHTML = `
-                      <textarea class="hidden raw-message-content" style="display:none;"></textarea>
-                      <div class="bubble shadow-sm relative group">
-                        <span class="mentor-tag">resposta do mentor</span>
-                        <div class="markdown-content mentor-markdown pb-5"></div>
-                        <!-- Toolbar for AI message -->
-                        <div class="absolute right-2 bottom-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-x-2 bg-slate-100/90 border border-slate-200 px-2 py-1 rounded-md text-[10px] text-slate-600">
-                          <button onclick="copyMsg('${data.ai_message_id}')" title="Copiar Resposta" class="hover:text-slate-900 cursor-pointer flex items-center">
-                            <i data-feather="copy" class="w-3 h-3"></i>
-                          </button>
-                        </div>
-                      </div>
-                    `;
-                    assistantMsg.querySelector('.raw-message-content').value = data.ai_content;
-                    container.appendChild(assistantMsg);
-
                     renderMessages();
                     feather.replace();
+
+                    const container = chatMessages.querySelector('.chat-body-container');
+                    const typingMsg = document.createElement('div');
+                    typingMsg.className = 'msg mentor';
+                    typingMsg.innerHTML = '<div class="bubble"><span class="mentor-tag">resposta do mentor</span><div class="markdown-content" style="display:flex;align-items:center;gap:8px;font-style:italic;color:var(--pencil);"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--margin-red);animation:pulse 1.2s infinite ease-in-out;"></span>Mentor está formulando resposta...</div></div>';
+                    container.appendChild(typingMsg);
                     chatMessages.scrollTop = chatMessages.scrollHeight;
-                    
-                    Toastify({
-                        text: "Mensagem editada e atualizada!",
-                        backgroundColor: "#1F4B3A",
-                        duration: 3000
-                    }).showToast();
+
+                    pollTask(data.task_id, function(result) {
+                        typingMsg.remove();
+                        const assistantMsg = document.createElement('div');
+                        assistantMsg.className = 'msg mentor';
+                        assistantMsg.setAttribute('data-id', result.assistant_message_id);
+                        assistantMsg.innerHTML = '<textarea class="hidden raw-message-content" style="display:none;"></textarea><div class="bubble shadow-sm relative group"><span class="mentor-tag">resposta do mentor</span><div class="markdown-content mentor-markdown pb-5"></div><div class="absolute right-2 bottom-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-x-2 bg-slate-100/90 border border-slate-200 px-2 py-1 rounded-md text-[10px] text-slate-600"><button onclick="copyMsg(\'' + result.assistant_message_id + '\')" title="Copiar Resposta" class="hover:text-slate-900 cursor-pointer flex items-center"><i data-feather="copy" class="w-3 h-3"></i></button></div></div>';
+                        assistantMsg.querySelector('.raw-message-content').value = result.assistant_content;
+                        container.appendChild(assistantMsg);
+                        renderMessages();
+                        feather.replace();
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                        Toastify({ text: "Mensagem editada e atualizada!", backgroundColor: "#1F4B3A", duration: 3000 }).showToast();
+                    }, function(error) {
+                        typingMsg.remove();
+                        Toastify({ text: "Erro ao processar: " + error, backgroundColor: "#ef4444", duration: 3000 }).showToast();
+                        window.location.reload();
+                    });
+                } else if (data.success && data.ai_message_id) {
+                    window.location.reload();
                 } else {
                     Toastify({
-                        text: "Erro ao editar: " + data.error,
+                        text: "Erro ao editar: " + (data.error || 'Erro desconhecido'),
                         backgroundColor: "#ef4444",
                         duration: 3000
                     }).showToast();
@@ -1376,11 +1385,18 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) {
+                return res.json().catch(() => {
+                    throw new Error('Erro de conexão');
+                }).then(err => {
+                    throw new Error(err.error || 'Erro');
+                });
+            }
+            return res.json();
+        })
         .then(data => {
-            bubble.classList.remove('opacity-70');
-            if (data.success) {
-                // Remove all subsequent message elements in the UI
+            if (data.success && data.status === 'processing' && data.task_id) {
                 let nextEl = msgEl.nextElementSibling;
                 while (nextEl) {
                     const toRemove = nextEl;
@@ -1388,39 +1404,38 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                     toRemove.remove();
                 }
 
-                // Create and append the new AI response bubble
                 const container = chatMessages.querySelector('.chat-body-container');
-                const assistantMsg = document.createElement('div');
-                assistantMsg.className = 'msg mentor';
-                assistantMsg.setAttribute('data-id', data.ai_message_id);
-                assistantMsg.innerHTML = `
-                  <textarea class="hidden raw-message-content" style="display:none;"></textarea>
-                  <div class="bubble shadow-sm relative group">
-                    <span class="mentor-tag">resposta do mentor</span>
-                    <div class="markdown-content mentor-markdown pb-5"></div>
-                    <!-- Toolbar for AI message -->
-                    <div class="absolute right-2 bottom-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-x-2 bg-slate-100/90 border border-slate-200 px-2 py-1 rounded-md text-[10px] text-slate-600">
-                      <button onclick="copyMsg('${data.ai_message_id}')" title="Copiar Resposta" class="hover:text-slate-900 cursor-pointer flex items-center">
-                        <i data-feather="copy" class="w-3 h-3"></i>
-                      </button>
-                    </div>
-                  </div>
-                `;
-                assistantMsg.querySelector('.raw-message-content').value = data.ai_content;
-                container.appendChild(assistantMsg);
-
-                renderMessages();
-                feather.replace();
+                const typingMsg = document.createElement('div');
+                typingMsg.className = 'msg mentor';
+                typingMsg.innerHTML = '<div class="bubble"><span class="mentor-tag">resposta do mentor</span><div class="markdown-content" style="display:flex;align-items:center;gap:8px;font-style:italic;color:var(--pencil);"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--margin-red);animation:pulse 1.2s infinite ease-in-out;"></span>Mentor está formulando resposta...</div></div>';
+                container.appendChild(typingMsg);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
 
-                Toastify({
-                    text: "Mensagem reenviada com sucesso!",
-                    backgroundColor: "#1F4B3A",
-                    duration: 3000
-                }).showToast();
+                pollTask(data.task_id, function(result) {
+                    bubble.classList.remove('opacity-70');
+                    typingMsg.remove();
+                    const assistantMsg = document.createElement('div');
+                    assistantMsg.className = 'msg mentor';
+                    assistantMsg.setAttribute('data-id', result.assistant_message_id);
+                    assistantMsg.innerHTML = '<textarea class="hidden raw-message-content" style="display:none;"></textarea><div class="bubble shadow-sm relative group"><span class="mentor-tag">resposta do mentor</span><div class="markdown-content mentor-markdown pb-5"></div><div class="absolute right-2 bottom-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-x-2 bg-slate-100/90 border border-slate-200 px-2 py-1 rounded-md text-[10px] text-slate-600"><button onclick="copyMsg(\'' + result.assistant_message_id + '\')" title="Copiar Resposta" class="hover:text-slate-900 cursor-pointer flex items-center"><i data-feather="copy" class="w-3 h-3"></i></button></div></div>';
+                    assistantMsg.querySelector('.raw-message-content').value = result.assistant_content;
+                    container.appendChild(assistantMsg);
+                    renderMessages();
+                    feather.replace();
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    Toastify({ text: "Mensagem reenviada com sucesso!", backgroundColor: "#1F4B3A", duration: 3000 }).showToast();
+                }, function(error) {
+                    bubble.classList.remove('opacity-70');
+                    typingMsg.remove();
+                    Toastify({ text: "Erro ao reenviar: " + error, backgroundColor: "#ef4444", duration: 3000 }).showToast();
+                });
+            } else if (data.success && data.ai_message_id) {
+                bubble.classList.remove('opacity-70');
+                window.location.reload();
             } else {
+                bubble.classList.remove('opacity-70');
                 Toastify({
-                    text: "Erro ao reenviar: " + data.error,
+                    text: "Erro ao reenviar: " + (data.error || 'Erro desconhecido'),
                     backgroundColor: "#ef4444",
                     duration: 3000
                 }).showToast();
@@ -1436,6 +1451,44 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
             }).showToast();
         });
     }
+
+    // Scroll to bottom button
+    const scrollBtn = document.getElementById('scrollToBottomBtn');
+
+    function scrollToBottom() {
+        chatMessages.scrollTo({
+            top: chatMessages.scrollHeight,
+            behavior: 'smooth'
+        });
+    }
+
+    function isNearBottom() {
+        const threshold = 300;
+        return chatMessages.scrollTop + chatMessages.clientHeight >= chatMessages.scrollHeight - threshold;
+    }
+
+    chatMessages.addEventListener('scroll', () => {
+        if (isNearBottom()) {
+            scrollBtn.style.display = 'none';
+        } else {
+            scrollBtn.style.display = 'flex';
+        }
+    });
+
+    // Auto-scroll when new messages arrive
+    const observer = new MutationObserver(() => {
+        if (isNearBottom()) {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    });
+    observer.observe(chatMessages.querySelector('.chat-body-container'), {
+        childList: true, subtree: true
+    });
+
+    // Initial scroll to bottom - wait for content to render
+    requestAnimationFrame(() => {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
   </script>
 
   <!-- Add pulse animation for typing indicator -->
