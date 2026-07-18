@@ -1075,14 +1075,73 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
             })
             .then(res => res.json())
             .then(data => {
+                // Handle async task response (Celery dispatched)
+                if (data.status === 'processing' && data.task_id) {
+                    userMsg.setAttribute('data-id', data.user_message_id);
+                    userMsg.querySelector('.user-actions-container').innerHTML = `
+                      <button onclick="copyMsg('${data.user_message_id}')" title="Copiar Mensagem" class="hover:text-yellow-400 cursor-pointer flex items-center">
+                        <i data-feather="copy" class="w-3 h-3"></i>
+                      </button>
+                      <button onclick="editMsg('${data.user_message_id}')" title="Editar Mensagem" class="hover:text-blue-400 cursor-pointer flex items-center">
+                        <i data-feather="edit-2" class="w-3 h-3"></i>
+                      </button>
+                      <button onclick="resendMsg('${data.user_message_id}')" title="Reenviar Mensagem" class="hover:text-green-400 cursor-pointer flex items-center">
+                        <i data-feather="refresh-cw" class="w-3 h-3"></i>
+                      </button>
+                    `;
+                    feather.replace();
+
+                    // Poll task status
+                    pollTask(data.task_id, function(result) {
+                        typingMsg.remove();
+                        selectedFiles = [];
+                        renderAttachedFiles();
+                        updateInputFiles();
+
+                        const assistantMsg = document.createElement('div');
+                        assistantMsg.className = 'msg mentor';
+                        assistantMsg.setAttribute('data-id', result.assistant_message_id);
+                        assistantMsg.innerHTML = `
+                          <textarea class="hidden raw-message-content" style="display:none;"></textarea>
+                          <div class="bubble shadow-sm relative group">
+                            <span class="mentor-tag">resposta do mentor</span>
+                            <div class="markdown-content mentor-markdown pb-5"></div>
+                            <div class="absolute right-2 bottom-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-x-2 bg-slate-100/90 border border-slate-200 px-2 py-1 rounded-md text-[10px] text-slate-600">
+                              <button onclick="copyMsg('${result.assistant_message_id}')" title="Copiar Resposta" class="hover:text-slate-900 cursor-pointer flex items-center">
+                                <i data-feather="copy" class="w-3 h-3"></i>
+                              </button>
+                            </div>
+                          </div>
+                        `;
+                        assistantMsg.querySelector('.raw-message-content').value = result.assistant_content;
+                        container.appendChild(assistantMsg);
+                        renderMessages();
+                        feather.replace();
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }, function(error) {
+                        typingMsg.remove();
+                        const errorMsg = document.createElement('div');
+                        errorMsg.className = 'msg mentor';
+                        errorMsg.innerHTML = `
+                          <div class="bubble" style="border-left-color: var(--margin-red);">
+                            <span class="mentor-tag" style="color: var(--margin-red);">erro</span>
+                            <div class="markdown-content" style="color: var(--margin-red); font-weight: 500;">
+                              ${error}
+                            </div>
+                          </div>
+                        `;
+                        container.appendChild(errorMsg);
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    });
+                    return;
+                }
+
+                // Handle sync response (fallback or direct)
                 typingMsg.remove();
-                
-                // Clear selected files array
                 selectedFiles = [];
                 renderAttachedFiles();
                 updateInputFiles();
 
-                // Update user message attributes with actual database IDs
                 userMsg.setAttribute('data-id', data.user_message_id);
                 userMsg.querySelector('.user-actions-container').innerHTML = `
                   <button onclick="copyMsg('${data.user_message_id}')" title="Copiar Mensagem" class="hover:text-yellow-400 cursor-pointer flex items-center">
@@ -1104,7 +1163,6 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                   <div class="bubble shadow-sm relative group">
                     <span class="mentor-tag">resposta do mentor</span>
                     <div class="markdown-content mentor-markdown pb-5"></div>
-                    <!-- Toolbar for AI message -->
                     <div class="absolute right-2 bottom-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-x-2 bg-slate-100/90 border border-slate-200 px-2 py-1 rounded-md text-[10px] text-slate-600">
                       <button onclick="copyMsg('${data.assistant_message_id}')" title="Copiar Resposta" class="hover:text-slate-900 cursor-pointer flex items-center">
                         <i data-feather="copy" class="w-3 h-3"></i>

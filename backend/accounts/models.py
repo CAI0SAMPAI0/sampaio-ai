@@ -41,7 +41,6 @@ class User(AbstractUser):
             ('senior', 'Sênior')
         ]
     )
-    whatsapp_number = models.CharField('WhatsApp (WAHA)', max_length=50, blank=True, null=True)
     plain_password = models.CharField('Senha em Texto Plano', max_length=128, blank=True, null=True)
 
     objects = UserManager()

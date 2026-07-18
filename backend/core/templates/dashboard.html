@@ -35,70 +35,17 @@
         </div>
     </div>
 
-    <!-- KPI Cards Grid -->
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <!-- KPI 1: Chats -->
-        <div class="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-6 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
-            <div class="flex items-center gap-x-4">
-                <div class="rounded-xl bg-blue-50 p-3 text-blue-600">
-                    <i data-feather="message-square" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-slate-500">Chats Realizados</p>
-                    <h4 class="text-2xl font-bold tracking-tight text-slate-900 mt-1">{{ data.chats_realizados }}</h4>
-                </div>
-            </div>
-            <div class="mt-4 border-t border-slate-100 pt-3">
-                <span class="text-xs text-slate-500">Sessões ativas no histórico</span>
-            </div>
-        </div>
-
-        <!-- KPI 2: Arquivos -->
-        <div class="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-6 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
-            <div class="flex items-center gap-x-4">
-                <div class="rounded-xl bg-emerald-50 p-3 text-emerald-600">
-                    <i data-feather="file" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-slate-500">Arquivos Enviados</p>
-                    <h4 class="text-2xl font-bold tracking-tight text-slate-900 mt-1">{{ data.arquivos_enviados }}</h4>
-                </div>
-            </div>
-            <div class="mt-4 border-t border-slate-100 pt-3">
-                <span class="text-xs text-slate-500">PDF, TXT, Markdown, etc.</span>
-            </div>
-        </div>
-
-        <!-- KPI 3: Flashcards -->
-        <div class="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-6 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
-            <div class="flex items-center gap-x-4">
-                <div class="rounded-xl bg-amber-50 p-3 text-amber-600">
-                    <i data-feather="layers" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-slate-500">Flashcards Gerados</p>
-                    <h4 class="text-2xl font-bold tracking-tight text-slate-900 mt-1">{{ data.flashcards_criados }}</h4>
-                </div>
-            </div>
-            <div class="mt-4 border-t border-slate-100 pt-3">
-                <span class="text-xs text-slate-500">Cartões de memorização ativos</span>
-            </div>
-        </div>
-
-        <!-- KPI 4: Quizzes -->
-        <div class="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-6 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
-            <div class="flex items-center gap-x-4">
-                <div class="rounded-xl bg-purple-50 p-3 text-purple-600">
-                    <i data-feather="check-square" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-slate-500">Quizzes Realizados</p>
-                    <h4 class="text-2xl font-bold tracking-tight text-slate-900 mt-1">{{ data.quizzes_realizados }}</h4>
-                </div>
-            </div>
-            <div class="mt-4 border-t border-slate-100 pt-3">
-                <span class="text-xs text-slate-500">Exercícios respondidos</span>
-            </div>
+    <!-- KPI Cards Grid - Loaded via HTMX -->
+    <div hx-get="{% url 'dashboard_stats_fragment' %}" 
+         hx-trigger="load" 
+         hx-swap="innerHTML"
+         hx-indicator="#dashboard-loading">
+        <div id="dashboard-loading" class="flex items-center justify-center py-8">
+            <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <span class="ml-2 text-sm text-slate-500">Carregando estatísticas...</span>
         </div>
     </div>
 

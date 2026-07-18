@@ -1,0 +1,37 @@
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div class="bg-white rounded-xl p-4 border border-slate-200">
+        <div class="text-2xl font-bold text-slate-800">{{ arquivos_enviados }}</div>
+        <div class="text-xs text-slate-500 mt-1">Arquivos Enviados</div>
+    </div>
+    <div class="bg-white rounded-xl p-4 border border-slate-200">
+        <div class="text-2xl font-bold text-green-600">{{ documentos_processados }}</div>
+        <div class="text-xs text-slate-500 mt-1">Processados</div>
+    </div>
+    <div class="bg-white rounded-xl p-4 border border-slate-200">
+        <div class="text-2xl font-bold text-blue-600">{{ chats_realizados }}</div>
+        <div class="text-xs text-slate-500 mt-1">Conversas</div>
+    </div>
+    <div class="bg-white rounded-xl p-4 border border-slate-200">
+        <div class="text-2xl font-bold text-purple-600">{{ flashcards_criados }}</div>
+        <div class="text-xs text-slate-500 mt-1">Flashcards</div>
+    </div>
+    <div class="bg-white rounded-xl p-4 border border-slate-200">
+        <div class="text-2xl font-bold text-amber-600">{{ quizzes_realizados }}</div>
+        <div class="text-xs text-slate-500 mt-1">Quizzes</div>
+    </div>
+    <div class="bg-white rounded-xl p-4 border border-slate-200">
+        <div class="text-2xl font-bold text-rose-600">{{ horas_estudadas }}h</div>
+        <div class="text-xs text-slate-500 mt-1">Horas Estudadas</div>
+    </div>
+</div>
+
+{% if temas_estudados %}
+<div class="mt-4">
+    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Temas Estudados</h3>
+    <div class="flex flex-wrap gap-2">
+        {% for tema in temas_estudados %}
+        <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">{{ tema }}</span>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}

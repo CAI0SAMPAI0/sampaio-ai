@@ -2,9 +2,9 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models import Quiz, QuizQuestion
+from .models import Quiz
 from .serializers import QuizListSerializer, QuizDetailSerializer
-from .services import generate_quiz_for_document
+
 
 class QuizViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -23,38 +23,38 @@ class QuizViewSet(viewsets.ModelViewSet):
         theme = request.data.get('theme') or None
         num_questions = int(request.data.get('num_questions') or 3)
         difficulty = request.data.get('difficulty') or "Médio"
-        
+
         if not document_id:
-            return Response({'error': 'Parâmetro document_id é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
-            
-        quiz = generate_quiz_for_document(
-            document_id=document_id,
-            user=request.user,
-            theme=theme,
-            num_questions=num_questions,
-            difficulty=difficulty
+            return Response(
+                {'error': 'Parâmetro document_id é obrigatório.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        from core.tasks import generate_quiz_task
+        task = generate_quiz_task.delay(
+            document_id, request.user.id,
+            theme=theme, num_questions=num_questions, difficulty=difficulty
         )
-        if not quiz:
-            return Response({'error': 'Erro ao gerar quiz.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
-        serializer = QuizDetailSerializer(quiz)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(
+            {'task_id': task.id, 'status': 'processing'},
+            status=status.HTTP_202_ACCEPTED
+        )
 
     @action(detail=True, methods=['post'])
     def submit(self, request, pk=None):
         quiz = self.get_object()
-        answers = request.data.get('answers', {})  # Mapeia question_id (string) -> resposta (string)
-        
+        answers = request.data.get('answers', {})
+
         results = []
         correct_count = 0
         total_questions = quiz.questions.count()
-        
+
         for q in quiz.questions.all():
             user_ans = answers.get(str(q.id))
             is_correct = (user_ans == q.correct_answer)
             if is_correct:
                 correct_count += 1
-                
+
             results.append({
                 'question_id': q.id,
                 'question_text': q.question_text,
@@ -63,9 +63,12 @@ class QuizViewSet(viewsets.ModelViewSet):
                 'is_correct': is_correct,
                 'explanation': q.explanation
             })
-            
-        score_pct = (correct_count / total_questions * 100) if total_questions > 0 else 0
-        
+
+        score_pct = (
+            (correct_count / total_questions * 100)
+            if total_questions > 0 else 0
+        )
+
         return Response({
             'score': correct_count,
             'total': total_questions,

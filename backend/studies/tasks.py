@@ -1,6 +1,5 @@
 import json
 import re
-import requests
 from celery import shared_task
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -11,21 +10,6 @@ from studies.models import DailyChallenge
 from notifications.services import send_user_notification
 
 User = get_user_model()
-
-@shared_task
-def ping_waha_task():
-    """
-    Ping no servidor WAHA a cada 12 minutos para evitar que ele durma no Render.
-    """
-    waha_url = getattr(settings, 'WAHA_URL', 'http://localhost:3000')
-    try:
-        # Pede a rota principal ou docs do WAHA
-        response = requests.get(waha_url, timeout=10)
-        print(f"WAHA Keepalive Ping: Status {response.status_code}")
-        return True
-    except Exception as e:
-        print(f"Erro no Keepalive Ping do WAHA: {e}")
-        return False
 
 @shared_task
 def generate_daily_challenges_task():

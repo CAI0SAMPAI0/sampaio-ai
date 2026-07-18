@@ -1,0 +1,11 @@
+{% for msg in messages %}
+<div class="chat-message {% if msg.role == 'user' %}user-message{% else %}assistant-message{% endif %}" id="msg-{{ msg.id }}">
+    <div class="message-role">{{ msg.role|title }}</div>
+    <div class="message-content">{{ msg.content|linebreaksbr }}</div>
+    <div class="message-time">{{ msg.created_at|date:"d/m/Y H:i" }}</div>
+</div>
+{% empty %}
+<div class="text-center text-slate-400 py-8">
+    <p>Nenhuma mensagem ainda. Comece a conversa!</p>
+</div>
+{% endfor %}

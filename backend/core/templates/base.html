@@ -19,6 +19,9 @@
     <!-- Alpine.js CDN -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
+    <!-- HTMX CDN -->
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    
     <!-- Feather Icons CDN -->
     <script src="https://unpkg.com/feather-icons"></script>
     
@@ -433,12 +436,6 @@
                         <i data-feather="user" class="tab-icon" style="color: var(--tab-3);"></i>
                         <span class="tab-label">Minha Conta</span>
                     </a>
-                    {% if request.user.is_superuser %}
-                    <a class="tab {% if request.resolver_match.url_name == 'waha_dashboard' %}active{% endif %}" href="{% url 'waha_dashboard' %}">
-                        <i data-feather="message-circle" class="tab-icon" style="color: #25d366;"></i>
-                        <span class="tab-label">Status WhatsApp</span>
-                    </a>
-                    {% endif %}
                 {% endif %}
             </nav>
 
@@ -544,6 +541,30 @@
                     fontFamily: "'IBM Plex Sans', sans-serif"
                 }
             }).showToast();
+        }
+
+        // Celery task polling helper
+        function pollTask(taskId, onSuccess, onError, interval = 1500) {
+            const poll = setInterval(() => {
+                fetch(`/api/task/${taskId}/`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.state === 'SUCCESS') {
+                        clearInterval(poll);
+                        if (onSuccess) onSuccess(data.result);
+                    } else if (data.state === 'FAILURE') {
+                        clearInterval(poll);
+                        if (onError) onError(data.error || 'Erro ao processar tarefa.');
+                    }
+                    // PENDING or STARTED -> keep polling
+                })
+                .catch(err => {
+                    clearInterval(poll);
+                    if (onError) onError('Erro de conexão ao verificar status.');
+                });
+            }, interval);
         }
     </script>
     {% block extra_js %}{% endblock %}

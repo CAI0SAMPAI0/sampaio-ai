@@ -1,0 +1,12 @@
+{% for session in sessions %}
+<a href="/chat/?session={{ session.id }}" 
+   class="session-item {% if active_session and active_session.id == session.id %}active{% endif %}"
+   hx-get="/api/fragments/chat/messages/{{ session.id }}/"
+   hx-target="#chat-messages"
+   hx-swap="innerHTML">
+    <span class="session-title">{{ session.title }}</span>
+    <span class="session-date">{{ session.created_at|date:"d/m" }}</span>
+</a>
+{% empty %}
+<div class="text-center text-slate-400 py-4 text-sm">Nenhuma conversa ainda</div>
+{% endfor %}

@@ -22,7 +22,6 @@ for host in ['.onrender.com', 'proxy.spaces.internal.huggingface.tech', 'localho
         ALLOWED_HOSTS.append(host)
 
 
-
 GROQ_API_KEY = config('GROQ_API_KEY', default=None)
 
 # Database
@@ -240,10 +239,6 @@ if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend'
 
-# WAHA Settings
-WAHA_URL = config('WAHA_URL', default=config('WAHA_RENDER', default='http://localhost:3000'))
-WAHA_API_KEY = config('WAHA_API_KEY', default='')
-
 # Celery Beat Schedule
 from celery.schedules import crontab
 
@@ -252,10 +247,6 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'studies.tasks.generate_daily_challenges_task',
         'schedule': crontab(hour=9, minute=0),
     },
-    'waha-keepalive': {
-        'task': 'studies.tasks.ping_waha_task',
-        'schedule': crontab(minute='*/12'),
-    },
 }
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

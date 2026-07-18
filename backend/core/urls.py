@@ -4,6 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from .views import (
     health_check,
+    task_status,
     login_page,
     logout_page,
     dashboard_page,
@@ -20,25 +21,26 @@ from .views import (
     challenges_page,
     run_challenge_code,
     submit_challenge,
-    waha_dashboard,
-    waha_qr_proxy,
-    waha_screenshot_proxy,
     run_terminal_command,
     run_editor_code,
     export_chat_md,
     share_chat,
     rename_chat,
     public_chat_share_view,
-    test_notification_caio,
     analyze_user_level,
     edit_chat_message,
-    resend_chat_message_view
+    resend_chat_message_view,
+    chat_messages_fragment,
+    chat_sessions_fragment,
+    document_status_fragment,
+    dashboard_stats_fragment
 )
 
 
 urlpatterns = [
     path('', dashboard_page, name='dashboard_page'),
     path('health', health_check, name='health_check'),
+    path('api/task/<str:task_id>/', task_status, name='task_status'),
     path('login/', login_page, name='login_page'),
     path('logout/', logout_page, name='logout'),
     path('profile/', profile_page, name='profile_page'),
@@ -62,10 +64,13 @@ urlpatterns = [
     path('challenges/run/', run_challenge_code, name='run_challenge_code'),
     path('challenges/submit/', submit_challenge, name='submit_challenge'),
     path('studies/', study_plans_page, name='study_plans_page'),
-    path('waha-dashboard/', waha_dashboard, name='waha_dashboard'),
-    path('waha-dashboard/qr/', waha_qr_proxy, name='waha_qr_proxy'),
-    path('waha-dashboard/screenshot/', waha_screenshot_proxy, name='waha_screenshot_proxy'),
-    path('api/notifications/test-caio/', test_notification_caio, name='test_notification_caio'),
+    
+    # HTMX Fragment endpoints
+    path('api/fragments/chat/messages/<int:session_id>/', chat_messages_fragment, name='chat_messages_fragment'),
+    path('api/fragments/chat/sessions/', chat_sessions_fragment, name='chat_sessions_fragment'),
+    path('api/fragments/document/<int:document_id>/status/', document_status_fragment, name='document_status_fragment'),
+    path('api/fragments/dashboard/stats/', dashboard_stats_fragment, name='dashboard_stats_fragment'),
+    
     path('admin/', admin.site.urls),
     
     # API endpoints
