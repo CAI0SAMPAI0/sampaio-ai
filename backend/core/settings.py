@@ -163,9 +163,9 @@ STORAGES = {
     },
 }
 
-# Celery Configurations
-CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
-CELERY_BROKER_URL = config('CELERY_BROKER_URL', default=CELERY_RESULT_BACKEND)
+# Celery Configurations — Redis used as both broker AND result backend
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default=CELERY_BROKER_URL)
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -238,15 +238,5 @@ if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend'
-
-# Celery Beat Schedule
-from celery.schedules import crontab
-
-CELERY_BEAT_SCHEDULE = {
-    'generate-daily-challenges': {
-        'task': 'studies.tasks.generate_daily_challenges_task',
-        'schedule': crontab(hour=9, minute=0),
-    },
-}
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

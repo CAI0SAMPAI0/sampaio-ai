@@ -97,6 +97,20 @@ def health_check(request):
 
 
 @login_required(login_url='login_page')
+def trigger_daily_challenges(request):
+    """Trigger daily challenge generation. Call via cron or external scheduler."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    from studies.tasks import generate_daily_challenges_task
+    try:
+        generate_daily_challenges_task()
+        return JsonResponse({'status': 'ok', 'message': 'Daily challenges generated.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required(login_url='login_page')
 def task_status(request, task_id):
     """
     Endpoint para polling do status de uma tarefa Celery.

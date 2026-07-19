@@ -5,6 +5,7 @@ from django.conf.urls.static import static
 from .views import (
     health_check,
     task_status,
+    trigger_daily_challenges,
     login_page,
     logout_page,
     dashboard_page,
@@ -41,6 +42,7 @@ urlpatterns = [
     path('', dashboard_page, name='dashboard_page'),
     path('health', health_check, name='health_check'),
     path('api/task/<str:task_id>/', task_status, name='task_status'),
+    path('api/cron/daily-challenges', trigger_daily_challenges, name='trigger_daily_challenges'),
     path('login/', login_page, name='login_page'),
     path('logout/', logout_page, name='logout'),
     path('profile/', profile_page, name='profile_page'),

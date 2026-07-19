@@ -35,12 +35,13 @@ services:
 
   app:
     image: ghcr.io/caio/sampaio-ai-app:latest
+    command: sh entrypoint.sh
     environment:
       - DEBUG=False
       - SECRET_KEY_FILE=/run/secrets/DJANGO_SECRET_KEY
-      - DATABASE_URL_FILE=/run/secrets/DATABASE_URL # Neon PostgreSQL
+      - DATABASE_URL_FILE=/run/secrets/DATABASE_URL
       - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+      - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     secrets:
       - DJANGO_SECRET_KEY
@@ -79,60 +80,9 @@ services:
       restart_policy:
         condition: on-failure
 
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    volumes:
-      - rabbitmq_prod_data:/var/lib/rabbitmq
-    networks:
-      - internal_net
-    deploy:
-      restart_policy:
-        condition: on-failure
-
-  celery_worker:
-    image: ghcr.io/caio/sampaio-ai-app:latest
-    command: celery -A core worker --loglevel=info
-    environment:
-      - DEBUG=False
-      - SECRET_KEY_FILE=/run/secrets/DJANGO_SECRET_KEY
-      - DATABASE_URL_FILE=/run/secrets/DATABASE_URL
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-    secrets:
-      - DJANGO_SECRET_KEY
-      - DATABASE_URL
-    networks:
-      - internal_net
-    deploy:
-      replicas: 2
-      restart_policy:
-        condition: on-failure
-
-  celery_beat:
-    image: ghcr.io/caio/sampaio-ai-app:latest
-    command: celery -A core beat --loglevel=info
-    environment:
-      - DEBUG=False
-      - SECRET_KEY_FILE=/run/secrets/DJANGO_SECRET_KEY
-      - DATABASE_URL_FILE=/run/secrets/DATABASE_URL
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-    secrets:
-      - DJANGO_SECRET_KEY
-      - DATABASE_URL
-    networks:
-      - internal_net
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-
 volumes:
   traefik_certificates:
   redis_prod_data:
-  rabbitmq_prod_data:
 
 secrets:
   CLOUDFLARE_DNS_API_TOKEN:

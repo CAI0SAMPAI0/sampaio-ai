@@ -5,9 +5,10 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
-# Install system dependencies including redis-server
+# Install system dependencies: redis-server for embedded broker (saves ~100MB vs separate container)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     redis-server \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install python dependencies
