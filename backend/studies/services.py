@@ -4,8 +4,12 @@ from django.conf import settings
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
 from .models import StudyPlan
+from asgiref.sync import async_to_sync
+from celery import shared_task
 
-def generate_study_plan(user, objective, technology, available_hours, duration_weeks):
+
+@shared_task
+async def generate_study_plan(user, objective, technology, available_hours, duration_weeks):
     """
     Gera um plano de estudos estruturado semanalmente para a tecnologia informada,
     adequado à carga horária do usuário. Utiliza IA (Groq) se disponível, senão gera conteúdo simulado de alta qualidade.
@@ -16,7 +20,7 @@ def generate_study_plan(user, objective, technology, available_hours, duration_w
     plan_content = {}
 
     if groq_key and groq_key != 'gsk_placeholder_for_development' and groq_key != "":
-        try:
+        async def call_llm():
             llm = ChatGroq(
                 groq_api_key=groq_key,
                 model="llama-3.3-70b-versatile",
@@ -40,7 +44,9 @@ def generate_study_plan(user, objective, technology, available_hours, duration_w
                 "}\n"
                 "Não inclua nenhum texto explicativo antes ou depois do JSON."
             )
-            response = llm.invoke([HumanMessage(content=prompt)])
+            return await llm.ainvoke([HumanMessage(content=prompt)])
+        try:
+            response = await call_llm()
             match = re.search(r'\{\s*\"semanas\".*\}', response.content, re.DOTALL)
             if match:
                 plan_content = json.loads(match.group(0))

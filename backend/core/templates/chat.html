@@ -731,11 +731,21 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
 
     function updateInputFiles() {
         const fileInput = document.getElementById('fileAttachInput');
+        if (selectedFiles.length === 0) {
+            fileInput.value = '';
+            return;
+        }
         const dt = new DataTransfer();
         selectedFiles.forEach(file => {
             dt.items.add(file);
         });
         fileInput.files = dt.files;
+    }
+
+    function clearAllAttachments() {
+        selectedFiles = [];
+        renderAttachedFiles();
+        updateInputFiles();
     }
 
     // Auto-expand textarea
@@ -1108,9 +1118,7 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                     // Poll task status
                     pollTask(data.task_id, function(result) {
                         typingMsg.remove();
-                        selectedFiles = [];
-                        renderAttachedFiles();
-                        updateInputFiles();
+                        clearAllAttachments();
 
                         const assistantMsg = document.createElement('div');
                         assistantMsg.className = 'msg mentor';
@@ -1134,6 +1142,7 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                         chatMessages.scrollTop = chatMessages.scrollHeight;
                     }, function(error) {
                         typingMsg.remove();
+                        clearAllAttachments();
                         const errorMsg = document.createElement('div');
                         errorMsg.className = 'msg mentor';
                         errorMsg.innerHTML = `
@@ -1152,9 +1161,7 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
 
                 // Handle sync response (fallback or direct)
                 typingMsg.remove();
-                selectedFiles = [];
-                renderAttachedFiles();
-                updateInputFiles();
+                clearAllAttachments();
 
                 userMsg.setAttribute('data-id', data.user_message_id);
                 userMsg.querySelector('.user-actions-container').innerHTML = `
@@ -1193,6 +1200,7 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
             })
             .catch(err => {
                 typingMsg.remove();
+                clearAllAttachments();
                 const errorMsg = document.createElement('div');
                 errorMsg.className = 'msg mentor';
                 errorMsg.innerHTML = `

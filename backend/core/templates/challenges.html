@@ -201,6 +201,13 @@
             openFeedbackDrawer();
             
             consoleOutput.innerHTML = `<span class="text-purple-400 font-bold">[AVALIAÇÃO DA IA]</span> Feedback gerado com sucesso. Verifique o painel lateral!`;
+
+            // Reload after a short delay to show the next challenge
+            if (data.status === 'passed') {
+                setTimeout(() => {
+                    window.location.reload();
+                }, 3000);
+            }
         })
         .catch(err => {
             console.error(err);

@@ -78,14 +78,21 @@ def generate_daily_challenges_task():
     _generate_mock_daily_challenges()
 
     # Notificar todos os usuários ativos
+    level_to_difficulty = {
+        'iniciante': 'iniciante',
+        'junior': 'iniciante',
+        'pleno': 'intermediario',
+        'senior': 'avancado',
+    }
     active_users = User.objects.filter(is_active=True)
     for user in active_users:
         user_lvl = getattr(user, 'level', 'iniciante')
-        challenge = DailyChallenge.objects.filter(date=today, difficulty=user_lvl).first()
+        difficulty = level_to_difficulty.get(user_lvl, 'iniciante')
+        challenge = DailyChallenge.objects.filter(date=today, difficulty=difficulty).first()
         if challenge:
             title = f"Desafio Diário Disponível: {challenge.title}"
             message = (
-                f"Olá! O seu desafio diário de programação (Nível {user_lvl.capitalize()}) está pronto.\n\n"
+                f"Olá! O seu desafio diário de programação (Nível {difficulty.capitalize()}) está pronto.\n\n"
                 f"Desafio: {challenge.title}\n"
                 f"Descrição: {challenge.description}\n\n"
                 "Acesse a plataforma para resolver o código e obter o feedback detalhado da inteligência artificial!"

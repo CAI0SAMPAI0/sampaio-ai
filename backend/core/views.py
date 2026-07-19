@@ -519,13 +519,24 @@ def challenges_page(request):
         user_level, 'iniciante'
     )
 
+    # Try to find a challenge the user hasn't passed yet
+    passed_challenge_ids = ChallengeSubmission.objects.filter(
+        user=request.user, status='passed'
+    ).values_list('challenge_id', flat=True)
+
     challenge = DailyChallenge.objects.filter(
         date=today, difficulty=difficulty
-    ).first()
+    ).exclude(id__in=passed_challenge_ids).first()
 
     if not challenge:
         challenge = DailyChallenge.objects.filter(
             date=today
+        ).exclude(id__in=passed_challenge_ids).first()
+
+    if not challenge:
+        # All challenges for today are passed, show the hardest one
+        challenge = DailyChallenge.objects.filter(
+            date=today, difficulty=difficulty
         ).first()
 
     if not challenge:
