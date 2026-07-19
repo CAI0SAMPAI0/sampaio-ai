@@ -133,8 +133,12 @@ def submit_challenge_task(self, challenge_id, user_id, code):
                 f"Código:\n```python\n{code}\n```\n\n"
                 f"Status: {'Aprovado' if passed else 'Falhou'}\n"
                 f"Logs: {exec_output}\n\n"
-                "Avalie: Correção, PEP8, Simplificação, "
-                "O que Estudar. Em Português."
+                "Responda EXATAMENTE neste formato:\n"
+                "NOTA: <de 0 a 10>\n\n"
+                "### Correção\n<análise>\n\n"
+                "### PEP8\n<dicas>\n\n"
+                "### Simplificação\n<sugestões>\n\n"
+                "### O que Estudar\n<tópicos>"
             )
             response = llm.invoke([HumanMessage(content=prompt)])
             feedback_text = response.content
@@ -146,7 +150,9 @@ def submit_challenge_task(self, challenge_id, user_id, code):
             )
     else:
         status_str = "Aprovado!" if passed else "Falhou."
+        grade = "8" if passed else "3"
         feedback_text = (
+            f"NOTA: {grade}\n\n"
             f"### Avaliação Simulada\n\n"
             f"**Status**: {status_str}\n"
             f"**Logs**: \n{exec_output}\n\n"

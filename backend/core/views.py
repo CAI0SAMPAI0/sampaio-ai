@@ -568,9 +568,16 @@ def challenges_page(request):
             user=request.user, challenge=challenge
         ).order_by('-created_at').first()
 
+    # All submissions for today's challenges (history)
+    today_challenges = DailyChallenge.objects.filter(date=today)
+    all_submissions = ChallengeSubmission.objects.filter(
+        user=request.user, challenge__in=today_challenges
+    ).select_related('challenge').order_by('-created_at')[:20]
+
     return render(request, 'challenges.html', {
         'challenge': challenge,
         'submission': submission,
+        'all_submissions': all_submissions,
         'user_level': user_level
     })
 
@@ -728,7 +735,13 @@ def submit_challenge(request):
                 f"Revise este código Python:\n"
                 f"```python\n{code}\n```\n"
                 f"Status: {status_text}\n"
-                f"Logs: {exec_output}"
+                f"Logs: {exec_output}\n\n"
+                "Responda EXATAMENTE neste formato:\n"
+                "NOTA: <de 0 a 10>\n\n"
+                "### Correção\n<análise>\n\n"
+                "### PEP8\n<dicas>\n\n"
+                "### Simplificação\n<sugestões>\n\n"
+                "### O que Estudar\n<tópicos>"
             )
             response = llm.invoke([
                 HumanMessage(content=prompt)
