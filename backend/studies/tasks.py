@@ -114,10 +114,10 @@ def _generate_mock_daily_challenges():
         },
         {
             'title': 'Filtrar Números Primos',
-            'description': 'Crie uma função filtrar_primos(numeros) que receba uma lista de inteiros e retorne apenas os números primos contidos nela.',
+            'description': 'Crie uma função filtrar_primos(numeros) que receba uma lista de inteiros e retorne apenas os números primos.\n\nDica: Um número primo é divisível apenas por 1 e por ele mesmo (ex: 2, 3, 5, 7, 11). O número 1 NÃO é primo.',
             'difficulty': 'intermediario',
-            'initial_code': 'def filtrar_primos(numeros):\n    # Escreva sua lógica aqui\n    pass',
-            'test_code': 'assert filtrar_primos([1, 2, 3, 4, 5]) == [2, 3, 5]\nassert filtrar_primos([10, 11, 12, 13]) == [11, 13]'
+            'initial_code': 'def filtrar_primos(numeros):\n    primos = []\n    for n in numeros:\n        if n < 2:\n            continue\n        # Verifique se n é primo (sem divisores além de 1 e n)\n        eh_primo = True\n        for i in range(2, n):\n            if n % i == 0:\n                eh_primo = False\n                break\n        if eh_primo:\n            primos.append(n)\n    return primos',
+            'test_code': 'assert filtrar_primos([1, 2, 3, 4, 5]) == [2, 3, 5]\nassert filtrar_primos([10, 11, 12, 13]) == [11, 13]\nassert filtrar_primos([1, 4, 9, 15]) == []'
         },
         {
             'title': 'Validador de Parênteses',

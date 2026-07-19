@@ -139,6 +139,47 @@
         feedbackDrawer.classList.add('translate-x-full');
     }
 
+    function handleChallengeResult(data) {
+        if (data.status === 'passed') {
+            statusAlert.className = "rounded-xl border p-4 text-xs flex items-start gap-x-3 border-emerald-200 bg-emerald-50 text-emerald-800";
+            statusIcon.setAttribute('data-feather', 'check-circle');
+            statusTitle.textContent = "Aprovado nos Testes Locais";
+        } else {
+            statusAlert.className = "rounded-xl border p-4 text-xs flex items-start gap-x-3 border-rose-200 bg-rose-50 text-rose-800";
+            statusIcon.setAttribute('data-feather', 'x-circle');
+            statusTitle.textContent = "Falhou nos Testes Locais";
+        }
+        statusSub.textContent = "Último envio em: Agora mesmo";
+        feather.replace();
+
+        const feedback = data.feedback || "Sem feedback disponível.";
+        feedbackContent.innerHTML = `<div class="prose prose-sm max-w-none">${feedback.replace(/\n/g, '<br>')}</div>`;
+        openFeedbackDrawer();
+
+        consoleOutput.innerHTML = `<span class="text-purple-400 font-bold">[AVALIAÇÃO DA IA]</span> Feedback gerado com sucesso. Verifique o painel lateral!`;
+
+        if (data.status === 'passed') {
+            setTimeout(() => { window.location.reload(); }, 3000);
+        }
+    }
+
+    function pollChallengeTask(taskId) {
+        const pollInterval = setInterval(() => {
+            fetch(`/api/task/${taskId}/`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.state === 'SUCCESS' && data.result) {
+                        clearInterval(pollInterval);
+                        handleChallengeResult(data.result);
+                    } else if (data.state === 'FAILURE') {
+                        clearInterval(pollInterval);
+                        consoleOutput.innerHTML = `<span class="text-rose-400 font-bold">[ERRO]</span> ${data.error || 'Falha ao processar.'}`;
+                    }
+                })
+                .catch(() => {});
+        }, 2000);
+    }
+
     // Run basic validation
     document.getElementById('btnRunTest').addEventListener('click', () => {
         const code = codeEditor.value;
@@ -183,31 +224,15 @@
         })
         .then(res => res.json())
         .then(data => {
-            // Update status UI
-            if (data.status === 'passed') {
-                statusAlert.className = "rounded-xl border p-4 text-xs flex items-start gap-x-3 border-emerald-200 bg-emerald-50 text-emerald-800";
-                statusIcon.setAttribute('data-feather', 'check-circle');
-                statusTitle.textContent = "Aprovado nos Testes Locais";
-            } else {
-                statusAlert.className = "rounded-xl border p-4 text-xs flex items-start gap-x-3 border-rose-200 bg-rose-50 text-rose-800";
-                statusIcon.setAttribute('data-feather', 'x-circle');
-                statusTitle.textContent = "Falhou nos Testes Locais";
+            // Handle async task (Celery dispatched)
+            if (data.status === 'processing' && data.task_id) {
+                consoleOutput.innerHTML = `<span class="text-blue-400 font-bold">[AGUARDANDO]</span> Processando com IA... Verifique em instantes.`;
+                pollChallengeTask(data.task_id);
+                return;
             }
-            statusSub.textContent = `Último envio em: Agora mesmo`;
-            feather.replace();
 
-            // Populate feedback and open drawer
-            feedbackContent.innerHTML = `<div class="prose prose-sm max-w-none">${data.feedback.replace(/\n/g, '<br>')}</div>`;
-            openFeedbackDrawer();
-            
-            consoleOutput.innerHTML = `<span class="text-purple-400 font-bold">[AVALIAÇÃO DA IA]</span> Feedback gerado com sucesso. Verifique o painel lateral!`;
-
-            // Reload after a short delay to show the next challenge
-            if (data.status === 'passed') {
-                setTimeout(() => {
-                    window.location.reload();
-                }, 3000);
-            }
+            // Handle sync response
+            handleChallengeResult(data);
         })
         .catch(err => {
             console.error(err);
