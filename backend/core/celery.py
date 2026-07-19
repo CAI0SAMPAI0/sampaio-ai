@@ -14,3 +14,6 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # Load task modules from all registered Django apps.
 app.autodiscover_tasks()
+
+# Explicitly import tasks from core module (not an installed app, so autodiscover misses them)
+import core.tasks  # noqa: E402, F401

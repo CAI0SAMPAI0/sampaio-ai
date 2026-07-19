@@ -624,6 +624,7 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
   <script>
     // Global selected files array
     let selectedFiles = [];
+    let isSending = false;
 
     // Configure marked safely
     if (typeof marked !== 'undefined') {
@@ -1027,8 +1028,12 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
     if (chatForm && chatMessages) {
         chatForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            if (isSending) return;
             const text = messageInput.value.trim();
             if (!text && selectedFiles.length === 0) return;
+            isSending = true;
+            const sendBtn = chatForm.querySelector('.send-btn');
+            if (sendBtn) sendBtn.disabled = true;
 
             // Create user bubble
             const userMsg = document.createElement('div');
@@ -1140,6 +1145,8 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                         renderMessages();
                         feather.replace();
                         chatMessages.scrollTop = chatMessages.scrollHeight;
+                        isSending = false;
+                        if (sendBtn) sendBtn.disabled = false;
                     }, function(error) {
                         typingMsg.remove();
                         clearAllAttachments();
@@ -1155,6 +1162,8 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                         `;
                         container.appendChild(errorMsg);
                         chatMessages.scrollTop = chatMessages.scrollHeight;
+                        isSending = false;
+                        if (sendBtn) sendBtn.disabled = false;
                     });
                     return;
                 }
@@ -1197,6 +1206,8 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                 renderMessages();
                 feather.replace();
                 chatMessages.scrollTop = chatMessages.scrollHeight;
+                isSending = false;
+                if (sendBtn) sendBtn.disabled = false;
             })
             .catch(err => {
                 typingMsg.remove();
@@ -1214,6 +1225,8 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                 container.appendChild(errorMsg);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
                 console.error(err);
+                isSending = false;
+                if (sendBtn) sendBtn.disabled = false;
             });
         });
     }
@@ -1377,19 +1390,23 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
     }
 
     // Re-send User Message (Triggers new response, deletes later history)
+    let isResending = false;
     function resendMsg(id) {
+        if (isResending) return;
         const msgEl = document.querySelector(`.msg[data-id="${id}"]`);
         if (!msgEl) return;
         const bubble = msgEl.querySelector('.bubble');
         if (!bubble) return;
 
+        isResending = true;
         // Show temporary loading indicator
         bubble.classList.add('opacity-70');
 
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
         fetch(`/chat/message/${id}/resend`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
+                'X-CSRFToken': csrfToken,
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
@@ -1432,13 +1449,16 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                     feather.replace();
                     chatMessages.scrollTop = chatMessages.scrollHeight;
                     Toastify({ text: "Mensagem reenviada com sucesso!", backgroundColor: "#1F4B3A", duration: 3000 }).showToast();
+                    isResending = false;
                 }, function(error) {
                     bubble.classList.remove('opacity-70');
                     typingMsg.remove();
                     Toastify({ text: "Erro ao reenviar: " + error, backgroundColor: "#ef4444", duration: 3000 }).showToast();
+                    isResending = false;
                 });
             } else if (data.success && data.ai_message_id) {
                 bubble.classList.remove('opacity-70');
+                isResending = false;
                 window.location.reload();
             } else {
                 bubble.classList.remove('opacity-70');
@@ -1447,6 +1467,7 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                     backgroundColor: "#ef4444",
                     duration: 3000
                 }).showToast();
+                isResending = false;
             }
         })
         .catch(err => {
@@ -1457,6 +1478,7 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                 backgroundColor: "#ef4444",
                 duration: 3000
             }).showToast();
+            isResending = false;
         });
     }
 
