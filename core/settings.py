@@ -174,23 +174,47 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+# Low memory settings for Celery
+CELERY_WORKER_CONCURRENCY = 1
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 100
+CELERY_WORKER_MAX_MEMORY_PER_CHILD = 80000  # 80MB
 
 # Redis Cache Configurations (with memory limits for 512MB RAM server)
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": config("REDIS_URL", default="redis://127.0.0.1:6379/0"),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        },
-        "KEY_PREFIX": "sampaio",
-        "TIMEOUT": 300,  # 5 minutes default cache timeout
-    }
-}
+# Fallback to local memory cache if Redis is not available
+REDIS_URL = config("REDIS_URL", default="redis://127.0.0.1:6379/0")
 
-# Cache sessions in Redis instead of database (saves DB queries)
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-SESSION_CACHE_ALIAS = "default"
+try:
+    import redis
+    r = redis.from_url(REDIS_URL, socket_connect_timeout=2)
+    r.ping()
+    REDIS_AVAILABLE = True
+except Exception:
+    REDIS_AVAILABLE = False
+
+if REDIS_AVAILABLE:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            },
+            "KEY_PREFIX": "sampaio",
+            "TIMEOUT": 300,
+        }
+    }
+    # Cache sessions in Redis (saves DB queries)
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+    SESSION_CACHE_ALIAS = "default"
+else:
+    # Fallback: use database sessions and local memory cache
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "unique-snowflake",
+        }
+    }
+    SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
 # Overrides para ambiente de testes automatizados
 if 'test' in sys.argv:
