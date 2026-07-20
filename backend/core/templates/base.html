@@ -28,6 +28,17 @@
     <!-- Toastify CSS -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     
+    <!-- Apply theme before body renders to prevent flash -->
+    <script>
+        (function() {
+            var saved = localStorage.getItem('theme');
+            var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (saved === 'dark' || (!saved && prefersDark)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+    
     <style>
         :root {
             --paper: #F3EEE2;
@@ -371,48 +382,35 @@
             z-index: 10;
         }
 
-        /* MAP TAILWIND STYLES TO NOTEBOOK DESIGN SYSTEM */
-        .content-wrap .bg-white {
-            background-color: var(--paper-card) !important;
-        }
-        .content-wrap .border-slate-200, 
-        .content-wrap .border-slate-100 {
-            border-color: var(--border-color) !important;
-        }
-        .content-wrap .bg-slate-50 {
-            background-color: var(--paper) !important;
-        }
-        .content-wrap .bg-slate-100 {
-            background-color: #EBE4D5 !important;
-        }
-        .content-wrap .text-slate-900,
-        .content-wrap .text-slate-800 {
-            color: var(--ink) !important;
-        }
-        .content-wrap .text-slate-500,
-        .content-wrap .text-slate-600 {
-            color: var(--ink-soft) !important;
-        }
-        .content-wrap .text-slate-400 {
-            color: var(--pencil) !important;
-        }
-        .content-wrap input,
-        .content-wrap textarea,
-        .content-wrap select {
-            background-color: var(--input-bg) !important;
-            border-color: var(--ink) !important;
-            color: var(--ink) !important;
-        }
-        .content-wrap input:focus,
-        .content-wrap textarea:focus,
-        .content-wrap select:focus {
-            border-color: var(--margin-red) !important;
-            box-shadow: 0 0 0 3px var(--margin-red-soft) !important;
-        }
+        /* GLOBAL TAILWIND DARK MODE OVERRIDES */
+        .bg-white { background-color: var(--paper-card) !important; }
+        .bg-slate-50 { background-color: var(--paper) !important; }
+        .bg-slate-100 { background-color: var(--paper) !important; }
+        .border-slate-200, .border-slate-100 { border-color: var(--border-color) !important; }
+        .text-slate-900, .text-slate-800 { color: var(--ink) !important; }
+        .text-slate-700 { color: var(--ink) !important; }
+        .text-slate-600, .text-slate-500 { color: var(--ink-soft) !important; }
+        .text-slate-400 { color: var(--pencil) !important; }
+        .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: var(--border-color) !important; }
+        .hover\:bg-slate-50:hover { background-color: var(--paper) !important; }
+        .hover\:bg-slate-100:hover { background-color: var(--paper) !important; }
+        .ring-inset { --tw-ring-inset: inset; }
 
-        [data-theme="dark"] .content-wrap .bg-slate-100 {
-            background-color: #2a2520 !important;
-        }
+        /* Dark mode - only apply when data-theme="dark" is set */
+        [data-theme="dark"] .bg-white { background-color: var(--paper-card) !important; }
+        [data-theme="dark"] .bg-slate-50 { background-color: var(--paper) !important; }
+        [data-theme="dark"] .bg-slate-100 { background-color: var(--paper) !important; }
+        [data-theme="dark"] .border-slate-200, 
+        [data-theme="dark"] .border-slate-100 { border-color: var(--border-color) !important; }
+        [data-theme="dark"] .text-slate-900, 
+        [data-theme="dark"] .text-slate-800,
+        [data-theme="dark"] .text-slate-700 { color: var(--ink) !important; }
+        [data-theme="dark"] .text-slate-600,
+        [data-theme="dark"] .text-slate-500 { color: var(--ink-soft) !important; }
+        [data-theme="dark"] .text-slate-400 { color: var(--pencil) !important; }
+        [data-theme="dark"] .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: var(--border-color) !important; }
+        [data-theme="dark"] .hover\:bg-slate-50:hover { background-color: var(--paper) !important; }
+        [data-theme="dark"] .hover\:bg-slate-100:hover { background-color: var(--paper) !important; }
 
         /* THEME TOGGLE BUTTON */
         .theme-toggle {
@@ -447,6 +445,20 @@
         .theme-toggle button svg {
             width: 14px;
             height: 14px;
+        }
+
+        /* GLOBAL INPUT STYLES */
+        input, textarea, select {
+            background-color: var(--input-bg) !important;
+            border-color: var(--border-color) !important;
+            color: var(--ink) !important;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--margin-red) !important;
+            box-shadow: 0 0 0 3px var(--margin-red-soft) !important;
+        }
+        input::placeholder, textarea::placeholder {
+            color: var(--pencil) !important;
         }
 
         /* SCROLLBARS */
