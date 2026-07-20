@@ -27,12 +27,12 @@ services:
 
   app:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
     container_name: sampaio_ai_app
     command: sh entrypoint.sh
     volumes:
-      - ./backend:/app
+      - .:/app
     ports:
       - "8000:8000"
     environment:

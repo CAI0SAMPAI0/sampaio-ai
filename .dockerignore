@@ -1,12 +1,5 @@
 .venv
-.git
-.github
-backend/media/
-backend/staticfiles/
-backend/db.sqlite3
-backend/*.sqlite3
-*.log
-__pycache__/
+__pycache__
 *.pyc
 *.pyo
 *.pyd
@@ -16,5 +9,10 @@ venv/
 ENV/
 build/
 dist/
+media/
+db.sqlite3
+*.sqlite3
+*.log
+__pycache__/
 *.egg-info
 .env

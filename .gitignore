@@ -23,9 +23,9 @@ design_systems/
 Thumbs.db
 
 # Media, backups, and gathered static files
-backend/media/
-backend/backups/
-backend/staticfiles/
+media/
+backups/
+staticfiles/
 
 # IDEs
 .vscode/
