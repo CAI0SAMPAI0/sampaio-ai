@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="pt-br" class="h-full bg-slate-50">
+<html lang="pt-br" class="h-full">
 <head>
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="IE=edge">
@@ -49,6 +49,27 @@
             --tab-5: #6B5B95;
             --sidebar-w: 260px;
             --sidebar-w-collapsed: 64px;
+            --border-color: #DCD4BF;
+            --input-bg: #FBF8F0;
+            --shadow: rgba(0,0,0,0.05);
+        }
+
+        [data-theme="dark"] {
+            --paper: #1a1612;
+            --paper-card: #231f1a;
+            --ink: #E4DFD3;
+            --ink-soft: #A09888;
+            --pencil: #706858;
+            --rule-blue: #4A6A82;
+            --rule-blue-faint: #2d2a20;
+            --margin-red: #D45555;
+            --margin-red-soft: #3d1f1f;
+            --mentor-green: #3a8a5a;
+            --mentor-green-bg: #1a2e22;
+            --highlight: #D4A832;
+            --border-color: #3a352a;
+            --input-bg: #2a2520;
+            --shadow: rgba(0,0,0,0.3);
         }
 
         [x-cloak] { display: none !important; }
@@ -60,6 +81,10 @@
             font-family: 'IBM Plex Sans', sans-serif;
             color: var(--ink);
             overflow: hidden;
+        }
+
+        [data-theme="dark"] html, [data-theme="dark"] body {
+            background: #12100d;
         }
 
         .app {
@@ -85,6 +110,11 @@
             z-index: 40;
         }
 
+        [data-theme="dark"] .sidebar {
+            background: #0f0d0a;
+            border-right-color: #1a1815;
+        }
+
         .brand {
             display: flex;
             align-items: center;
@@ -93,6 +123,10 @@
             border-bottom: 1px solid #3a362b;
             margin-bottom: 16px;
             white-space: nowrap;
+        }
+
+        [data-theme="dark"] .brand {
+            border-bottom-color: #25221a;
         }
 
         .brand-text {
@@ -132,6 +166,12 @@
             justify-content: center;
             font-size: 13px;
             transition: all 0.2s;
+        }
+
+        [data-theme="dark"] .toggle-btn {
+            background: #1a1815;
+            border-color: #2a2620;
+            color: #A09888;
         }
 
         .toggle-btn:hover {
@@ -207,12 +247,20 @@
             background: #26231b;
         }
 
+        [data-theme="dark"] .tab:not(.active):hover {
+            background: #1a1815;
+        }
+
         /* FOOTER */
         .sidebar-foot {
             padding: 14px 0 4px 22px;
             border-top: 1px solid #3a362b;
             margin-top: auto;
             flex: none;
+        }
+
+        [data-theme="dark"] .sidebar-foot {
+            border-top-color: #25221a;
         }
 
         .foot-user {
@@ -237,6 +285,10 @@
             font-size: 12px;
             flex: none;
             border: 1px solid #3a362b;
+        }
+
+        [data-theme="dark"] .avatar-sm {
+            border-color: #2a2620;
         }
 
         .foot-name {
@@ -266,6 +318,10 @@
             z-index: 10;
         }
 
+        [data-theme="dark"] .content-wrap {
+            background: var(--paper);
+        }
+
         .content-wrap::before {
             content: '';
             position: absolute;
@@ -283,7 +339,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 18px 32px 18px 88px;
-            border-bottom: 1px solid #DCD4BF;
+            border-bottom: 1px solid var(--border-color);
             background: var(--paper);
             flex: none;
             z-index: 10;
@@ -321,7 +377,7 @@
         }
         .content-wrap .border-slate-200, 
         .content-wrap .border-slate-100 {
-            border-color: #DCD4BF !important;
+            border-color: var(--border-color) !important;
         }
         .content-wrap .bg-slate-50 {
             background-color: var(--paper) !important;
@@ -343,7 +399,7 @@
         .content-wrap input,
         .content-wrap textarea,
         .content-wrap select {
-            background-color: var(--paper-card) !important;
+            background-color: var(--input-bg) !important;
             border-color: var(--ink) !important;
             color: var(--ink) !important;
         }
@@ -352,6 +408,45 @@
         .content-wrap select:focus {
             border-color: var(--margin-red) !important;
             box-shadow: 0 0 0 3px var(--margin-red-soft) !important;
+        }
+
+        [data-theme="dark"] .content-wrap .bg-slate-100 {
+            background-color: #2a2520 !important;
+        }
+
+        /* THEME TOGGLE BUTTON */
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            background: var(--paper-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 3px;
+        }
+        .theme-toggle button {
+            padding: 5px 8px;
+            border-radius: 6px;
+            border: none;
+            background: transparent;
+            color: var(--pencil);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .theme-toggle button:hover {
+            color: var(--ink);
+        }
+        .theme-toggle button.active {
+            background: var(--ink);
+            color: var(--paper);
+            box-shadow: 0 1px 3px var(--shadow);
+        }
+        .theme-toggle button svg {
+            width: 14px;
+            height: 14px;
         }
 
         /* SCROLLBARS */
@@ -371,6 +466,14 @@
 
         ::-webkit-scrollbar-thumb:hover {
             background: var(--pencil);
+        }
+
+        [data-theme="dark"] ::-webkit-scrollbar-thumb {
+            background: #3a352a;
+        }
+
+        [data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+            background: #504a3e;
         }
     </style>
     {% block extra_css %}{% endblock %}
@@ -476,6 +579,18 @@
                             🎓 Mentor de Programação
                         </span>
                     {% endblock %}
+                    <!-- Theme Toggle -->
+                    <div class="theme-toggle">
+                        <button onclick="setTheme('light')" id="themeLight" title="Modo Claro">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                        </button>
+                        <button onclick="setTheme('dark')" id="themeDark" title="Modo Escuro">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                        </button>
+                        <button onclick="setTheme('system')" id="themeSystem" title="Seguir Sistema">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -490,7 +605,50 @@
 
     <!-- Initialize icons & Toggle Sidebar Script -->
     <script>
+        // Theme management
+        function setTheme(theme) {
+            const html = document.documentElement;
+            if (theme === 'system') {
+                html.removeAttribute('data-theme');
+                localStorage.removeItem('theme');
+            } else {
+                html.setAttribute('data-theme', theme);
+                localStorage.setItem('theme', theme);
+            }
+            updateThemeButtons(theme);
+        }
+
+        function updateThemeButtons(active) {
+            document.querySelectorAll('.theme-toggle button').forEach(btn => btn.classList.remove('active'));
+            const id = 'theme' + active.charAt(0).toUpperCase() + active.slice(1);
+            const btn = document.getElementById(id);
+            if (btn) btn.classList.add('active');
+        }
+
+        function initTheme() {
+            const saved = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = saved || 'system';
+            if (theme === 'dark' || (!saved && prefersDark)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+            updateThemeButtons(theme);
+        }
+
+        // Listen for system preference changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (!localStorage.getItem('theme')) {
+                if (e.matches) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                }
+                updateThemeButtons('system');
+            }
+        });
+
         document.addEventListener("DOMContentLoaded", function() {
+            initTheme();
             feather.replace();
 
             // Collapsible Sidebar logic

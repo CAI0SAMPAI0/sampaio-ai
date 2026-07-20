@@ -31,12 +31,30 @@
             --margin-red: #B33A3A;
             --mentor-green: #1F4B3A;
             --highlight: #F2D472;
+            --border-color: #DCD4BF;
+        }
+
+        [data-theme="dark"] {
+            --paper: #1a1612;
+            --paper-card: #231f1a;
+            --ink: #E4DFD3;
+            --ink-soft: #A09888;
+            --pencil: #706858;
+            --margin-red: #D45555;
+            --mentor-green: #3a8a5a;
+            --highlight: #D4A832;
+            --border-color: #3a352a;
         }
 
         body {
             background: #E7E1D2;
             font-family: 'IBM Plex Sans', sans-serif;
             color: var(--ink);
+            margin: 0;
+        }
+
+        [data-theme="dark"] body {
+            background: #12100d;
         }
 
         .chat-body-container {
@@ -83,7 +101,7 @@
 
         .msg.mentor .bubble {
             background: var(--paper-card);
-            border: 1px solid #DCD4BF;
+            border: 1px solid var(--border-color);
             border-left: 4px solid var(--mentor-green);
             border-radius: 2px 12px 12px 12px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
@@ -135,8 +153,8 @@
         .markdown-content code:not(pre code) {
             font-family: 'JetBrains Mono', monospace;
             font-size: 13.5px;
-            background: #EBE4D5;
-            color: #7A3333;
+            background: var(--paper);
+            color: var(--margin-red);
             padding: 2px 6px;
             border-radius: 4px;
             font-weight: 500;
@@ -151,7 +169,7 @@
                 <i data-feather="cpu" class="text-yellow-400 w-6 h-6"></i>
                 <div>
                     <h1 class="font-serif font-bold text-lg leading-tight">{{ session.title }}</h1>
-                    <p class="text-[11px] text-[#8c8573]">Conversa compartilhada do Sampaio AI</p>
+                    <p class="text-[11px] text-[var(--pencil)]">Conversa compartilhada do Sampaio AI</p>
                 </div>
             </div>
             <a href="/" class="text-xs bg-[#b33a3a] hover:bg-[#962a2a] text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-x-1.5">

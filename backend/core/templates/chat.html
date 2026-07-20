@@ -65,10 +65,10 @@
 
   .msg.mentor .bubble {
     background: var(--paper-card);
-    border: 1px solid #DCD4BF;
+    border: 1px solid var(--border-color);
     border-left: 3px solid var(--mentor-green);
     border-radius: 2px 8px 8px 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 5px var(--shadow);
   }
 
   .mentor-tag {
@@ -88,7 +88,7 @@
     font-family: 'Caveat', cursive;
     font-size: 16px;
     font-weight: 600;
-    color: #5a4a10;
+    color: var(--ink);
     display: inline-block;
   }
 
@@ -174,7 +174,7 @@
     flex: none;
     padding: 18px 32px 22px 88px;
     background: var(--paper);
-    border-top: 1px solid #DCD4BF;
+    border-top: 1px solid var(--border-color);
     z-index: 10;
   }
 
@@ -217,8 +217,9 @@
   }
 
   .send-btn:hover {
-    background: #962a2a;
-    border-color: #962a2a;
+    background: var(--margin-red);
+    border-color: var(--margin-red);
+    filter: brightness(0.85);
   }
 
   .empty-state {
@@ -257,7 +258,7 @@
   .sessions-section {
     margin-top: 18px;
     padding: 16px 14px 0 22px;
-    border-top: 1px solid #3a362b;
+    border-top: 1px solid var(--border-color);
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -496,17 +497,17 @@
 
               <div class="input-row items-end">
                 <div class="relative shrink-0">
-                  <button type="button" id="attachBtn" onclick="toggleAttachDropdown(event)" class="p-3.5 border 1.5px border-[#DCD4BF] rounded-xl bg-[#FBF8F0] hover:bg-[#EBE4D5] transition-colors flex items-center justify-center cursor-pointer" title="Anexar">
+                  <button type="button" id="attachBtn" onclick="toggleAttachDropdown(event)" class="p-3.5 border border-[var(--border-color)] rounded-xl bg-[var(--input-bg)] hover:bg-[var(--paper)] transition-colors flex items-center justify-center cursor-pointer" title="Anexar">
                     <i data-feather="paperclip" class="w-5 h-5 text-slate-600"></i>
                   </button>
                   
                   <!-- Attach options dropdown -->
-                  <div id="attachDropdown" class="absolute bottom-14 left-0 w-64 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 hidden z-50">
-                    <button type="button" onclick="triggerFileInput(); closeAttachDropdown();" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-x-2 cursor-pointer">
+                  <div id="attachDropdown" class="absolute bottom-14 left-0 w-64 bg-[var(--paper-card)] border border-[var(--border-color)] rounded-xl shadow-lg py-1.5 hidden z-50">
+                    <button type="button" onclick="triggerFileInput(); closeAttachDropdown();" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-[var(--ink)] hover:bg-[var(--paper)] flex items-center gap-x-2 cursor-pointer">
                       <i data-feather="file-plus" class="w-4 h-4 text-blue-600"></i>
                       <span>Anexar Arquivos (máx. 10)</span>
                     </button>
-                    <button type="button" onclick="openPlayground(); closeAttachDropdown();" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-x-2 cursor-pointer">
+                    <button type="button" onclick="openPlayground(); closeAttachDropdown();" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-[var(--ink)] hover:bg-[var(--paper)] flex items-center gap-x-2 cursor-pointer">
                       <i data-feather="terminal" class="w-4 h-4 text-emerald-600"></i>
                       <span>Abrir Terminal / Editor de Código</span>
                     </button>
@@ -516,7 +517,7 @@
                 <!-- File input -->
                 <input type="file" id="fileAttachInput" name="files" multiple class="hidden" onchange="handleFileSelection(event)">
 
-                <textarea name="message" id="messageInput" placeholder="Pergunte sobre código ou peça para pesquisar na web..." required autocomplete="off" class="flex-1 rounded-xl border-1.5 border-slate-900 bg-[#FBF8F0] text-slate-900 px-4 py-3 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder-slate-400 resize-none max-h-48 h-[44px] transition-all" style="line-height: 1.5;" oninput="autoExpandTextarea(this)"></textarea>
+                <textarea name="message" id="messageInput" placeholder="Pergunte sobre código ou peça para pesquisar na web..." required autocomplete="off" class="flex-1 rounded-xl border-1.5 border-[var(--ink)] bg-[var(--input-bg)] text-[var(--ink)] px-4 py-3 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder-[var(--pencil)] resize-none max-h-48 h-[44px] transition-all" style="line-height: 1.5;" oninput="autoExpandTextarea(this)"></textarea>
                 
                 <button type="submit" class="send-btn self-end p-3.5 h-[44px] flex items-center justify-center">
                   <i data-feather="send" style="width:16px; height:16px;"></i>
@@ -529,10 +530,10 @@
       </div>
 
       <!-- Resizer Split Bar -->
-      <div class="w-1 bg-[#DCD4BF] hover:bg-slate-400 cursor-col-resize select-none h-full transition-colors hidden shrink-0" id="panelResizer"></div>
+      <div class="w-1 bg-[var(--border-color)] hover:bg-[var(--pencil)] cursor-col-resize select-none h-full transition-colors hidden shrink-0" id="panelResizer"></div>
 
       <!-- Right Panel: Editor & Terminal -->
-      <div class="w-0 flex flex-col h-full bg-[#15130E] text-[#E4E0CF] border-l border-[#DCD4BF] overflow-hidden shrink-0 transition-all duration-200" id="rightPlaygroundPanel">
+      <div class="w-0 flex flex-col h-full bg-[#15130E] text-[#E4E0CF] border-l border-[var(--border-color)] overflow-hidden shrink-0 transition-all duration-200" id="rightPlaygroundPanel">
         <!-- Panel Header -->
         <div class="flex items-center justify-between px-4 py-3 bg-[#1C1A14] border-b border-[#2d2a20] shrink-0">
           <div class="flex items-center gap-x-2">

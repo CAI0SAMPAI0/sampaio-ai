@@ -38,16 +38,16 @@
         overflow-y: auto;
     }
     .card-face-front {
-        background-color: #ffffff;
-        color: #1e3a8a;
-        border: 1px solid #e2e8f0;
-        border-left: 5px solid #3b82f6;
+        background-color: var(--paper-card);
+        color: var(--ink);
+        border: 1px solid var(--border-color);
+        border-left: 5px solid var(--rule-blue);
     }
     .card-face-back {
-        background-color: #eff6ff;
-        color: #1e293b;
+        background-color: var(--paper);
+        color: var(--ink);
         transform: rotateY(180deg);
-        border: 2px solid #bfdbfe;
+        border: 2px solid var(--rule-blue);
     }
 </style>
 {% endblock %}
@@ -63,7 +63,7 @@
         
         <!-- Total count badge -->
         <div class="mt-4 md:mt-0 shrink-0">
-            <div class="flex items-center gap-x-4 bg-white border border-slate-200 px-5 py-3 rounded-2xl shadow-2xs">
+            <div class="flex items-center gap-x-4 bg-[var(--paper-card)] border border-[var(--border-color)] px-5 py-3 rounded-2xl shadow-2xs">
                 <div class="rounded-xl bg-blue-50 p-2.5 text-blue-600">
                     <i data-feather="layers" class="w-5 h-5"></i>
                 </div>
@@ -80,7 +80,7 @@
         <!-- Coluna Esquerda: IA e Filtros (1/3 no desktop) -->
         <div class="space-y-6 lg:col-span-1">
             <!-- IA Generator Card -->
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+            <div class="rounded-2xl border border-[var(--border-color)] bg-[var(--paper-card)] p-6 shadow-xs">
                 <h4 class="text-base font-bold text-slate-900 flex items-center gap-x-2">
                     <i data-feather="cpu" class="w-5 h-5 text-blue-600"></i>
                     Gerador com IA
@@ -89,7 +89,7 @@
                 
                 <div class="mb-4">
                     <label for="docSelect" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Selecione o Documento</label>
-                    <select id="docSelect" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                    <select id="docSelect" class="w-full rounded-xl border border-[var(--border-color)] px-3.5 py-2.5 text-sm bg-[var(--paper)] placeholder-slate-400 focus:bg-[var(--paper-card)] focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
                         <option value="">-- Selecione --</option>
                         {% for doc in documents %}
                         <option value="{{ doc.id }}">{{ doc.name }} ({{ doc.chunks_count }} chunks)</option>
@@ -112,14 +112,14 @@
             </div>
 
             <!-- Box Filters Card -->
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+            <div class="rounded-2xl border border-[var(--border-color)] bg-[var(--paper-card)] p-6 shadow-xs">
                 <h4 class="text-base font-bold text-slate-900 flex items-center gap-x-2">
                     <i data-feather="sliders" class="w-5 h-5 text-blue-600"></i>
                     Filtrar Estudos
                 </h4>
                 <div class="mt-4">
                     <label for="boxFilter" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Filtrar por Caixa Leitner</label>
-                    <select id="boxFilter" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-slate-50 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                    <select id="boxFilter" class="w-full rounded-xl border border-[var(--border-color)] px-3.5 py-2.5 text-sm bg-[var(--paper)] placeholder-slate-400 focus:bg-[var(--paper-card)] focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
                         <option value="all">Todas as caixas</option>
                         <option value="1">Caixa 1 (Estudar Mais / Difícil)</option>
                         <option value="2">Caixa 2</option>
@@ -133,19 +133,19 @@
 
         <!-- Coluna Direita: Revisão Interativa (2/3 no desktop) -->
         <div class="lg:col-span-2">
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs min-h-[480px] flex flex-col justify-between">
+            <div class="rounded-2xl border border-[var(--border-color)] bg-[var(--paper-card)] p-6 shadow-xs min-h-[480px] flex flex-col justify-between">
                 <!-- Review Card Header -->
-                <div class="flex justify-between items-center pb-4 border-b border-slate-100 mb-6">
+                <div class="flex justify-between items-center pb-4 border-b border-[var(--border-color)] mb-6">
                     <h4 class="text-base font-bold text-slate-900 flex items-center gap-x-2">
                         <i data-feather="book-open" class="w-5 h-5 text-blue-600"></i>
                         Sessão de Revisão
                     </h4>
-                    <span id="card-progress-indicator" class="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600" style="display: none;">Card 1 de 10</span>
+                    <span id="card-progress-indicator" class="inline-flex items-center rounded-md bg-[var(--paper)] px-2 py-1 text-xs font-semibold text-[var(--ink-soft)]" style="display: none;">Card 1 de 10</span>
                 </div>
 
                 <!-- Empty State -->
                 <div id="empty-state" class="text-center py-12 my-auto" style="{% if flashcards %}display: none;{% endif %}">
-                    <div class="inline-flex rounded-full bg-slate-50 p-4 text-slate-400 mb-3">
+                    <div class="inline-flex rounded-full bg-[var(--paper)] p-4 text-[var(--pencil)] mb-3">
                         <i data-feather="layers" class="w-8 h-8"></i>
                     </div>
                     <h5 class="text-sm font-bold text-slate-900">Nenhum Flashcard para Revisar</h5>
