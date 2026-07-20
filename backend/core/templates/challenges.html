@@ -150,11 +150,9 @@
             <i data-feather="x" class="w-5 h-5"></i>
         </button>
     </div>
-    <div class="flex-1 overflow-y-auto p-6 space-y-4 text-slate-700 text-xs leading-relaxed markdown-body" id="feedbackContent">
+    <div class="flex-1 overflow-y-auto p-6 space-y-4 text-slate-700 text-xs leading-relaxed" id="feedbackContent">
         {% if submission and submission.feedback %}
-            <div class="prose prose-sm max-w-none">
-                {{ submission.feedback|linebreaksbr }}
-            </div>
+            <div class="markdown-body" id="initialFeedback" data-feedback="{{ submission.feedback|escapejs }}"></div>
         {% else %}
             <p class="text-slate-400 text-center py-12">Nenhum feedback disponível ainda. Envie o seu código para revisão.</p>
         {% endif %}
@@ -163,6 +161,54 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Marked (Markdown Parser) & Highlight.js -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
+
+<style>
+  .markdown-body pre {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    background: #0D0B08;
+    color: #4AF626;
+    padding: 14px;
+    border-radius: 6px;
+    display: block;
+    margin: 10px 0;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-x: hidden;
+    border: 1px solid #2d2a20;
+  }
+  .markdown-body pre code {
+    font-family: inherit;
+    background: transparent;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+  }
+  .markdown-body code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: #EBE4D5;
+    color: #7A3333;
+    padding: 2px 5px;
+    border-radius: 3px;
+  }
+  .markdown-body h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 14px 0 6px 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .markdown-body p { margin: 6px 0; }
+  .markdown-body ul { margin: 6px 0 6px 18px; }
+  .markdown-body li { margin-bottom: 3px; }
+</style>
+
 <script>
     const challengeId = "{{ challenge.id }}";
     const feedbackDrawer = document.getElementById('feedbackDrawer');
@@ -173,6 +219,29 @@
     const statusTitle = document.getElementById('statusTitle');
     const statusSub = document.getElementById('statusSub');
     const codeEditor = document.getElementById('codeEditor');
+
+    // Configure marked
+    if (typeof marked !== 'undefined') {
+        marked.setOptions({
+            langPrefix: 'hljs language-'
+        });
+    }
+
+    function renderMarkdown(text) {
+        if (!text) return '<p class="text-slate-400">Sem feedback.</p>';
+        if (typeof marked !== 'undefined') {
+            return marked.parse(text);
+        }
+        return text.replace(/\n/g, '<br>');
+    }
+
+    // Render initial feedback from server
+    document.addEventListener('DOMContentLoaded', function() {
+        const el = document.getElementById('initialFeedback');
+        if (el && el.dataset.feedback) {
+            el.innerHTML = renderMarkdown(el.dataset.feedback);
+        }
+    });
 
     // Tab switching
     function showTab(tab) {
@@ -214,7 +283,7 @@
 
         // Show feedback if available
         if (feedback) {
-            feedbackContent.innerHTML = '<div class="prose prose-sm max-w-none">' + feedback.replace(/\n/g, '<br>') + '</div>';
+            feedbackContent.innerHTML = '<div class="markdown-body">' + renderMarkdown(feedback) + '</div>';
             openFeedbackDrawer();
         }
 
@@ -246,7 +315,7 @@
         feather.replace();
 
         const feedback = data.feedback || 'Sem feedback disponível.';
-        feedbackContent.innerHTML = '<div class="prose prose-sm max-w-none">' + feedback.replace(/\n/g, '<br>') + '</div>';
+        feedbackContent.innerHTML = '<div class="markdown-body">' + renderMarkdown(feedback) + '</div>';
         openFeedbackDrawer();
 
         consoleOutput.innerHTML = '<span class="text-purple-400 font-bold">[AVALIAÇÃO DA IA]</span> Feedback gerado com sucesso. Verifique o painel lateral!';
