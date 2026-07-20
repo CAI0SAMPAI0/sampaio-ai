@@ -11,6 +11,7 @@ from django.contrib.auth import (
     login as auth_login, logout as auth_logout
 )
 from django.contrib.auth.decorators import login_required
+from django.db import models
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -180,36 +181,28 @@ def logout_page(request):
 
 @login_required(login_url='login_page')
 def dashboard_page(request):
-    chats_count = ChatSession.objects.filter(
-        user=request.user
-    ).count()
-    docs_count = KnowledgeDocument.objects.filter(
-        user=request.user
-    ).count()
-    processed_count = KnowledgeDocument.objects.filter(
-        user=request.user, processing_status='completed'
-    ).count()
-    cards_count = Flashcard.objects.filter(user=request.user).count()
-    quizzes_count = Quiz.objects.filter(user=request.user).count()
-
-    study_plans = StudyPlan.objects.filter(user=request.user)
-    hours_total = sum(
-        p.available_hours_per_week * p.duration_weeks
-        for p in study_plans
+    user = request.user
+    # Single query for counts using dictionary aggregation
+    from django.db.models import Count, Sum, F
+    from studies.models import StudyPlan
+    
+    docs_stats = KnowledgeDocument.objects.filter(user=user).aggregate(
+        total=Count('id'),
+        processed=Count('id', filter=models.Q(processing_status='completed'))
     )
-
-    techs = list(
-        study_plans.values_list('technology', flat=True).distinct()
-    )
-
+    
     dash_data = {
-        'arquivos_enviados': docs_count,
-        'documentos_processados': processed_count,
-        'chats_realizados': chats_count,
-        'flashcards_criados': cards_count,
-        'quizzes_realizados': quizzes_count,
-        'horas_estudadas': hours_total,
-        'temas_estudados': techs
+        'arquivos_enviados': docs_stats['total'],
+        'documentos_processados': docs_stats['processed'],
+        'chats_realizados': ChatSession.objects.filter(user=user).count(),
+        'flashcards_criados': Flashcard.objects.filter(user=user).count(),
+        'quizzes_realizados': Quiz.objects.filter(user=user).count(),
+        'horas_estudadas': StudyPlan.objects.filter(user=user).aggregate(
+            total=Sum(F('available_hours_per_week') * F('duration_weeks'))
+        )['total'] or 0,
+        'temas_estudados': list(
+            StudyPlan.objects.filter(user=user).values_list('technology', flat=True).distinct()
+        )
     }
 
     return render(request, 'dashboard.html', {'data': dash_data})
@@ -1360,36 +1353,24 @@ def document_status_fragment(request, document_id):
 @login_required(login_url='login_page')
 def dashboard_stats_fragment(request):
     """Retorna as estatísticas do dashboard."""
-    chats_count = ChatSession.objects.filter(
-        user=request.user
-    ).count()
-    docs_count = KnowledgeDocument.objects.filter(
-        user=request.user
-    ).count()
-    processed_count = KnowledgeDocument.objects.filter(
-        user=request.user, processing_status='completed'
-    ).count()
-    cards_count = Flashcard.objects.filter(
-        user=request.user
-    ).count()
-    quizzes_count = Quiz.objects.filter(
-        user=request.user
-    ).count()
-    study_plans = StudyPlan.objects.filter(user=request.user)
-    hours_total = sum(
-        p.available_hours_per_week * p.duration_weeks
-        for p in study_plans
+    from django.db.models import Count, Sum, F
+    
+    user = request.user
+    docs_stats = KnowledgeDocument.objects.filter(user=user).aggregate(
+        total=Count('id'),
+        processed=Count('id', filter=models.Q(processing_status='completed'))
     )
-    techs = list(
-        study_plans.values_list('technology', flat=True).distinct()
-    )
-
+    
     return render(request, 'fragments/dashboard_stats.html', {
-        'arquivos_enviados': docs_count,
-        'documentos_processados': processed_count,
-        'chats_realizados': chats_count,
-        'flashcards_criados': cards_count,
-        'quizzes_realizados': quizzes_count,
-        'horas_estudadas': hours_total,
-        'temas_estudados': techs
+        'arquivos_enviados': docs_stats['total'],
+        'documentos_processados': docs_stats['processed'],
+        'chats_realizados': ChatSession.objects.filter(user=user).count(),
+        'flashcards_criados': Flashcard.objects.filter(user=user).count(),
+        'quizzes_realizados': Quiz.objects.filter(user=user).count(),
+        'horas_estudadas': StudyPlan.objects.filter(user=user).aggregate(
+            total=Sum(F('available_hours_per_week') * F('duration_weeks'))
+        )['total'] or 0,
+        'temas_estudados': list(
+            StudyPlan.objects.filter(user=user).values_list('technology', flat=True).distinct()
+        )
     })

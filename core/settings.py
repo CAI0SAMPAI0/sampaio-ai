@@ -2,13 +2,15 @@ from pathlib import Path
 from decouple import config
 from datetime import timedelta
 import importlib.util
+import sys
 
 # BASE_DIR deve ser o primeiro
 BASE_DIR = Path(__file__).resolve().parent.parent
 HAS_WHITENOISE = importlib.util.find_spec('whitenoise') is not None
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-CHANGE_ME', cast=str)
-DEBUG = config('DEBUG', default=True, cast=bool)
+# DEBUG must be False in production to avoid storing SQL queries in memory
+DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = [
     host.strip()
     for host in config(
@@ -34,6 +36,8 @@ if DATABASE_URL:
     if not DEBUG and 'sqlite' not in db_config.get('ENGINE', ''):
         db_config.setdefault('OPTIONS', {})
         db_config['OPTIONS']['sslmode'] = 'require'
+    # Reduce connection pool for 512MB RAM
+    db_config['CONN_MAX_AGE'] = 300
     DATABASES = {
         'default': db_config
     }
@@ -76,7 +80,6 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -84,8 +87,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# Add WhiteNoise middleware only once, after SessionMiddleware
 if HAS_WHITENOISE:
-    MIDDLEWARE.insert(2, 'whitenoise.middleware.WhiteNoiseMiddleware')
+    MIDDLEWARE.insert(3, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 ROOT_URLCONF = 'core.urls'
 
@@ -171,30 +175,36 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
-# Redis Cache Configurations
+# Redis Cache Configurations (with memory limits for 512MB RAM server)
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": config("REDIS_URL", default="redis://127.0.0.1:6379/0"),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
+        },
+        "KEY_PREFIX": "sampaio",
+        "TIMEOUT": 300,  # 5 minutes default cache timeout
     }
 }
 
+# Cache sessions in Redis instead of database (saves DB queries)
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+
 # Overrides para ambiente de testes automatizados
-import sys
 if 'test' in sys.argv:
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
         }
     }
+    SESSION_ENGINE = "django.contrib.sessions.backends.db"
     GROQ_API_KEY = 'gsk_placeholder_for_development'
 
-# File upload limits (100MB)
-DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB in bytes
-FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB in bytes
+# File upload limits (reduced for 512MB RAM server)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB in bytes
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB in bytes
 
 # Hardening Security Settings
 SECURE_BROWSER_XSS_FILTER = True
