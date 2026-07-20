@@ -26,15 +26,12 @@ echo "Celery worker started with PID: $CELERY_PID"
 
 # Run Django ASGI app with uvicorn (optimized for 512MB RAM)
 # --workers 1: single process to save memory (Celery + Redis already use RAM)
-# --threads 4: handle I/O concurrently without extra process memory
-# --limit-concurrency 100: prevent memory overload from too many connections
 # --timeout-keep-alive 30: close idle connections faster
-echo "Starting Django ASGI application (uvicorn, workers=1, threads=4)..."
+# --log-level warning: less I/O in production
+echo "Starting Django ASGI application (uvicorn, workers=1)..."
 exec uvicorn core.asgi:application \
     --host 0.0.0.0 \
     --port ${PORT:-7860} \
     --workers 1 \
-    --threads 4 \
     --timeout-keep-alive 30 \
-    --limit-concurrency 100 \
     --log-level warning
