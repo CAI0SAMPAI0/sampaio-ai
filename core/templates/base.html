@@ -715,6 +715,7 @@
 
         // Celery task polling helper
         function pollTask(taskId, onSuccess, onError, interval = 1500) {
+            let completed = false;
             const poll = setInterval(() => {
                 fetch(`/api/task/${taskId}/`, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -726,16 +727,21 @@
                     return r.json();
                 })
                 .then(data => {
+                    if (completed) return;
                     if (data.state === 'SUCCESS') {
+                        completed = true;
                         clearInterval(poll);
                         if (onSuccess) onSuccess(data.result);
                     } else if (data.state === 'FAILURE') {
+                        completed = true;
                         clearInterval(poll);
                         if (onError) onError(data.error || 'Erro ao processar tarefa.');
                     }
                     // PENDING or STARTED -> keep polling
                 })
                 .catch(err => {
+                    if (completed) return;
+                    completed = true;
                     clearInterval(poll);
                     if (onError) onError('Erro de conexão ao verificar status.');
                 });

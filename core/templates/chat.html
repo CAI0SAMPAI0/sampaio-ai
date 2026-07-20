@@ -722,7 +722,7 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
         container.innerHTML = '';
         selectedFiles.forEach((file, index) => {
             const chip = document.createElement('div');
-            chip.className = 'flex items-center gap-x-1.5 px-2.5 py-1 rounded-full bg-slate-200 border border-slate-300 text-xs text-slate-700 shadow-2xs';
+            chip.className = 'flex items-center gap-x-1.5 px-2.5 py-1 rounded-full bg-white border border-slate-200 text-xs text-slate-700 shadow-2xs';
             chip.innerHTML = `
                 <span>${file.name}</span>
                 <button type="button" onclick="removeAttachedFile(${index})" class="text-slate-400 hover:text-slate-600 font-bold ml-1 cursor-pointer">×</button>
@@ -1105,6 +1105,9 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                 return res.json();
             })
             .then(data => {
+                // Message sent successfully — clear attachments immediately
+                clearAllAttachments();
+
                 // Handle async task response (Celery dispatched)
                 if (data.status === 'processing' && data.task_id) {
                     userMsg.setAttribute('data-id', data.user_message_id);
@@ -1124,7 +1127,6 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                     // Poll task status
                     pollTask(data.task_id, function(result) {
                         typingMsg.remove();
-                        clearAllAttachments();
 
                         const assistantMsg = document.createElement('div');
                         assistantMsg.className = 'msg mentor';
@@ -1150,7 +1152,6 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
                         if (sendBtn) sendBtn.disabled = false;
                     }, function(error) {
                         typingMsg.remove();
-                        clearAllAttachments();
                         const errorMsg = document.createElement('div');
                         errorMsg.className = 'msg mentor';
                         errorMsg.innerHTML = `
@@ -1171,7 +1172,6 @@ Digite comandos como 'pip install <lib>' ou rode códigos Python.
 
                 // Handle sync response (fallback or direct)
                 typingMsg.remove();
-                clearAllAttachments();
 
                 userMsg.setAttribute('data-id', data.user_message_id);
                 userMsg.querySelector('.user-actions-container').innerHTML = `
