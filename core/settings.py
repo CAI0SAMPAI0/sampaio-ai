@@ -43,8 +43,7 @@ if DATABASE_URL:
     if not DEBUG and "sqlite" not in db_config.get("ENGINE", ""):
         db_config.setdefault("OPTIONS", {})
         db_config["OPTIONS"]["sslmode"] = "require"
-    # Reduce connection pool for 512MB RAM
-    db_config["CONN_MAX_AGE"] = 300
+    db_config["CONN_MAX_AGE"] = 600
     DATABASES = {"default": db_config}
 else:
     DATABASES = {
@@ -181,25 +180,15 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
-# Low memory settings for Celery
-CELERY_WORKER_CONCURRENCY = 1
-CELERY_WORKER_MAX_TASKS_PER_CHILD = 100
-CELERY_WORKER_MAX_MEMORY_PER_CHILD = 80000  # 80MB
+# Configurações de performance elevadas
+CELERY_WORKER_CONCURRENCY = 2  # Ajuste baseado no número de CPUs (ex: 2 a 4)
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000  # Reinicia o worker após 1000 tarefas (evita leaks)
+CELERY_WORKER_MAX_MEMORY_PER_CHILD = 512000  # Permitido até 512MB por worker se necessário
 
-# Redis Cache Configurations (with memory limits for 512MB RAM server)
-# Fallback to local memory cache if Redis is not available
-REDIS_URL = config("REDIS_URL", default="redis://127.0.0.1:6379/0")
+# Redis Cache & Sessions (Otimizado para 8GB e estável entre deploys)
+REDIS_URL = config("REDIS_URL", default=None)
 
-try:
-    import redis
-
-    r = redis.from_url(REDIS_URL, socket_connect_timeout=2)
-    r.ping()
-    REDIS_AVAILABLE = True
-except Exception:
-    REDIS_AVAILABLE = False
-
-if REDIS_AVAILABLE:
+if REDIS_URL and "test" not in sys.argv:
     CACHES = {
         "default": {
             "BACKEND": "django_redis.cache.RedisCache",
@@ -208,14 +197,13 @@ if REDIS_AVAILABLE:
                 "CLIENT_CLASS": "django_redis.client.DefaultClient",
             },
             "KEY_PREFIX": "sampaio",
-            "TIMEOUT": 300,
+            "TIMEOUT": 3600,
         }
     }
-    # Cache sessions in Redis (saves DB queries)
-    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+    # Mantém o login mesmo que o Redis interno do container reinicie no deploy
+    SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
     SESSION_CACHE_ALIAS = "default"
 else:
-    # Fallback: use database sessions and local memory cache
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
@@ -235,8 +223,8 @@ if "test" in sys.argv:
     GROQ_API_KEY = "gsk_placeholder_for_development"
 
 # File upload limits (reduced for 512MB RAM server)
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB in bytes
-FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB in bytes
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800    # 10MB in bytes
+FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800    # 10MB in bytes
 
 # Hardening Security Settings
 SECURE_BROWSER_XSS_FILTER = True
