@@ -9,10 +9,11 @@ from .serializers import (
     UserUpdateSerializer,
     ChangePasswordSerializer,
     PasswordResetRequestSerializer,
-    PasswordResetConfirmSerializer
+    PasswordResetConfirmSerializer,
 )
 
 User = get_user_model()
+
 
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
@@ -40,11 +41,14 @@ class ChangePasswordView(APIView):
         serializer = ChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
             user = request.user
-            if not user.check_password(serializer.validated_data['current_password']):
-                return Response({'error': 'Senha atual incorreta'}, status=status.HTTP_400_BAD_REQUEST)
-            user.set_password(serializer.validated_data['new_password'])
+            if not user.check_password(serializer.validated_data["current_password"]):
+                return Response(
+                    {"error": "Senha atual incorreta"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            user.set_password(serializer.validated_data["new_password"])
             user.save()
-            return Response({'message': 'Senha alterada com sucesso'})
+            return Response({"message": "Senha alterada com sucesso"})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -54,7 +58,7 @@ class PasswordResetRequestView(APIView):
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
         if serializer.is_valid():
-            email = serializer.validated_data['email']
+            email = serializer.validated_data["email"]
             user = User.objects.filter(email=email).first()
             if user:
                 token = default_token_generator.make_token(user)
@@ -63,7 +67,9 @@ class PasswordResetRequestView(APIView):
                 print(f"Token: {token}")
                 print("------------------------------------------")
             # Sempre retornar sucesso para evitar vazamento de dados de usuários cadastrados
-            return Response({'message': 'Se o email existir, um token de recuperação foi enviado.'})
+            return Response(
+                {"message": "Se o email existir, um token de recuperação foi enviado."}
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -73,15 +79,18 @@ class PasswordResetConfirmView(APIView):
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
         if serializer.is_valid():
-            email = serializer.validated_data['email']
-            token = serializer.validated_data['token']
-            new_password = serializer.validated_data['new_password']
-            
+            email = serializer.validated_data["email"]
+            token = serializer.validated_data["token"]
+            new_password = serializer.validated_data["new_password"]
+
             user = User.objects.filter(email=email).first()
             if user and default_token_generator.check_token(user, token):
                 user.set_password(new_password)
                 user.save()
-                return Response({'message': 'Senha redefinida com sucesso.'})
-            
-            return Response({'error': 'Token ou email inválido.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"message": "Senha redefinida com sucesso."})
+
+            return Response(
+                {"error": "Token ou email inválido."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

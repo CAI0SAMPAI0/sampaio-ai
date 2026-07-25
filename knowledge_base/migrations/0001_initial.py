@@ -9,19 +9,39 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('uploads', '0001_initial'),
+        ("uploads", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='KnowledgeChunk',
+            name="KnowledgeChunk",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('content', models.TextField()),
-                ('page_number', models.IntegerField(blank=True, null=True)),
-                ('embedding', models.JSONField(help_text='Vetor de embedding como lista de floats')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('document', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='chunks', to='uploads.knowledgedocument')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("content", models.TextField()),
+                ("page_number", models.IntegerField(blank=True, null=True)),
+                (
+                    "embedding",
+                    models.JSONField(
+                        help_text="Vetor de embedding como lista de floats"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "document",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="chunks",
+                        to="uploads.knowledgedocument",
+                    ),
+                ),
             ],
         ),
     ]

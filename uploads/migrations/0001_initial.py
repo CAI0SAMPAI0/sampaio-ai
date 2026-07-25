@@ -15,19 +15,53 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='KnowledgeDocument',
+            name="KnowledgeDocument",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255)),
-                ('file', models.FileField(upload_to='documents/')),
-                ('file_type', models.CharField(max_length=50)),
-                ('file_size', models.IntegerField(help_text='Tamanho em bytes')),
-                ('processing_status', models.CharField(choices=[('pending', 'Pendente'), ('processing', 'Processando'), ('completed', 'Concluído'), ('failed', 'Falhou')], default='pending', max_length=20)),
-                ('chunks_count', models.IntegerField(default=0)),
-                ('tags', models.CharField(blank=True, help_text='Tags separadas por vírgula', max_length=255)),
-                ('uploaded_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='documents', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("file", models.FileField(upload_to="documents/")),
+                ("file_type", models.CharField(max_length=50)),
+                ("file_size", models.IntegerField(help_text="Tamanho em bytes")),
+                (
+                    "processing_status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pendente"),
+                            ("processing", "Processando"),
+                            ("completed", "Concluído"),
+                            ("failed", "Falhou"),
+                        ],
+                        default="pending",
+                        max_length=20,
+                    ),
+                ),
+                ("chunks_count", models.IntegerField(default=0)),
+                (
+                    "tags",
+                    models.CharField(
+                        blank=True,
+                        help_text="Tags separadas por vírgula",
+                        max_length=255,
+                    ),
+                ),
+                ("uploaded_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="documents",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

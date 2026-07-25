@@ -10,22 +10,51 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('uploads', '0001_initial'),
+        ("uploads", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Flashcard',
+            name="Flashcard",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('front', models.TextField()),
-                ('back', models.TextField()),
-                ('box', models.IntegerField(default=1, help_text='Caixa para repetição espaçada (1-5)')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('reviewed_at', models.DateTimeField(blank=True, null=True)),
-                ('document', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='flashcards', to='uploads.knowledgedocument')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='flashcards', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("front", models.TextField()),
+                ("back", models.TextField()),
+                (
+                    "box",
+                    models.IntegerField(
+                        default=1, help_text="Caixa para repetição espaçada (1-5)"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("reviewed_at", models.DateTimeField(blank=True, null=True)),
+                (
+                    "document",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="flashcards",
+                        to="uploads.knowledgedocument",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="flashcards",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

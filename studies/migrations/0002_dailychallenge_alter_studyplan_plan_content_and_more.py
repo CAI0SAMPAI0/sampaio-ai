@@ -8,40 +8,123 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('studies', '0001_initial'),
+        ("studies", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='DailyChallenge',
+            name="DailyChallenge",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=255)),
-                ('description', models.TextField(help_text='Descrição detalhada do desafio e requisitos')),
-                ('difficulty', models.CharField(choices=[('iniciante', 'Iniciante'), ('intermediario', 'Intermediário'), ('avancado', 'Avançado')], max_length=20)),
-                ('initial_code', models.TextField(blank=True, help_text='Código inicial de modelo/esqueleto')),
-                ('test_code', models.TextField(blank=True, help_text='Código de testes unitários ou assertivas para validar o funcionamento')),
-                ('date', models.DateField(auto_now_add=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("title", models.CharField(max_length=255)),
+                (
+                    "description",
+                    models.TextField(
+                        help_text="Descrição detalhada do desafio e requisitos"
+                    ),
+                ),
+                (
+                    "difficulty",
+                    models.CharField(
+                        choices=[
+                            ("iniciante", "Iniciante"),
+                            ("intermediario", "Intermediário"),
+                            ("avancado", "Avançado"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "initial_code",
+                    models.TextField(
+                        blank=True, help_text="Código inicial de modelo/esqueleto"
+                    ),
+                ),
+                (
+                    "test_code",
+                    models.TextField(
+                        blank=True,
+                        help_text="Código de testes unitários ou assertivas para validar o funcionamento",
+                    ),
+                ),
+                ("date", models.DateField(auto_now_add=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
         ),
         migrations.AlterField(
-            model_name='studyplan',
-            name='plan_content',
-            field=models.JSONField(help_text='Estrutura semanal do plano de estudos in JSON'),
+            model_name="studyplan",
+            name="plan_content",
+            field=models.JSONField(
+                help_text="Estrutura semanal do plano de estudos in JSON"
+            ),
         ),
         migrations.CreateModel(
-            name='ChallengeSubmission',
+            name="ChallengeSubmission",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('code', models.TextField()),
-                ('status', models.CharField(choices=[('pending', 'Pendente'), ('passed', 'Aprovado'), ('failed', 'Falhou')], default='pending', max_length=20)),
-                ('execution_output', models.TextField(blank=True, help_text='Saída do console de execução de testes', null=True)),
-                ('feedback', models.TextField(blank=True, help_text='Feedback da IA analisando o código, PEP8 e sugestões', null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='challenge_submissions', to=settings.AUTH_USER_MODEL)),
-                ('challenge', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='submissions', to='studies.dailychallenge')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("code", models.TextField()),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pendente"),
+                            ("passed", "Aprovado"),
+                            ("failed", "Falhou"),
+                        ],
+                        default="pending",
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "execution_output",
+                    models.TextField(
+                        blank=True,
+                        help_text="Saída do console de execução de testes",
+                        null=True,
+                    ),
+                ),
+                (
+                    "feedback",
+                    models.TextField(
+                        blank=True,
+                        help_text="Feedback da IA analisando o código, PEP8 e sugestões",
+                        null=True,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="challenge_submissions",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "challenge",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="submissions",
+                        to="studies.dailychallenge",
+                    ),
+                ),
             ],
         ),
     ]

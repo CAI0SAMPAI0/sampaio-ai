@@ -5,9 +5,9 @@ from core.config import settings
 import ssl
 
 # Corrige o prefixo para asyncpg
-database_url = settings.database_url \
-    .replace("postgresql://", "postgresql+asyncpg://") \
-    .replace("postgres://", "postgresql+asyncpg://")
+database_url = settings.database_url.replace(
+    "postgresql://", "postgresql+asyncpg://"
+).replace("postgres://", "postgresql+asyncpg://")
 
 # Remove ?sslmode=require da URL — asyncpg não aceita esse parâmetro
 if "?" in database_url:
@@ -28,10 +28,9 @@ engine = create_async_engine(
 )
 
 AsyncSessionLocal = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False
+    engine, class_=AsyncSession, expire_on_commit=False
 )
+
 
 class Base(DeclarativeBase):
     pass
@@ -40,6 +39,7 @@ class Base(DeclarativeBase):
 async def create_tables():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
 
 async def get_db():
     async with AsyncSessionLocal() as session:

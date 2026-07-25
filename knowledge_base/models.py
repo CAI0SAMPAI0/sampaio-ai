@@ -1,8 +1,11 @@
 from django.db import models
 from uploads.models import KnowledgeDocument
 
+
 class KnowledgeChunk(models.Model):
-    document = models.ForeignKey(KnowledgeDocument, on_delete=models.CASCADE, related_name='chunks')
+    document = models.ForeignKey(
+        KnowledgeDocument, on_delete=models.CASCADE, related_name="chunks"
+    )
     content = models.TextField()
     page_number = models.IntegerField(null=True, blank=True)
     embedding = models.JSONField(help_text="Vetor de embedding como lista de floats")

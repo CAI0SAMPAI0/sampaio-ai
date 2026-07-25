@@ -6,18 +6,29 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0002_storedfile'),
+        ("accounts", "0002_storedfile"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='level',
-            field=models.CharField(choices=[('iniciante', 'Iniciante'), ('intermediario', 'Intermediário'), ('avancado', 'Avançado')], default='iniciante', max_length=20, verbose_name='Nível de Programação'),
+            model_name="user",
+            name="level",
+            field=models.CharField(
+                choices=[
+                    ("iniciante", "Iniciante"),
+                    ("intermediario", "Intermediário"),
+                    ("avancado", "Avançado"),
+                ],
+                default="iniciante",
+                max_length=20,
+                verbose_name="Nível de Programação",
+            ),
         ),
         migrations.AddField(
-            model_name='user',
-            name='whatsapp_number',
-            field=models.CharField(blank=True, max_length=50, null=True, verbose_name='WhatsApp (WAHA)'),
+            model_name="user",
+            name="whatsapp_number",
+            field=models.CharField(
+                blank=True, max_length=50, null=True, verbose_name="WhatsApp (WAHA)"
+            ),
         ),
     ]

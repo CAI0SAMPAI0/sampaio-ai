@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Notification, AuditLog
 from .serializers import NotificationSerializer, AuditLogSerializer
 
+
 class NotificationViewSet(viewsets.ModelViewSet):
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
@@ -16,10 +17,10 @@ class NotificationViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-    @action(detail=False, methods=['post'], url_path='mark-all-read')
+    @action(detail=False, methods=["post"], url_path="mark-all-read")
     def mark_all_read(self, request):
         self.get_queryset().update(is_read=True)
-        return Response({'message': 'Todas as notificações foram marcadas como lidas.'})
+        return Response({"message": "Todas as notificações foram marcadas como lidas."})
 
 
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):

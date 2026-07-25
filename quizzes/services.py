@@ -6,7 +6,10 @@ from django.conf import settings
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
 
-def generate_quiz_for_document(document_id, user, theme=None, num_questions=3, difficulty="Médio"):
+
+def generate_quiz_for_document(
+    document_id, user, theme=None, num_questions=3, difficulty="Médio"
+):
     """
     Gera automaticamente um Quiz com perguntas de múltipla escolha com base no conteúdo
     do documento selecionado. Utiliza IA (Groq) se disponível, senão gera conteúdo simulado de alta qualidade.
@@ -19,7 +22,11 @@ def generate_quiz_for_document(document_id, user, theme=None, num_questions=3, d
     # Se tema for especificado, busca semanticamente os trechos mais relevantes do arquivo
     if theme:
         try:
-            from knowledge_base.services import DeterministicEmbeddings, cosine_similarity
+            from knowledge_base.services import (
+                DeterministicEmbeddings,
+                cosine_similarity,
+            )
+
             embedder = DeterministicEmbeddings()
             query_vector = embedder.embed_query(theme)
             all_chunks = doc.chunks.all()
@@ -43,21 +50,15 @@ def generate_quiz_for_document(document_id, user, theme=None, num_questions=3, d
     if theme:
         title += f" (Tema: {theme})"
 
-    quiz = Quiz.objects.create(
-        user=user,
-        document=doc,
-        title=title
-    )
+    quiz = Quiz.objects.create(user=user, document=doc, title=title)
 
-    groq_key = getattr(settings, 'GROQ_API_KEY', None)
+    groq_key = getattr(settings, "GROQ_API_KEY", None)
     questions = []
 
-    if groq_key and groq_key != 'gsk_placeholder_for_development' and groq_key != "":
+    if groq_key and groq_key != "gsk_placeholder_for_development" and groq_key != "":
         try:
             llm = ChatGroq(
-                groq_api_key=groq_key,
-                model="llama-3.3-70b-versatile",
-                temperature=0.4
+                groq_api_key=groq_key, model="llama-3.3-70b-versatile", temperature=0.4
             )
             prompt = (
                 "Você é um assistente especialista em programação. Com base no texto de estudo abaixo, "
@@ -71,18 +72,24 @@ def generate_quiz_for_document(document_id, user, theme=None, num_questions=3, d
                 f"Texto de estudo:\n{text_content}"
             )
             response = llm.invoke([HumanMessage(content=prompt)])
-            match = re.search(r'\[\s*\{.*\}\s*\]', response.content, re.DOTALL)
+            match = re.search(r"\[\s*\{.*\}\s*\]", response.content, re.DOTALL)
             if match:
                 data = json.loads(match.group(0))
                 for item in data:
-                    if item.get('question') and item.get('options') and item.get('correct_answer'):
-                        questions.append(QuizQuestion(
-                            quiz=quiz,
-                            question_text=item['question'],
-                            options=item['options'],
-                            correct_answer=item['correct_answer'],
-                            explanation=item.get('explanation', '')
-                        ))
+                    if (
+                        item.get("question")
+                        and item.get("options")
+                        and item.get("correct_answer")
+                    ):
+                        questions.append(
+                            QuizQuestion(
+                                quiz=quiz,
+                                question_text=item["question"],
+                                options=item["options"],
+                                correct_answer=item["correct_answer"],
+                                explanation=item.get("explanation", ""),
+                            )
+                        )
         except Exception as e:
             print(f"Erro ao gerar quiz via LLM: {e}")
 
@@ -96,26 +103,28 @@ def generate_quiz_for_document(document_id, user, theme=None, num_questions=3, d
                     "Escrever testes unitários e refatorar código legível seguindo a PEP8",
                     "Escrever código correndo sem se preocupar com testes ou estilo",
                     "Ignorar modularização e usar arquivos únicos gigantes",
-                    "Não refatorar e duplicar lógicas de código"
+                    "Não refatorar e duplicar lógicas de código",
                 ],
                 correct_answer="Escrever testes unitários e refatorar código legível seguindo a PEP8",
-                explanation="Modularização, legibilidade seguindo a PEP8 e cobertura de testes são pilares fundamentais da engenharia de software."
+                explanation="Modularização, legibilidade seguindo a PEP8 e cobertura de testes são pilares fundamentais da engenharia de software.",
             )
         ]
         # Se pediu mais questões no fallback
         for idx in range(1, num_questions):
-            questions.append(QuizQuestion(
-                quiz=quiz,
-                question_text=f"Questão {idx+1} [Simulada Nível {difficulty}]: Qual a melhor forma de validar o processamento correto?",
-                options=[
-                    "Implementando testes automatizados adequados ao fluxo",
-                    "Apenas checando logs manualmente uma vez",
-                    "Confiando que o código sempre funcionará sem validações",
-                    "Delegando toda a validação para o usuário final"
-                ],
-                correct_answer="Implementando testes automatizados adequados ao fluxo",
-                explanation="Garantir validações automáticas reduz a taxa de regressão e aumenta o desempenho geral do sistema."
-            ))
+            questions.append(
+                QuizQuestion(
+                    quiz=quiz,
+                    question_text=f"Questão {idx+1} [Simulada Nível {difficulty}]: Qual a melhor forma de validar o processamento correto?",
+                    options=[
+                        "Implementando testes automatizados adequados ao fluxo",
+                        "Apenas checando logs manualmente uma vez",
+                        "Confiando que o código sempre funcionará sem validações",
+                        "Delegando toda a validação para o usuário final",
+                    ],
+                    correct_answer="Implementando testes automatizados adequados ao fluxo",
+                    explanation="Garantir validações automáticas reduz a taxa de regressão e aumenta o desempenho geral do sistema.",
+                )
+            )
 
     QuizQuestion.objects.bulk_create(questions)
     return quiz

@@ -11,19 +11,20 @@ from notifications.services import send_user_notification
 
 User = get_user_model()
 
+
 @shared_task
 def generate_daily_challenges_task():
     """
     Gera desafios diários às 9h da manhã para os níveis: Iniciante, Intermediário e Avançado.
     Em seguida, notifica todos os usuários ativos de acordo com seus níveis.
     """
-    groq_key = getattr(settings, 'GROQ_API_KEY', None)
-    if not groq_key or groq_key == 'gsk_placeholder_for_development' or groq_key == "":
+    groq_key = getattr(settings, "GROQ_API_KEY", None)
+    if not groq_key or groq_key == "gsk_placeholder_for_development" or groq_key == "":
         print("Chave Groq indisponível. Simulando geração de desafios diários...")
         _generate_mock_daily_challenges()
         return
 
-    levels = ['iniciante', 'intermediario', 'avancado']
+    levels = ["iniciante", "intermediario", "avancado"]
     today = timezone.localdate()
 
     for lvl in levels:
@@ -33,11 +34,9 @@ def generate_daily_challenges_task():
 
         try:
             llm = ChatGroq(
-                groq_api_key=groq_key,
-                model="llama-3.3-70b-versatile",
-                temperature=0.7
+                groq_api_key=groq_key, model="llama-3.3-70b-versatile", temperature=0.7
             )
-            
+
             prompt = (
                 "Você é um criador de desafios de programação Python. Crie um desafio único de programação "
                 f"para o nível '{lvl.upper()}'.\n"
@@ -51,25 +50,25 @@ def generate_daily_challenges_task():
                 "- 'test_code': código com assertivas (ex: assertions ou chamadas) que validam se a resposta do usuário funciona\n\n"
                 "Exemplo de formato esperado:\n"
                 "{\n"
-                "  \"title\": \"Inverter String\",\n"
-                "  \"description\": \"Crie uma função chamada inverter(s) que retorne a string invertida.\",\n"
-                "  \"initial_code\": \"def inverter(s):\\n    # Seu código aqui\\n    pass\",\n"
+                '  "title": "Inverter String",\n'
+                '  "description": "Crie uma função chamada inverter(s) que retorne a string invertida.",\n'
+                '  "initial_code": "def inverter(s):\\n    # Seu código aqui\\n    pass",\n'
                 "  \"test_code\": \"assert inverter('ola') == 'alo'\\nassert inverter('python') == 'nohtyp'\"\n"
                 "}\n"
                 "Não retorne qualquer introdução ou texto fora do JSON."
             )
 
             response = llm.invoke([HumanMessage(content=prompt)])
-            match = re.search(r'\{.*\}', response.content, re.DOTALL)
+            match = re.search(r"\{.*\}", response.content, re.DOTALL)
             if match:
                 data = json.loads(match.group(0))
                 DailyChallenge.objects.create(
-                    title=data.get('title', f"Desafio Diário - {lvl.capitalize()}"),
-                    description=data.get('description', 'Resolva o problema proposto.'),
+                    title=data.get("title", f"Desafio Diário - {lvl.capitalize()}"),
+                    description=data.get("description", "Resolva o problema proposto."),
                     difficulty=lvl,
-                    initial_code=data.get('initial_code', 'def solucao():\n    pass'),
-                    test_code=data.get('test_code', '# Escreva seu teste'),
-                    date=today
+                    initial_code=data.get("initial_code", "def solucao():\n    pass"),
+                    test_code=data.get("test_code", "# Escreva seu teste"),
+                    date=today,
                 )
         except Exception as e:
             print(f"Erro ao gerar desafio diário do nível {lvl}: {e}")
@@ -79,16 +78,18 @@ def generate_daily_challenges_task():
 
     # Notificar todos os usuários ativos
     level_to_difficulty = {
-        'iniciante': 'iniciante',
-        'junior': 'iniciante',
-        'pleno': 'intermediario',
-        'senior': 'avancado',
+        "iniciante": "iniciante",
+        "junior": "iniciante",
+        "pleno": "intermediario",
+        "senior": "avancado",
     }
     active_users = User.objects.filter(is_active=True)
     for user in active_users:
-        user_lvl = getattr(user, 'level', 'iniciante')
-        difficulty = level_to_difficulty.get(user_lvl, 'iniciante')
-        challenge = DailyChallenge.objects.filter(date=today, difficulty=difficulty).first()
+        user_lvl = getattr(user, "level", "iniciante")
+        difficulty = level_to_difficulty.get(user_lvl, "iniciante")
+        challenge = DailyChallenge.objects.filter(
+            date=today, difficulty=difficulty
+        ).first()
         if challenge:
             title = f"Desafio Diário Disponível: {challenge.title}"
             message = (
@@ -99,6 +100,7 @@ def generate_daily_challenges_task():
             )
             send_user_notification(user, title, message)
 
+
 def _generate_mock_daily_challenges():
     """
     Gera desafios simulados caso o Groq falhe ou não esteja configurado.
@@ -106,35 +108,37 @@ def _generate_mock_daily_challenges():
     today = timezone.localdate()
     mocks = [
         {
-            'title': 'Soma de Dois Números',
-            'description': 'Crie uma função soma(a, b) que retorne a soma de dois números. Atente-se às boas práticas da PEP8.',
-            'difficulty': 'iniciante',
-            'initial_code': 'def soma(a, b):\n    # Escreva sua lógica aqui\n    pass',
-            'test_code': 'assert soma(2, 3) == 5\nassert soma(-1, 1) == 0'
+            "title": "Soma de Dois Números",
+            "description": "Crie uma função soma(a, b) que retorne a soma de dois números. Atente-se às boas práticas da PEP8.",
+            "difficulty": "iniciante",
+            "initial_code": "def soma(a, b):\n    # Escreva sua lógica aqui\n    pass",
+            "test_code": "assert soma(2, 3) == 5\nassert soma(-1, 1) == 0",
         },
         {
-            'title': 'Filtrar Números Primos',
-            'description': 'Crie uma função filtrar_primos(numeros) que receba uma lista de inteiros e retorne apenas os números primos.\n\nDica: Um número primo é divisível apenas por 1 e por ele mesmo (ex: 2, 3, 5, 7, 11). O número 1 NÃO é primo.',
-            'difficulty': 'intermediario',
-            'initial_code': 'def filtrar_primos(numeros):\n    primos = []\n    for n in numeros:\n        if n < 2:\n            continue\n        # Verifique se n é primo (sem divisores além de 1 e n)\n        eh_primo = True\n        for i in range(2, n):\n            if n % i == 0:\n                eh_primo = False\n                break\n        if eh_primo:\n            primos.append(n)\n    return primos',
-            'test_code': 'assert filtrar_primos([1, 2, 3, 4, 5]) == [2, 3, 5]\nassert filtrar_primos([10, 11, 12, 13]) == [11, 13]\nassert filtrar_primos([1, 4, 9, 15]) == []'
+            "title": "Filtrar Números Primos",
+            "description": "Crie uma função filtrar_primos(numeros) que receba uma lista de inteiros e retorne apenas os números primos.\n\nDica: Um número primo é divisível apenas por 1 e por ele mesmo (ex: 2, 3, 5, 7, 11). O número 1 NÃO é primo.",
+            "difficulty": "intermediario",
+            "initial_code": "def filtrar_primos(numeros):\n    primos = []\n    for n in numeros:\n        if n < 2:\n            continue\n        # Verifique se n é primo (sem divisores além de 1 e n)\n        eh_primo = True\n        for i in range(2, n):\n            if n % i == 0:\n                eh_primo = False\n                break\n        if eh_primo:\n            primos.append(n)\n    return primos",
+            "test_code": "assert filtrar_primos([1, 2, 3, 4, 5]) == [2, 3, 5]\nassert filtrar_primos([10, 11, 12, 13]) == [11, 13]\nassert filtrar_primos([1, 4, 9, 15]) == []",
         },
         {
-            'title': 'Validador de Parênteses',
-            'description': 'Crie uma classe ParantesesValidator com um método is_valid(s: str) -> bool que verifique se os parênteses, colchetes e chaves estão balanceados corretamente.',
-            'difficulty': 'avancado',
-            'initial_code': 'class ParantesesValidator:\n    def is_valid(self, s: str) -> bool:\n        # Escreva sua lógica aqui\n        pass',
-            'test_code': 'validator = ParantesesValidator()\nassert validator.is_valid("()[]{}") == True\nassert validator.is_valid("([)]") == False'
-        }
+            "title": "Validador de Parênteses",
+            "description": "Crie uma classe ParantesesValidator com um método is_valid(s: str) -> bool que verifique se os parênteses, colchetes e chaves estão balanceados corretamente.",
+            "difficulty": "avancado",
+            "initial_code": "class ParantesesValidator:\n    def is_valid(self, s: str) -> bool:\n        # Escreva sua lógica aqui\n        pass",
+            "test_code": 'validator = ParantesesValidator()\nassert validator.is_valid("()[]{}") == True\nassert validator.is_valid("([)]") == False',
+        },
     ]
 
     for mock in mocks:
-        if not DailyChallenge.objects.filter(date=today, difficulty=mock['difficulty']).exists():
+        if not DailyChallenge.objects.filter(
+            date=today, difficulty=mock["difficulty"]
+        ).exists():
             DailyChallenge.objects.create(
-                title=mock['title'],
-                description=mock['description'],
-                difficulty=mock['difficulty'],
-                initial_code=mock['initial_code'],
-                test_code=mock['test_code'],
-                date=today
+                title=mock["title"],
+                description=mock["description"],
+                difficulty=mock["difficulty"],
+                initial_code=mock["initial_code"],
+                test_code=mock["test_code"],
+                date=today,
             )

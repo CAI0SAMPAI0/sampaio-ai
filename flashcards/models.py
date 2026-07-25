@@ -4,12 +4,21 @@ from uploads.models import KnowledgeDocument
 
 User = get_user_model()
 
+
 class Flashcard(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='flashcards')
-    document = models.ForeignKey(KnowledgeDocument, on_delete=models.SET_NULL, null=True, blank=True, related_name='flashcards')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="flashcards")
+    document = models.ForeignKey(
+        KnowledgeDocument,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="flashcards",
+    )
     front = models.TextField()
     back = models.TextField()
-    box = models.IntegerField(default=1, help_text="Caixa para repetição espaçada (1-5)")
+    box = models.IntegerField(
+        default=1, help_text="Caixa para repetição espaçada (1-5)"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
 
