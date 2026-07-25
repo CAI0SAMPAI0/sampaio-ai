@@ -24,6 +24,7 @@ for host in [
     "proxy.spaces.internal.huggingface.tech",
     "localhost",
     "127.0.0.1",
+    'sampaio-ai-production.up.railway.app',
 ]:
     if host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(host)
@@ -140,7 +141,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 raw_origins = config(
     "CORS_ALLOWED_ORIGINS",
-    default="http://localhost:3000,https://supercai0-sampaio-ai.hf.space",
+    default="http://localhost:3000,https://supercai0-sampaio-ai.hf.space,sampaio-ai-production.up.railway.app",
 ).split(",")
 
 CORS_ALLOWED_ORIGINS = []
