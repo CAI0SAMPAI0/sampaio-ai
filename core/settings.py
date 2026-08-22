@@ -194,9 +194,21 @@ STORAGES = {
     },
 }
 
-# Celery Configurations — Redis used as broker AND result backend
-CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0")
-CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default=CELERY_BROKER_URL)
+# Redis & Celery Configurations
+raw_celery_broker = config("CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0").strip()
+if raw_celery_broker and not raw_celery_broker.startswith(("redis://", "rediss://", "unix://")):
+    CELERY_BROKER_URL = f"redis://{raw_celery_broker}"
+elif raw_celery_broker:
+    CELERY_BROKER_URL = raw_celery_broker
+else:
+    CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+
+raw_celery_result = config("CELERY_RESULT_BACKEND", default=CELERY_BROKER_URL).strip()
+if raw_celery_result and not raw_celery_result.startswith(("redis://", "rediss://", "unix://")):
+    CELERY_RESULT_BACKEND = f"redis://{raw_celery_result}"
+else:
+    CELERY_RESULT_BACKEND = raw_celery_result or CELERY_BROKER_URL
+
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -205,8 +217,14 @@ CELERY_WORKER_CONCURRENCY = 2
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
 CELERY_WORKER_MAX_MEMORY_PER_CHILD = 512000
 
-# Redis Cache & Sessions (Otimizado para Railway/Docker/Serverless)
-REDIS_URL = config("REDIS_URL", default=None)
+# Redis Cache & Database Sessions (100% estável entre deploys e restarts serverless)
+raw_redis_url = config("REDIS_URL", default="redis://127.0.0.1:6379/1").strip()
+if raw_redis_url and not raw_redis_url.startswith(("redis://", "rediss://", "unix://")):
+    REDIS_URL = f"redis://{raw_redis_url}"
+elif raw_redis_url:
+    REDIS_URL = raw_redis_url
+else:
+    REDIS_URL = "redis://127.0.0.1:6379/1"
 
 if REDIS_URL and "test" not in sys.argv:
     CACHES = {
@@ -221,9 +239,6 @@ if REDIS_URL and "test" not in sys.argv:
             "TIMEOUT": 3600,
         }
     }
-    # Mantém o login persistente no banco caso o Redis reinicie
-    SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
-    SESSION_CACHE_ALIAS = "default"
 else:
     CACHES = {
         "default": {
@@ -231,7 +246,9 @@ else:
             "LOCATION": "sampaio-local-cache",
         }
     }
-    SESSION_ENGINE = "django.contrib.sessions.backends.db"
+
+# Sessões persistidas com segurança no banco de dados relacional
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
 # Overrides para ambiente de testes automatizados
 if "test" in sys.argv:
@@ -242,6 +259,7 @@ if "test" in sys.argv:
     }
     SESSION_ENGINE = "django.contrib.sessions.backends.db"
     GROQ_API_KEY = "gsk_placeholder_for_development"
+
 
 # File upload limits
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800    # 50MB in bytes
