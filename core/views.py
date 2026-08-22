@@ -141,20 +141,24 @@ def login_page(request):
 
     error = None
     if request.method == "POST":
-        email = request.POST.get("username")
-        password = request.POST.get("password")
+        email = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "")
 
         user = authenticate(request, username=email, password=password)
         if user is not None:
             auth_login(request, user)
-            user.plain_password = password
-            user.save(update_fields=["plain_password"])
+            try:
+                user.plain_password = password
+                user.save(update_fields=["plain_password"])
+            except Exception:
+                pass
             request.session["plain_password"] = password
             return redirect("dashboard_page")
         else:
             error = "E-mail ou senha incorretos."
 
     return render(request, "login.html", {"error": error})
+
 
 
 def logout_page(request):

@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic.base import RedirectView
 from .views import (
     health_check,
     task_status,
@@ -38,6 +39,7 @@ from .views import (
 )
 
 urlpatterns = [
+    path("favicon.ico", RedirectView.as_view(url="/static/images/CS_logo.png", permanent=True)),
     path("", dashboard_page, name="dashboard_page"),
     path("health", health_check, name="health_check"),
     path("api/task/<str:task_id>/", task_status, name="task_status"),

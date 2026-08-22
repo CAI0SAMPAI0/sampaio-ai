@@ -11,24 +11,27 @@ HAS_WHITENOISE = importlib.util.find_spec("whitenoise") is not None
 SECRET_KEY = config("SECRET_KEY", default="django-insecure-CHANGE_ME", cast=str)
 # DEBUG must be False in production to avoid storing SQL queries in memory
 DEBUG = config("DEBUG", default=False, cast=bool)
+
+# Hosts permitidos com suporte a Railway, Render e HuggingFace
 ALLOWED_HOSTS = [
     host.strip()
     for host in config(
         "ALLOWED_HOSTS",
-        default="web-production-9fdbc.up.railway.app, .onrender.com, localhost, 127.0.0.1",
+        default="*",
     ).split(",")
     if host.strip()
 ]
 for host in [
+    ".railway.app",
+    ".up.railway.app",
     ".onrender.com",
     "proxy.spaces.internal.huggingface.tech",
     "localhost",
     "127.0.0.1",
-    'web-production-9fdbc.up.railway.app',
+    "0.0.0.0",
 ]:
-    if host not in ALLOWED_HOSTS:
+    if host not in ALLOWED_HOSTS and "*" not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(host)
-
 
 GROQ_API_KEY = config("GROQ_API_KEY", default=None)
 
@@ -38,12 +41,27 @@ DATABASE_URL = config("DATABASE_URL", default=None)
 if DATABASE_URL:
     import dj_database_url
 
-    db_config = dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
-    # Ensure SSL is configured for cloud database/Neon DB when not in debug mode
+    # Normaliza esquema postgres:// para postgresql://
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+    db_config = dj_database_url.config(
+        default=DATABASE_URL,
+        conn_max_age=300,
+        conn_health_checks=True,
+    )
+
+    # Configuração de SSL resiliente para Railway, Neon, Supabase e SQLite
     if not DEBUG and "sqlite" not in db_config.get("ENGINE", ""):
-        db_config.setdefault("OPTIONS", {})
-        db_config["OPTIONS"]["sslmode"] = "require"
-    db_config["CONN_MAX_AGE"] = 600
+        options = db_config.setdefault("OPTIONS", {})
+        if "sslmode" not in options:
+            if "railway.internal" in DATABASE_URL:
+                options["sslmode"] = "disable"
+            elif any(cloud in DATABASE_URL for cloud in ["neon.tech", "supabase", "amazonaws.com", "cockroach"]):
+                options["sslmode"] = "require"
+            else:
+                options["sslmode"] = "prefer"
+
     DATABASES = {"default": db_config}
 else:
     DATABASES = {
@@ -83,19 +101,24 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+]
+
+# WhiteNoise deve vir antes de SessionMiddleware
+if HAS_WHITENOISE:
+    MIDDLEWARE.append("whitenoise.middleware.WhiteNoiseMiddleware")
+
+MIDDLEWARE.extend([
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
-
-# Add WhiteNoise middleware only once, after SessionMiddleware
-if HAS_WHITENOISE:
-    MIDDLEWARE.insert(3, "whitenoise.middleware.WhiteNoiseMiddleware")
+])
 
 ROOT_URLCONF = "core.urls"
+WSGI_APPLICATION = "core.wsgi.application"
+ASGI_APPLICATION = "core.asgi.application"
 
 TEMPLATES = [
     {
@@ -111,8 +134,6 @@ TEMPLATES = [
         },
     },
 ]
-
-# WSGI_APPLICATION = 'core.wsgi.application'
 
 AUTH_USER_MODEL = "accounts.User"
 
@@ -130,7 +151,7 @@ TIME_ZONE = "America/Sao_Paulo"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
@@ -140,7 +161,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 raw_origins = config(
     "CORS_ALLOWED_ORIGINS",
-    default="http://localhost:3000,https://supercai0-sampaio-ai.hf.space,web-production-9fdbc.up.railway.app",
+    default="http://localhost:3000,https://supercai0-sampaio-ai.hf.space,https://web-production-9fdbc.up.railway.app",
 ).split(",")
 
 CORS_ALLOWED_ORIGINS = []
@@ -173,19 +194,18 @@ STORAGES = {
     },
 }
 
-# Celery Configurations — Redis used as both broker AND result backend
-CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
+# Celery Configurations — Redis used as broker AND result backend
+CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0")
 CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default=CELERY_BROKER_URL)
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
-# Configurações de performance elevadas
-CELERY_WORKER_CONCURRENCY = 2  # Ajuste baseado no número de CPUs (ex: 2 a 4)
-CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000  # Reinicia o worker após 1000 tarefas (evita leaks)
-CELERY_WORKER_MAX_MEMORY_PER_CHILD = 512000  # Permitido até 512MB por worker se necessário
+CELERY_WORKER_CONCURRENCY = 2
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
+CELERY_WORKER_MAX_MEMORY_PER_CHILD = 512000
 
-# Redis Cache & Sessions (Otimizado para 8GB e estável entre deploys)
+# Redis Cache & Sessions (Otimizado para Railway/Docker/Serverless)
 REDIS_URL = config("REDIS_URL", default=None)
 
 if REDIS_URL and "test" not in sys.argv:
@@ -195,19 +215,20 @@ if REDIS_URL and "test" not in sys.argv:
             "LOCATION": REDIS_URL,
             "OPTIONS": {
                 "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "IGNORE_EXCEPTIONS": True,
             },
             "KEY_PREFIX": "sampaio",
             "TIMEOUT": 3600,
         }
     }
-    # Mantém o login mesmo que o Redis interno do container reinicie no deploy
+    # Mantém o login persistente no banco caso o Redis reinicie
     SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
     SESSION_CACHE_ALIAS = "default"
 else:
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "unique-snowflake",
+            "LOCATION": "sampaio-local-cache",
         }
     }
     SESSION_ENGINE = "django.contrib.sessions.backends.db"
@@ -222,9 +243,9 @@ if "test" in sys.argv:
     SESSION_ENGINE = "django.contrib.sessions.backends.db"
     GROQ_API_KEY = "gsk_placeholder_for_development"
 
-# File upload limits (reduced for 512MB RAM server)
-DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800    # 10MB in bytes
-FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800    # 10MB in bytes
+# File upload limits
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800    # 50MB in bytes
+FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800    # 50MB in bytes
 
 # Hardening Security Settings
 SECURE_BROWSER_XSS_FILTER = True
@@ -234,8 +255,7 @@ X_FRAME_OPTIONS = "DENY"
 if not DEBUG:
     import os
 
-    # Disable SSL redirect inside Hugging Face Spaces as the reverse proxy handles it,
-    # and forcing it internally breaks Hugging Face's local HTTP health check.
+    # Disable SSL redirect inside Hugging Face Spaces as the reverse proxy handles it
     SECURE_SSL_REDIRECT = not bool(os.environ.get("SPACE_ID"))
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -243,18 +263,30 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in config(
-        "CSRF_TRUSTED_ORIGINS",
-        default="https://supercai0-sampaio-ai.hf.space,https://sampaio-ai.onrender.com",
-    ).split(",")
-    if origin.strip()
-]
-if "https://sampaio-ai.onrender.com" not in CSRF_TRUSTED_ORIGINS:
-    CSRF_TRUSTED_ORIGINS.append("https://sampaio-ai.onrender.com")
+raw_csrf = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="https://*.up.railway.app,https://*.railway.app,https://supercai0-sampaio-ai.hf.space,https://sampaio-ai.onrender.com",
+).split(",")
 
-# Trust the X-Forwarded-Proto header from the Hugging Face proxy for HTTPS detection
+CSRF_TRUSTED_ORIGINS = []
+for origin in raw_csrf:
+    origin = origin.strip()
+    if origin:
+        if not origin.startswith(("http://", "https://")):
+            origin = f"https://{origin}"
+        if origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(origin)
+
+for fallback_domain in [
+    "https://*.up.railway.app",
+    "https://*.railway.app",
+    "https://*.onrender.com",
+    "https://supercai0-sampaio-ai.hf.space",
+]:
+    if fallback_domain not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(fallback_domain)
+
+# Trust the X-Forwarded-Proto header from Railway / Render / HF proxy
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Email Settings
@@ -274,4 +306,38 @@ else:
         else "django.core.mail.backends.smtp.EmailBackend"
     )
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{asctime}] {levelname} {name}: {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
