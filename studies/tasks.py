@@ -33,10 +33,7 @@ def generate_daily_challenges_task():
             continue
 
         try:
-            llm = ChatGroq(
-                groq_api_key=groq_key, model="llama-3.3-70b-versatile", temperature=0.7
-            )
-
+            from core.llm import invoke_groq_with_fallback
             prompt = (
                 "Você é um criador de desafios de programação Python. Crie um desafio único de programação "
                 f"para o nível '{lvl.upper()}'.\n"
@@ -58,8 +55,8 @@ def generate_daily_challenges_task():
                 "Não retorne qualquer introdução ou texto fora do JSON."
             )
 
-            response = llm.invoke([HumanMessage(content=prompt)])
-            match = re.search(r"\{.*\}", response.content, re.DOTALL)
+            response_content = invoke_groq_with_fallback([HumanMessage(content=prompt)], temperature=0.7)
+            match = re.search(r"\{.*\}", response_content, re.DOTALL)
             if match:
                 data = json.loads(match.group(0))
                 DailyChallenge.objects.create(
@@ -72,6 +69,7 @@ def generate_daily_challenges_task():
                 )
         except Exception as e:
             print(f"Erro ao gerar desafio diário do nível {lvl}: {e}")
+
 
     # Fallback caso algum nível tenha falhado na geração
     _generate_mock_daily_challenges()

@@ -98,9 +98,7 @@ def submit_challenge_task(self, challenge_id, user_id, code):
 
     if groq_key and groq_key != "gsk_placeholder_for_development" and groq_key != "":
         try:
-            llm = ChatGroq(
-                groq_api_key=groq_key, model="llama-3.3-70b-versatile", temperature=0.4
-            )
+            from core.llm import invoke_groq_with_fallback
             prompt = (
                 "Você é um analista especialista em revisão "
                 "de código Python e PEP8.\n"
@@ -116,8 +114,7 @@ def submit_challenge_task(self, challenge_id, user_id, code):
                 "### Simplificação\n<sugestões>\n\n"
                 "### O que Estudar\n<tópicos>"
             )
-            response = llm.invoke([HumanMessage(content=prompt)])
-            feedback_text = response.content
+            feedback_text = invoke_groq_with_fallback([HumanMessage(content=prompt)], temperature=0.4)
         except Exception as e:
             feedback_text = (
                 f"Erro ao contatar IA: {e}\n\n"
@@ -126,6 +123,7 @@ def submit_challenge_task(self, challenge_id, user_id, code):
             )
     else:
         status_str = "Aprovado!" if passed else "Falhou."
+
         grade = "8" if passed else "3"
         feedback_text = (
             f"NOTA: {grade}\n\n"
@@ -185,27 +183,27 @@ def analyze_user_level_task(self, user_id, log_data):
 
     if groq_key and groq_key != "gsk_placeholder_for_development" and groq_key != "":
         try:
-            llm = ChatGroq(
-                groq_api_key=groq_key, model="llama-3.3-70b-versatile", temperature=0.2
-            )
-            response = llm.invoke(
+            from core.llm import invoke_groq_with_fallback
+            response_content = invoke_groq_with_fallback(
                 [
                     SystemMessage(content=system_prompt),
                     HumanMessage(content=f"Log:\n{log_str}"),
-                ]
+                ],
+                temperature=0.2,
             )
             try:
-                res_json = json.loads(response.content.strip())
+                res_json = json.loads(response_content.strip())
                 ai_level = res_json.get("level", ai_level).lower().strip()
                 ai_feedback = res_json.get("feedback", ai_feedback)
             except Exception:
-                match = re.search(r"\{.*\}", response.content, re.DOTALL)
+                match = re.search(r"\{.*\}", response_content, re.DOTALL)
                 if match:
                     res_json = json.loads(match.group(0))
                     ai_level = res_json.get("level", ai_level).lower().strip()
                     ai_feedback = res_json.get("feedback", ai_feedback)
         except Exception:
             pass
+
 
     correct_count = sum(1 for entry in log_data if entry.get("is_correct"))
     if not groq_key or groq_key == "gsk_placeholder_for_development" or groq_key == "":
@@ -255,9 +253,7 @@ def verify_flashcard_answer_task(self, flashcard_id, user_answer):
 
     if groq_key and groq_key != "gsk_placeholder_for_development" and groq_key != "":
         try:
-            llm = ChatGroq(
-                groq_api_key=groq_key, model="llama-3.3-70b-versatile", temperature=0.2
-            )
+            from core.llm import invoke_groq_with_fallback
             prompt = (
                 "Compare a resposta do usuário com a esperada.\n"
                 f"Pergunta: {flashcard.front}\n"
@@ -266,8 +262,8 @@ def verify_flashcard_answer_task(self, flashcard_id, user_answer):
                 'JSON: {"correct": bool, "score": 0-100, '
                 '"feedback": "..."}'
             )
-            response = llm.invoke([HumanMessage(content=prompt)])
-            match = re.search(r"\{.*\}", response.content, re.DOTALL)
+            response_content = invoke_groq_with_fallback([HumanMessage(content=prompt)], temperature=0.2)
+            match = re.search(r"\{.*\}", response_content, re.DOTALL)
             if match:
                 return json.loads(match.group(0))
         except Exception:
@@ -293,7 +289,6 @@ def generate_flashcards_task(self, document_id, user_id):
     """
     from flashcards.models import Flashcard
     from uploads.models import KnowledgeDocument
-    from langchain_groq import ChatGroq
     from langchain_core.messages import HumanMessage
 
     try:
@@ -311,16 +306,14 @@ def generate_flashcards_task(self, document_id, user_id):
 
     if groq_key and groq_key != "gsk_placeholder_for_development" and groq_key != "":
         try:
-            llm = ChatGroq(
-                groq_api_key=groq_key, model="llama-3.3-70b-versatile", temperature=0.4
-            )
+            from core.llm import invoke_groq_with_fallback
             prompt = (
                 "Gere 3-5 flashcards. "
                 'JSON: [{"front": "...", "back": "..."}]\n\n'
                 f"Texto:\n{text_content}"
             )
-            response = llm.invoke([HumanMessage(content=prompt)])
-            match = re.search(r"\[\s*\{.*\}\s*\]", response.content, re.DOTALL)
+            response_content = invoke_groq_with_fallback([HumanMessage(content=prompt)], temperature=0.4)
+            match = re.search(r"\[\s*\{.*\}\s*\]", response_content, re.DOTALL)
             if match:
                 data = json.loads(match.group(0))
                 for item in data:
@@ -362,7 +355,6 @@ def generate_quiz_task(
     """
     from quizzes.models import Quiz, QuizQuestion
     from uploads.models import KnowledgeDocument
-    from langchain_groq import ChatGroq
     from langchain_core.messages import HumanMessage
 
     try:
@@ -386,9 +378,7 @@ def generate_quiz_task(
 
     if groq_key and groq_key != "gsk_placeholder_for_development" and groq_key != "":
         try:
-            llm = ChatGroq(
-                groq_api_key=groq_key, model="llama-3.3-70b-versatile", temperature=0.4
-            )
+            from core.llm import invoke_groq_with_fallback
             prompt = (
                 f"Gere {num_questions} perguntas múltipla escolha.\n"
                 f"Tema: {theme or 'Geral'}\n"
@@ -399,8 +389,8 @@ def generate_quiz_task(
                 '"explanation": "..."}]\n\n'
                 f"Texto:\n{text_content}"
             )
-            response = llm.invoke([HumanMessage(content=prompt)])
-            match = re.search(r"\[\s*\{.*\}\s*\]", response.content, re.DOTALL)
+            response_content = invoke_groq_with_fallback([HumanMessage(content=prompt)], temperature=0.4)
+            match = re.search(r"\[\s*\{.*\}\s*\]", response_content, re.DOTALL)
             if match:
                 data = json.loads(match.group(0))
                 for item in data:
@@ -449,7 +439,6 @@ def generate_study_plan_task(
     Task assíncrona para gerar plano de estudos via LLM.
     """
     from studies.models import StudyPlan
-    from langchain_groq import ChatGroq
     from langchain_core.messages import HumanMessage
 
     title = f"Plano de Estudos: {technology}"
@@ -458,9 +447,7 @@ def generate_study_plan_task(
 
     if groq_key and groq_key != "gsk_placeholder_for_development" and groq_key != "":
         try:
-            llm = ChatGroq(
-                groq_api_key=groq_key, model="llama-3.3-70b-versatile", temperature=0.5
-            )
+            from core.llm import invoke_groq_with_fallback
             prompt = (
                 f"Plano de estudos: '{technology}', "
                 f"objetivo: '{objective}'. "
@@ -471,12 +458,13 @@ def generate_study_plan_task(
                 '"tarefas": [...], '
                 '"horas_sugeridas": 4}]}'
             )
-            response = llm.invoke([HumanMessage(content=prompt)])
-            match = re.search(r'\{\s*"semanas".*\}', response.content, re.DOTALL)
+            response_content = invoke_groq_with_fallback([HumanMessage(content=prompt)], temperature=0.5)
+            match = re.search(r'\{\s*"semanas".*\}', response_content, re.DOTALL)
             if match:
                 plan_content = json.loads(match.group(0))
         except Exception:
             pass
+
 
     if not plan_content:
         semanas = []

@@ -158,19 +158,15 @@ def generate_response_node(state: AgentState) -> dict:
     # 2. Histórico de conversas
     lc_messages.extend(state["messages"])
 
-    # 3. Executa inferência
+    # 3. Executa inferência com fallback e compressão de contexto
     assistant_content = ""
-    groq_key = getattr(settings, "GROQ_API_KEY", None)
-    if groq_key:
-        groq_key = str(groq_key).strip().strip("'").strip('"')
+    from core.llm import get_groq_api_key, invoke_groq_with_fallback
 
-    if groq_key and groq_key != "gsk_placeholder_for_development" and groq_key != "":
+    groq_key = get_groq_api_key()
+
+    if groq_key:
         try:
-            llm = ChatGroq(
-                groq_api_key=groq_key, model="llama-3.3-70b-versatile", temperature=0.3
-            )
-            response = llm.invoke(lc_messages)
-            assistant_content = response.content
+            assistant_content = invoke_groq_with_fallback(lc_messages, temperature=0.3)
         except Exception as e:
             assistant_content = (
                 f"Desculpe, ocorreu um erro ao processar a resposta: {str(e)}"
@@ -178,10 +174,8 @@ def generate_response_node(state: AgentState) -> dict:
     else:
         # Resposta simulada para desenvolvimento
         key_status = "Chave nula ou ausente"
-        if groq_key == "gsk_placeholder_for_development":
+        if getattr(settings, "GROQ_API_KEY", None) == "gsk_placeholder_for_development":
             key_status = "Placeholder de desenvolvimento ativo no seu arquivo .env"
-        elif groq_key == "":
-            key_status = "Chave vazia"
 
         assistant_content = (
             f"### Resposta do Mentor (Modo Simulação LangGraph)\n\n"
@@ -189,7 +183,7 @@ def generate_response_node(state: AgentState) -> dict:
         )
         if state.get("context"):
             assistant_content += (
-                f"**Livros Consumidos (RAG):**\n" f"```\n{state['context']}\n```\n\n"
+                f"**Livros Consumidos (RAG):**\n```\n{state['context']}\n```\n\n"
             )
         if state.get("web_context"):
             assistant_content += (
@@ -205,6 +199,7 @@ def generate_response_node(state: AgentState) -> dict:
     return {
         "messages": list(state["messages"]) + [AIMessage(content=assistant_content)]
     }
+
 
 
 # Compilação do grafo LangGraph

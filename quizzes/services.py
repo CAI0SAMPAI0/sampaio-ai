@@ -57,9 +57,7 @@ def generate_quiz_for_document(
 
     if groq_key and groq_key != "gsk_placeholder_for_development" and groq_key != "":
         try:
-            llm = ChatGroq(
-                groq_api_key=groq_key, model="llama-3.3-70b-versatile", temperature=0.4
-            )
+            from core.llm import invoke_groq_with_fallback
             prompt = (
                 "Você é um assistente especialista em programação. Com base no texto de estudo abaixo, "
                 f"gere exatamente {num_questions} perguntas de múltipla escolha.\n"
@@ -71,8 +69,9 @@ def generate_quiz_for_document(
                 "Não adicione nenhuma introdução ou explicação fora do JSON.\n\n"
                 f"Texto de estudo:\n{text_content}"
             )
-            response = llm.invoke([HumanMessage(content=prompt)])
-            match = re.search(r"\[\s*\{.*\}\s*\]", response.content, re.DOTALL)
+            response_content = invoke_groq_with_fallback([HumanMessage(content=prompt)], temperature=0.4)
+            match = re.search(r"\[\s*\{.*\}\s*\]", response_content, re.DOTALL)
+
             if match:
                 data = json.loads(match.group(0))
                 for item in data:

@@ -34,6 +34,7 @@ for host in [
         ALLOWED_HOSTS.append(host)
 
 GROQ_API_KEY = config("GROQ_API_KEY", default=None)
+GROQ_MODEL = config("GROQ_MODEL", default="openai/gpt-oss-120b")
 
 # Database
 DATABASE_URL = config("DATABASE_URL", default=None)

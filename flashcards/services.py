@@ -28,17 +28,15 @@ def generate_flashcards_for_document(document_id, user):
 
     if groq_key and groq_key != "gsk_placeholder_for_development" and groq_key != "":
         try:
-            llm = ChatGroq(
-                groq_api_key=groq_key, model="llama-3.3-70b-versatile", temperature=0.4
-            )
+            from core.llm import invoke_groq_with_fallback
             prompt = (
                 "Você é um assistente especialista em programação. Com base no texto de estudo abaixo, "
                 "gere exatamente 3 a 5 flashcards para revisão de conteúdo. Retorne APENAS um array JSON de objetos contendo "
                 "as chaves 'front' (pergunta da frente) e 'back' (resposta do verso). Não adicione nenhuma introdução ou explicação fora do JSON.\n\n"
                 f"Texto de estudo:\n{text_content}"
             )
-            response = llm.invoke([HumanMessage(content=prompt)])
-            match = re.search(r"\[\s*\{.*\}\s*\]", response.content, re.DOTALL)
+            response_content = invoke_groq_with_fallback([HumanMessage(content=prompt)], temperature=0.4)
+            match = re.search(r"\[\s*\{.*\}\s*\]", response_content, re.DOTALL)
             if match:
                 data = json.loads(match.group(0))
                 for item in data:
@@ -53,6 +51,7 @@ def generate_flashcards_for_document(document_id, user):
                         )
         except Exception as e:
             print(f"Erro ao gerar flashcards via LLM: {e}")
+
 
     # Fallback/simulação de geração
     if not flashcard_objs:

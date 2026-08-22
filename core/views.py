@@ -637,9 +637,7 @@ def submit_challenge(request):
     groq_key = getattr(settings, "GROQ_API_KEY", None)
     if groq_key and groq_key not in ("gsk_placeholder_for_development", ""):
         try:
-            llm = ChatGroq(
-                groq_api_key=groq_key, model="llama-3.3-70b-versatile", temperature=0.4
-            )
+            from core.llm import invoke_groq_with_fallback
             prompt = (
                 f"Revise este código Python:\n"
                 f"```python\n{code}\n```\n"
@@ -652,10 +650,10 @@ def submit_challenge(request):
                 "### Simplificação\n<sugestões>\n\n"
                 "### O que Estudar\n<tópicos>"
             )
-            response = llm.invoke([HumanMessage(content=prompt)])
-            feedback_text = response.content
+            feedback_text = invoke_groq_with_fallback([HumanMessage(content=prompt)], temperature=0.4)
         except Exception:
             pass
+
 
     submission = ChallengeSubmission.objects.create(
         user=request.user,
@@ -940,25 +938,30 @@ def analyze_user_level(request):
         groq_key = getattr(settings, "GROQ_API_KEY", None)
         if groq_key and groq_key not in ("gsk_placeholder_for_development", ""):
             try:
-                llm = ChatGroq(
-                    groq_api_key=groq_key,
-                    model="llama-3.3-70b-versatile",
-                    temperature=0.2,
-                )
+                from core.llm import invoke_groq_with_fallback
                 sys_msg = (
                     "Defina nível: "
                     "iniciante/junior/pleno/senior. "
                     "JSON: {level, feedback}"
                 )
-                response = llm.invoke(
-                    [SystemMessage(content=sys_msg), HumanMessage(content=log_str)]
+                response_content = invoke_groq_with_fallback(
+                    [SystemMessage(content=sys_msg), HumanMessage(content=log_str)],
+                    temperature=0.2,
                 )
-                res_json = json.loads(response.content.strip())
-                ai_level = res_json.get("level", ai_level).lower().strip()
-                ai_feedback = res_json.get("feedback", ai_feedback)
+                try:
+                    res_json = json.loads(response_content.strip())
+                    ai_level = res_json.get("level", ai_level).lower().strip()
+                    ai_feedback = res_json.get("feedback", ai_feedback)
+                except Exception:
+                    match = re.search(r"\{.*\}", response_content, re.DOTALL)
+                    if match:
+                        res_json = json.loads(match.group(0))
+                        ai_level = res_json.get("level", ai_level).lower().strip()
+                        ai_feedback = res_json.get("feedback", ai_feedback)
             except Exception:
                 pass
         correct_count = sum(1 for e in log if e.get("is_correct"))
+
         if not groq_key or groq_key in ("gsk_placeholder_for_development", ""):
             if correct_count >= 8:
                 ai_level = "senior"
