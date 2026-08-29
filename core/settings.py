@@ -58,7 +58,10 @@ if DATABASE_URL:
         if "sslmode" not in options:
             if "railway.internal" in DATABASE_URL:
                 options["sslmode"] = "disable"
-            elif any(cloud in DATABASE_URL for cloud in ["neon.tech", "supabase", "amazonaws.com", "cockroach"]):
+            elif any(
+                cloud in DATABASE_URL
+                for cloud in ["neon.tech", "supabase", "amazonaws.com", "cockroach"]
+            ):
                 options["sslmode"] = "require"
             else:
                 options["sslmode"] = "prefer"
@@ -108,14 +111,16 @@ MIDDLEWARE = [
 if HAS_WHITENOISE:
     MIDDLEWARE.append("whitenoise.middleware.WhiteNoiseMiddleware")
 
-MIDDLEWARE.extend([
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-])
+MIDDLEWARE.extend(
+    [
+        "django.contrib.sessions.middleware.SessionMiddleware",
+        "django.middleware.common.CommonMiddleware",
+        "django.middleware.csrf.CsrfViewMiddleware",
+        "django.contrib.auth.middleware.AuthenticationMiddleware",
+        "django.contrib.messages.middleware.MessageMiddleware",
+        "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    ]
+)
 
 ROOT_URLCONF = "core.urls"
 WSGI_APPLICATION = "core.wsgi.application"
@@ -196,8 +201,12 @@ STORAGES = {
 }
 
 # Redis & Celery Configurations
-raw_celery_broker = config("CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0").strip()
-if raw_celery_broker and not raw_celery_broker.startswith(("redis://", "rediss://", "unix://")):
+raw_celery_broker = config(
+    "CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0"
+).strip()
+if raw_celery_broker and not raw_celery_broker.startswith(
+    ("redis://", "rediss://", "unix://")
+):
     CELERY_BROKER_URL = f"redis://{raw_celery_broker}"
 elif raw_celery_broker:
     CELERY_BROKER_URL = raw_celery_broker
@@ -205,7 +214,9 @@ else:
     CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
 
 raw_celery_result = config("CELERY_RESULT_BACKEND", default=CELERY_BROKER_URL).strip()
-if raw_celery_result and not raw_celery_result.startswith(("redis://", "rediss://", "unix://")):
+if raw_celery_result and not raw_celery_result.startswith(
+    ("redis://", "rediss://", "unix://")
+):
     CELERY_RESULT_BACKEND = f"redis://{raw_celery_result}"
 else:
     CELERY_RESULT_BACKEND = raw_celery_result or CELERY_BROKER_URL
@@ -263,8 +274,8 @@ if "test" in sys.argv:
 
 
 # File upload limits
-DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800    # 50MB in bytes
-FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800    # 50MB in bytes
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB in bytes
+FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB in bytes
 
 # Hardening Security Settings
 SECURE_BROWSER_XSS_FILTER = True
@@ -359,4 +370,3 @@ LOGGING = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-

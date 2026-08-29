@@ -24,6 +24,7 @@ async def generate_study_plan(
     if groq_key and groq_key != "gsk_placeholder_for_development" and groq_key != "":
         try:
             from core.llm import invoke_groq_with_fallback
+
             prompt = (
                 "Você é um mentor técnico especialista em programação. Crie um plano de estudos "
                 f"para a tecnologia '{technology}', com o objetivo de '{objective}'. "
@@ -42,13 +43,14 @@ async def generate_study_plan(
                 "}\n"
                 "Não inclua nenhum texto explicativo antes ou depois do JSON."
             )
-            response_content = invoke_groq_with_fallback([HumanMessage(content=prompt)], temperature=0.5)
+            response_content = invoke_groq_with_fallback(
+                [HumanMessage(content=prompt)], temperature=0.5
+            )
             match = re.search(r"\{\s*\"semanas\".*\}", response_content, re.DOTALL)
             if match:
                 plan_content = json.loads(match.group(0))
         except Exception as e:
             print(f"Erro ao gerar plano de estudos via LLM: {e}")
-
 
     # Fallback/simulação de plano de estudos
     if not plan_content:

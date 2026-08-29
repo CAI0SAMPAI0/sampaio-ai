@@ -258,7 +258,6 @@ Fazer o aluno aprender a pensar como programador: entender problemas, criar algo
 
     lc_messages.append(SystemMessage(content=system_prompt))
 
-
     # 2. Histórico de conversas
     lc_messages.extend(state["messages"])
 
@@ -303,7 +302,6 @@ Fazer o aluno aprender a pensar como programador: entender problemas, criar algo
     return {
         "messages": list(state["messages"]) + [AIMessage(content=assistant_content)]
     }
-
 
 
 # Compilação do grafo LangGraph

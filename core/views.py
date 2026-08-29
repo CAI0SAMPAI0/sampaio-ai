@@ -160,7 +160,6 @@ def login_page(request):
     return render(request, "login.html", {"error": error})
 
 
-
 def logout_page(request):
     auth_logout(request)
     return redirect("login_page")
@@ -258,8 +257,7 @@ def send_chat_message(request, session_id):
                     file_content = f.read().decode("utf-8", errors="ignore")
                     ext = f.name.split(".")[-1]
                     files_context += (
-                        f"\n\n--- Arquivo: {f.name} ---"
-                        f"\n```{ext}\n{file_content}\n```"
+                        f"\n\n--- Arquivo: {f.name} ---\n```{ext}\n{file_content}\n```"
                     )
                 except Exception:
                     pass
@@ -372,7 +370,7 @@ def profile_page(request):
             if not email:
                 error_message = "O e-mail é obrigatório."
             elif User.objects.exclude(id=request.user.id).filter(email=email).exists():
-                error_message = "Este e-mail já está em uso " "por outro usuário."
+                error_message = "Este e-mail já está em uso por outro usuário."
             else:
                 request.user.first_name = first_name
                 request.user.last_name = last_name
@@ -395,9 +393,9 @@ def profile_page(request):
             if not request.user.check_password(current_password):
                 error_message = "Senha atual incorreta."
             elif new_password != confirm_password:
-                error_message = "A nova senha e a confirmação " "não conferem."
+                error_message = "A nova senha e a confirmação não conferem."
             elif len(new_password) < 6:
-                error_message = "A nova senha deve ter " "pelo menos 6 caracteres."
+                error_message = "A nova senha deve ter pelo menos 6 caracteres."
             else:
                 request.user.set_password(new_password)
                 request.user.plain_password = new_password
@@ -530,7 +528,7 @@ def run_challenge_code(request):
     except DailyChallenge.DoesNotExist:
         return JsonResponse({"error": "Desafio não encontrado."}, status=404)
 
-    full_code = f"{code}\n\n# --- TEST CASES ---\n" f"{challenge.test_code}"
+    full_code = f"{code}\n\n# --- TEST CASES ---\n{challenge.test_code}"
 
     with tempfile.NamedTemporaryFile(
         suffix=".py", delete=False, mode="w", encoding="utf-8"
@@ -605,7 +603,7 @@ def submit_challenge(request):
 
     import tempfile
 
-    full_code = f"{code}\n\n# --- TEST CASES ---\n" f"{challenge.test_code}"
+    full_code = f"{code}\n\n# --- TEST CASES ---\n{challenge.test_code}"
     with tempfile.NamedTemporaryFile(
         suffix=".py", delete=False, mode="w", encoding="utf-8"
     ) as temp:
@@ -621,7 +619,7 @@ def submit_challenge(request):
             timeout=5,
         )
         passed = result.returncode == 0
-        exec_output = f"Stdout:\n{result.stdout}\n\n" f"Stderr:\n{result.stderr}"
+        exec_output = f"Stdout:\n{result.stdout}\n\nStderr:\n{result.stderr}"
     except Exception as e:
         exec_output = f"Erro: {str(e)}"
     finally:
@@ -638,6 +636,7 @@ def submit_challenge(request):
     if groq_key and groq_key not in ("gsk_placeholder_for_development", ""):
         try:
             from core.llm import invoke_groq_with_fallback
+
             prompt = (
                 f"Revise este código Python:\n"
                 f"```python\n{code}\n```\n"
@@ -650,10 +649,11 @@ def submit_challenge(request):
                 "### Simplificação\n<sugestões>\n\n"
                 "### O que Estudar\n<tópicos>"
             )
-            feedback_text = invoke_groq_with_fallback([HumanMessage(content=prompt)], temperature=0.4)
+            feedback_text = invoke_groq_with_fallback(
+                [HumanMessage(content=prompt)], temperature=0.4
+            )
         except Exception:
             pass
-
 
     submission = ChallengeSubmission.objects.create(
         user=request.user,
@@ -805,7 +805,7 @@ def run_terminal_command(request):
             output += result.stderr
         if not output.strip():
             exit_code = result.returncode
-            output = f"Comando executado " f"(Código de saída: {exit_code})"
+            output = f"Comando executado (Código de saída: {exit_code})"
 
         return JsonResponse({"output": output, "exit_code": result.returncode})
     except subprocess.TimeoutExpired:
@@ -885,9 +885,7 @@ def run_editor_code(request):
             {
                 "passed": False,
                 "stdout": "",
-                "stderr": (
-                    "Erro: Tempo limite de execução " "de 10 segundos excedido."
-                ),
+                "stderr": ("Erro: Tempo limite de execução de 10 segundos excedido."),
                 "exit_code": -1,
             }
         )
@@ -929,7 +927,7 @@ def analyze_user_level(request):
         log_str = ""
         for i, entry in enumerate(log):
             log_str += (
-                f"Q{i+1}: {entry.get('question')} | "
+                f"Q{i + 1}: {entry.get('question')} | "
                 f"Resp: {entry.get('user_answer')} | "
                 f"OK: {entry.get('is_correct')}\n"
             )
@@ -939,6 +937,7 @@ def analyze_user_level(request):
         if groq_key and groq_key not in ("gsk_placeholder_for_development", ""):
             try:
                 from core.llm import invoke_groq_with_fallback
+
                 sys_msg = (
                     "Defina nível: "
                     "iniciante/junior/pleno/senior. "
@@ -1020,7 +1019,7 @@ def edit_chat_message(request, message_id):
             return JsonResponse(
                 {
                     "success": False,
-                    "error": ("Apenas mensagens do usuário " "podem ser editadas."),
+                    "error": ("Apenas mensagens do usuário podem ser editadas."),
                 },
                 status=400,
             )
@@ -1085,7 +1084,7 @@ def resend_chat_message_view(request, message_id):
             return JsonResponse(
                 {
                     "success": False,
-                    "error": ("Apenas mensagens do usuário " "podem ser reenviadas."),
+                    "error": ("Apenas mensagens do usuário podem ser reenviadas."),
                 },
                 status=400,
             )

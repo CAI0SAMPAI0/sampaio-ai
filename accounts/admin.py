@@ -41,4 +41,3 @@ class CustomUserAdmin(BaseUserAdmin):
 class StoredFileAdmin(admin.ModelAdmin):
     list_display = ["name", "size", "updated_at"]
     search_fields = ["name"]
-

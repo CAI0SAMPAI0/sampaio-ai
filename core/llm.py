@@ -7,7 +7,8 @@ from langchain_groq import ChatGroq
 
 # Modelos padrão suportados no Groq
 DEFAULT_GROQ_MODELS = [
-    getattr(settings, "GROQ_MODEL", None) or os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"),
+    getattr(settings, "GROQ_MODEL", None)
+    or os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"),
     "gpt-oss-120b",
     "openai/gpt-oss-120b",
     "openai/gpt-oss-20b",
@@ -31,7 +32,9 @@ def get_groq_model() -> str:
     return (model or "openai/gpt-oss-120b").strip()
 
 
-def get_groq_llm(model: Optional[str] = None, temperature: float = 0.3) -> Optional[ChatGroq]:
+def get_groq_llm(
+    model: Optional[str] = None, temperature: float = 0.3
+) -> Optional[ChatGroq]:
     """Instancia o cliente ChatGroq com o modelo configurado."""
     key = get_groq_api_key()
     if not key:
@@ -139,7 +142,11 @@ def invoke_groq_with_fallback(
         except Exception as e:
             err_str = str(e)
             last_exception = e
-            if "model_not_found" in err_str or "does not exist" in err_str or "404" in err_str:
+            if (
+                "model_not_found" in err_str
+                or "does not exist" in err_str
+                or "404" in err_str
+            ):
                 continue
             raise e
 

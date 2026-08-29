@@ -58,6 +58,7 @@ def generate_quiz_for_document(
     if groq_key and groq_key != "gsk_placeholder_for_development" and groq_key != "":
         try:
             from core.llm import invoke_groq_with_fallback
+
             prompt = (
                 "Você é um assistente especialista em programação. Com base no texto de estudo abaixo, "
                 f"gere exatamente {num_questions} perguntas de múltipla escolha.\n"
@@ -69,7 +70,9 @@ def generate_quiz_for_document(
                 "Não adicione nenhuma introdução ou explicação fora do JSON.\n\n"
                 f"Texto de estudo:\n{text_content}"
             )
-            response_content = invoke_groq_with_fallback([HumanMessage(content=prompt)], temperature=0.4)
+            response_content = invoke_groq_with_fallback(
+                [HumanMessage(content=prompt)], temperature=0.4
+            )
             match = re.search(r"\[\s*\{.*\}\s*\]", response_content, re.DOTALL)
 
             if match:
@@ -113,7 +116,7 @@ def generate_quiz_for_document(
             questions.append(
                 QuizQuestion(
                     quiz=quiz,
-                    question_text=f"Questão {idx+1} [Simulada Nível {difficulty}]: Qual a melhor forma de validar o processamento correto?",
+                    question_text=f"Questão {idx + 1} [Simulada Nível {difficulty}]: Qual a melhor forma de validar o processamento correto?",
                     options=[
                         "Implementando testes automatizados adequados ao fluxo",
                         "Apenas checando logs manualmente uma vez",

@@ -55,9 +55,10 @@ class UploadsTests(TestCase):
             self.assertEqual(len(first_chunk.embedding), 384)  # 384 dimensoes
 
     def test_multiple_uploads_processing(self):
-        with tempfile.NamedTemporaryFile(
-            suffix=".txt", delete=True
-        ) as file1, tempfile.NamedTemporaryFile(suffix=".md", delete=True) as file2:
+        with (
+            tempfile.NamedTemporaryFile(suffix=".txt", delete=True) as file1,
+            tempfile.NamedTemporaryFile(suffix=".md", delete=True) as file2,
+        ):
             file1.write(b"TXT content notes about Django framework.")
             file1.seek(0)
             file1.name = "notes.txt"

@@ -39,7 +39,10 @@ from .views import (
 )
 
 urlpatterns = [
-    path("favicon.ico", RedirectView.as_view(url="/static/images/CS_logo.png", permanent=True)),
+    path(
+        "favicon.ico",
+        RedirectView.as_view(url="/static/images/CS_logo.png", permanent=True),
+    ),
     path("", dashboard_page, name="dashboard_page"),
     path("health", health_check, name="health_check"),
     path("api/task/<str:task_id>/", task_status, name="task_status"),
